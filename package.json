@@ -1,0 +1,17 @@
+{
+  "name": "@stt/framework-modular",
+  "version": "1.0.0",
+  "description": "Framework modular: base común para centralizar los módulos del equipo",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix packages/apps/web/modules/app",
+    "build": "npm run build --prefix packages/apps/web/modules/app",
+    "typecheck": "npm run typecheck --prefix packages/apps/web/modules/app"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "workspaces": [
+    "packages/apps/web"
+  ]
+}

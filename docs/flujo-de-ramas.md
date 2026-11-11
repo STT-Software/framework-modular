@@ -75,10 +75,11 @@ de seguir; el workflow nunca pisa historial.
 
 Están creadas como rulesets del repo (*Settings → Rules → Rulesets*):
 
-- **`integration-solo-por-pr`**: todo cambio entra por Pull Request, las
-  conversaciones deben quedar resueltas y no se permite force push ni borrar la
-  rama. Hoy **no exige aprobaciones** (0), porque no hay un revisor asignado. Cuando
-  el equipo tenga revisores, súbelo a 1 en *Settings → Rules → Rulesets*.
+- **`integration-solo-por-pr`**: todo cambio entra por Pull Request con 1
+  aprobación. La revisión es cruzada: nadie aprueba su propio PR, así que cada
+  persona revisa los PRs de la otra. Se descartan las aprobaciones si llegan
+  commits nuevos, las conversaciones deben quedar resueltas y no se permite force
+  push ni borrar la rama.
 - **`main-test-production-historial-protegido`**: no se permite force push, borrar
   las ramas ni historial con merge commits.
 

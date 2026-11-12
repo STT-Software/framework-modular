@@ -21,5 +21,14 @@ export default defineConfig({
   ],
   server: {
     port: 6020,
+    proxy: {
+      // super-admin-auth: el navegador llama a /api/super-admin-auth y Vite lo
+      // reenvía al servicio (evita CORS y funciona aunque el navegador no esté en esta máquina).
+      "/api/super-admin-auth": {
+        target: process.env.SUPER_ADMIN_AUTH_URL ?? "http://localhost:8080",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api\/super-admin-auth/, ""),
+      },
+    },
   },
 });

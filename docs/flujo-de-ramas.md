@@ -77,6 +77,32 @@ Notas sobre este repo:
   recibe código por la promoción `test → production`, así que un hotfix también
   entra por PR a `integration` y baja por el mismo camino.
 
+## Ramas end to end
+
+Cada rama que entrega una funcionalidad se trabaja **completa**: backend,
+frontend y documentación viajan juntos en la misma rama y en el mismo PR.
+
+- No se abren ramas separadas "solo backend" y "solo frontend" para una misma
+  funcionalidad. Una funcionalidad no llega a `integration` a medias.
+- Antes de abrir el PR, la funcionalidad debe funcionar de punta a punta: desde
+  la pantalla hasta la base de datos.
+- Si una funcionalidad es grande, se divide en **rebanadas verticales**: cada
+  rebanada es end to end y más pequeña (por ejemplo, "login" y luego "recuperar
+  contraseña"), no en capas ("primero todo el backend").
+
+Qué debe llevar el PR de una funcionalidad:
+
+| Parte | Qué incluye |
+|-------|-------------|
+| Backend | El servicio o los endpoints, con sus variables de entorno en `.env.example`. |
+| Frontend | Las pantallas y el cliente que consume el backend. |
+| Documentación | El contrato HTTP en el README del servicio y los docs que cambien (`docs/`, README). |
+| Verificación | Probado de punta a punta, indicando en el PR cómo se probó. |
+
+Esta regla aplica a las ramas que entregan o corrigen funcionalidad (`feature/`,
+`feat/`, `fix/`, `bugfix/`, `hotfix/`). Las ramas que por definición tocan solo una
+parte (`docs/`, `refactor/`, `chore/`, `release/`) no necesitan las tres.
+
 ## Promociones entre ramas (GitHub Actions)
 
 Las promociones avanzan la rama destino al **mismo commit** con fast-forward, sin

@@ -1,0 +1,36 @@
+# Shared development infrastructure.
+#
+#   npm run db:up      start MongoDB   (from the repo root)
+#   npm run db:down    stop it         (data is kept in the volume)
+#
+# One MongoDB instance serves every service in development, but each service has
+# its own database and its own user (see mongo-init/). A service can only access
+# its own database.
+#
+# Credentials come from infra/.env (see infra/.env.example).
+name: framework-modular
+
+services:
+  mongo:
+    image: mongo:8
+    container_name: framework-modular-mongo
+    restart: unless-stopped
+    # Only reachable from this machine, not from the network.
+    ports:
+      - "127.0.0.1:${MONGO_PORT:-27017}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in infra/.env}
+      # One password per service database (used by mongo-init/).
+      SUPER_ADMIN_AUTH_DB_PASSWORD: ${SUPER_ADMIN_AUTH_DB_PASSWORD:?Set SUPER_ADMIN_AUTH_DB_PASSWORD in infra/.env}
+    volumes:
+      - mongo-data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo-data:

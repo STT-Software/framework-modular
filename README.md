@@ -3,9 +3,11 @@
 Base común donde se centralizan los módulos de todo el equipo, para trabajar
 sobre un mismo proyecto con flujo de Pull Requests.
 
-> El flujo de ramas (`integration` → `main` → `test` → `production`) está en
-> [`docs/flujo-de-ramas.md`](docs/flujo-de-ramas.md). Léelo antes de abrir tu
-> primer PR.
+> - El flujo de ramas (`integration` → `main` → `test` → `production`) está en
+>   [`docs/flujo-de-ramas.md`](docs/flujo-de-ramas.md). Léelo antes de abrir tu
+>   primer PR.
+> - La organización del código (arquitectura modular "screaming") está en
+>   [`docs/arquitectura.md`](docs/arquitectura.md).
 
 ## Estructura
 
@@ -16,15 +18,20 @@ sobre un mismo proyecto con flujo de Pull Requests.
 ├── lerna.json
 ├── tsconfig.json
 ├── docs/
-│   └── flujo-de-ramas.md
+│   ├── flujo-de-ramas.md
+│   └── arquitectura.md
+├── infra/                       MongoDB de desarrollo (Docker)
 └── packages/
+    ├── services/
+    │   └── super-admin-auth/    Servicio NestJS + MongoDB (ver su README)
     └── apps/
         └── web/                 Bundle app.web
             └── modules/
                 └── app/         Aplicación React + Vite + Tailwind
                     └── src/
-                        ├── app/       App, rutas, shell y sidebar
-                        ├── pages/     Páginas de cada módulo
+                        ├── app/       App, shell, sidebar y registro de módulos
+                        ├── modules/   Módulos de negocio (super-admin-auth)
+                        ├── pages/     Páginas del scaffolding
                         ├── elements/  Componentes UI compartidos
                         ├── layouts/   Layouts base
                         ├── shell/     Sidebar, header y menús
@@ -50,7 +57,17 @@ Otros comandos desde la raíz:
 ```bash
 npm run typecheck  # tsc --noEmit
 npm run build      # tsc -b && vite build
+npm run db:up                # MongoDB en Docker
+npm run dev:super-admin-auth # servicio NestJS en http://localhost:8080
+npm run dev                  # app web en http://localhost:6020
 ```
+
+Con las tres cosas arriba, el acceso del superadmin está en
+`http://localhost:6020/super/login` (y `/super/register`). Detalles en
+[`src/modules/super-admin-auth/README.md`](packages/apps/web/modules/app/src/modules/super-admin-auth/README.md).
+
+El servicio y MongoDB necesitan archivos `.env`; los pasos están en
+[`packages/services/super-admin-auth/README.md`](packages/services/super-admin-auth/README.md).
 
 ## Agregar un módulo
 
@@ -65,5 +82,6 @@ Los archivos de proyecto y el bundle `app.web` se crearon a mano siguiendo la
 estructura de WebIAI, porque el registro `npm.pkg.webiai.io` estaba devolviendo
 error 500 y `webiai install` no pudo completarse. Cuando el registro vuelva,
 hay que correr `webiai install` en la raíz para terminar de enlazar el CLI y
-las dependencias de WebIAI. Todavía no existen los bundles de backend
-(`srv.api`) ni de infraestructura (`cloud.core`).
+las dependencias de WebIAI. El backend (`packages/services/super-admin-auth`) es
+una app NestJS suelta, todavía sin bundle de WebIAI; tampoco existe el de
+infraestructura (`cloud.core`).

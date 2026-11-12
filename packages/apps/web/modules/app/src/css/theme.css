@@ -2,6 +2,14 @@
   --font-*: initial;
   --font-outfit: Outfit, sans-serif;
 
+  /* Marca Necto (login del superadmin y futuras pantallas con la identidad Necto) */
+  --color-necto: #190088;
+  --color-necto-hover: #2f13a3;
+  --color-necto-dark: #6250e8;
+  --color-necto-dark-hover: #7464f0;
+  --color-necto-link: #b7adff;
+  --color-necto-accent: #ff3f1a;
+
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;
   --breakpoint-xsm: 425px;

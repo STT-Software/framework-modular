@@ -1,0 +1,212 @@
+/*
+ * super-admin-auth: layout de acceso en dos columnas (formulario + panel de marca).
+ * Portado del diseño de referencia "necto-superlogin". Las clases llevan el prefijo
+ * "sa-" para no chocar con el resto de la app. El tema oscuro usa la clase ".dark"
+ * que aplica el uiStore sobre <html>.
+ */
+
+.sa-auth {
+  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ── Columna del formulario ─────────────────────────────────────────────── */
+.sa-form-side { min-height: 100svh; }
+.sa-header { gap: 16px; min-height: 96px; padding: 36px 48px 16px; }
+.sa-logo-link { flex-shrink: 0; width: 182px; display: block; }
+.sa-logo-link svg { width: 100%; height: auto; display: block; }
+.sa-body { padding: 34px 64px 44px; }
+.sa-footer { justify-content: space-between; gap: 12px; padding: 20px 48px 28px; display: flex; }
+
+.sa-eyebrow { color: #667085; letter-spacing: 0.13em; font-size: 11px; font-weight: 600; }
+.dark .sa-eyebrow { color: #98a2b3; }
+.sa-eyebrow span { background: #ff3f1a; border-radius: 2px; width: 6px; height: 6px; }
+
+.sa-theme-toggle { flex-shrink: 0; min-width: 100px; }
+
+/* Separación del botón principal. Va fuera de las capas de Tailwind a propósito:
+   así reemplaza el margen que le pone "space-y-*" (igual que el diseño de referencia). */
+.sa-submit { margin-top: 24px; }
+
+/* Flecha del botón principal: se desplaza al pasar el cursor. */
+.sa-arrow { transition: transform 0.2s; }
+.group:hover .sa-arrow { transform: translateX(3px); }
+
+/* Entrada suave de cada formulario al cambiar entre login y registro. */
+@keyframes sa-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sa-fade-in { animation: sa-fade-in 0.3s cubic-bezier(0.2, 0.65, 0.3, 1); }
+
+/* ── Logotipo ───────────────────────────────────────────────────────────── */
+.necto-logo__indigo { fill: #190088; }
+.necto-logo__orange { fill: #ff3f1a; }
+.dark .necto-logo--default .necto-logo__indigo { fill: #f2f4f7; }
+.dark .necto-logo--on-brand .necto-logo__indigo { fill: #fff; }
+html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
+
+/* ── Panel de marca ─────────────────────────────────────────────────────── */
+.sa-brand-side { isolation: isolate; min-height: 800px; background: #ff3f1a; }
+.dark .sa-brand-side { background: #100548; border-left: 1px solid #ffffff06; }
+
+.sa-brand-grid {
+  background-image:
+    linear-gradient(#2121210b 1px, #0000 1px),
+    linear-gradient(90deg, #2121210b 1px, #0000 1px);
+  background-size: 56px 56px;
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: radial-gradient(#000 15%, #0000 78%);
+  mask-image: radial-gradient(#000 15%, #0000 78%);
+}
+.dark .sa-brand-grid {
+  background-image:
+    linear-gradient(#ffffff0b 1px, #0000 1px),
+    linear-gradient(90deg, #ffffff0b 1px, #0000 1px);
+}
+
+.sa-brand-glow {
+  background: radial-gradient(at 50% 45%, #ffb27a66, #0000 65%);
+  position: absolute;
+  inset: 5%;
+}
+.dark .sa-brand-glow { background: radial-gradient(at 50% 45%, #4930b360, #0000 65%); }
+
+.sa-brand-content { width: 100%; padding: 70px 40px; }
+.sa-brand-logo-large { width: min(290px, 80%); margin: auto; }
+.sa-brand-logo-large svg { width: 100%; height: auto; display: block; }
+
+.sa-brand-divider { background: #190088; border-radius: 3px; width: 32px; height: 3px; margin: 35px auto 28px; }
+.dark .sa-brand-divider { background: #ff3f1a; }
+
+.sa-brand-headline {
+  color: #212121;
+  letter-spacing: -0.035em;
+  font-size: clamp(30px, 3vw, 44px);
+  font-weight: 500;
+  line-height: 1.18;
+}
+.dark .sa-brand-headline { color: #fff; }
+.sa-brand-headline span { color: #190088; }
+.dark .sa-brand-headline span { color: #ff3f1a; }
+
+.sa-brand-description { color: #212121; margin-top: 22px; font-size: 16px; line-height: 1.7; }
+.dark .sa-brand-description { color: #c3c0e8; }
+
+.sa-brand-topline {
+  color: #212121;
+  letter-spacing: 0.17em;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  display: flex;
+  position: absolute;
+  top: 48px;
+  left: 48px;
+}
+.dark .sa-brand-topline { color: #cbc7e8; }
+.sa-brand-topline span {
+  background: #97d6df;
+  border-radius: 50%;
+  width: 7px;
+  height: 7px;
+  box-shadow: 0 0 0 5px #97d6df12;
+}
+
+.sa-brand-bottom {
+  color: #212121;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  font-size: 12px;
+  display: flex;
+  position: absolute;
+  bottom: 38px;
+  left: 48px;
+  right: 48px;
+}
+.dark .sa-brand-bottom { color: #bcb6df; }
+.sa-brand-bottom-dots { gap: 6px; display: flex; }
+.sa-brand-bottom-dots i { background: #21212166; border-radius: 50%; width: 5px; height: 5px; }
+.sa-brand-bottom-dots i:first-child { background: #190088; border-radius: 8px; width: 18px; }
+.dark .sa-brand-bottom-dots i { background: #8b80bd; }
+.dark .sa-brand-bottom-dots i:first-child { background: #ff3f1a; }
+
+/* ── Órbitas animadas (motion graphic) ──────────────────────────────────── */
+@keyframes sa-revolve { to { transform: rotate(360deg); } }
+
+.sa-orbits {
+  aspect-ratio: 1;
+  width: min(630px, 105%);
+  position: absolute;
+  top: 47%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.sa-orbit { border: 1px solid #21212112; border-radius: 50%; position: absolute; }
+.dark .sa-orbit { border-color: #ffffff0c; }
+.sa-orbit span { border-radius: 50%; position: absolute; }
+.sa-orbit-outer { animation: 80s linear infinite sa-revolve; inset: 0; }
+.sa-orbit-inner { animation: 65s linear infinite reverse sa-revolve; inset: 12%; }
+.sa-orbit-outer span {
+  background: #190088;
+  width: 12px;
+  height: 12px;
+  top: 10%;
+  left: 17%;
+  box-shadow: 0 0 24px #19008833;
+}
+.dark .sa-orbit-outer span { background: #ff3f1a; box-shadow: 0 0 24px #ff3f1a55; }
+.sa-orbit-inner span {
+  background: #97d6df;
+  width: 7px;
+  height: 7px;
+  bottom: 17%;
+  right: 10%;
+  box-shadow: 0 0 20px #97d6df55;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (min-width: 1024px) {
+  .sa-auth { min-height: max(800px, 100svh); }
+  .sa-brand-side { min-height: 100%; }
+}
+
+@media (max-width: 1100px) and (min-width: 1024px) {
+  .sa-header { padding-left: 32px; padding-right: 32px; }
+  .sa-body { padding-left: 40px; padding-right: 40px; }
+  .sa-footer { padding-left: 32px; padding-right: 32px; }
+}
+
+@media (max-width: 1023px) {
+  .sa-form-side { min-height: min(800px, 100svh); }
+  .sa-header { min-height: 88px; padding: 28px 32px 12px; }
+  .sa-body { padding: 40px 32px; }
+  .sa-footer { padding: 16px 32px 28px; }
+  .sa-brand-side { min-height: 320px; }
+  .sa-brand-content { padding: 50px 24px; }
+  .sa-brand-topline, .sa-brand-bottom { display: none; }
+  .sa-brand-logo-large { width: 210px; }
+  .sa-brand-divider { margin: 22px auto 18px; }
+  .sa-brand-headline { font-size: 28px; }
+  .sa-brand-description { margin-top: 16px; font-size: 14px; }
+  .sa-orbits { width: 360px; }
+}
+
+@media (max-width: 480px) {
+  .sa-theme-toggle { width: 44px; min-width: 44px; padding: 0; }
+  .sa-theme-label { display: none; }
+  .sa-header { padding-left: 24px; padding-right: 24px; }
+  .sa-logo-link { width: 161px; }
+  .sa-body { padding: 28px 24px 40px; }
+  .sa-footer { gap: 8px; padding-left: 24px; padding-right: 24px; font-size: 10px; }
+  .sa-brand-logo-large { width: 210px; }
+}
+
+/* Respeta a quien prefiere menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  .sa-auth *, .sa-auth *::before, .sa-auth *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

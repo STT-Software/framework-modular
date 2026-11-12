@@ -96,7 +96,7 @@ Qué debe llevar el PR de una funcionalidad:
 |-------|-------------|
 | Backend | El servicio o los endpoints, con sus variables de entorno en `.env.example`. |
 | Frontend | Las pantallas y el cliente que consume el backend. |
-| Documentación | El contrato HTTP en el README del servicio y los docs que cambien (`docs/`, README). |
+| Documentación | El contrato HTTP en el README del servicio y los docs que cambien (`docs/`, README). Si el cambio altera el estado del proyecto, actualiza también [`ai-context.md`](ai-context.md). |
 | Verificación | Probado de punta a punta, indicando en el PR cómo se probó. |
 
 Esta regla aplica a las ramas que entregan o corrigen funcionalidad (`feature/`,

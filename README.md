@@ -3,9 +3,16 @@
 Base común donde se centralizan los módulos de todo el equipo, para trabajar
 sobre un mismo proyecto con flujo de Pull Requests.
 
+> ## Si eres una IA (o retomas el trabajo en una sesión nueva), empieza aquí
+>
+> **Lee primero [`docs/ai-context.md`](docs/ai-context.md).** Es el documento más importante del
+> repo: estado actual, reglas del equipo, cómo levantar todo, herramientas y versiones, carpetas de
+> referencia y trampas conocidas. Cualquier IA que trabaje en este proyecto debe leerlo antes de
+> actuar y mantenerlo actualizado. (`AGENTS.md` y `.kiro/steering/ai-context.md` remiten a él.)
+>
+> Después, según la tarea:
 > - El flujo de ramas (`integration` → `main` → `test` → `production`) está en
->   [`docs/flujo-de-ramas.md`](docs/flujo-de-ramas.md). Léelo antes de abrir tu
->   primer PR.
+>   [`docs/flujo-de-ramas.md`](docs/flujo-de-ramas.md). Léelo antes de abrir tu primer PR.
 > - La organización del código (arquitectura modular "screaming") está en
 >   [`docs/arquitectura.md`](docs/arquitectura.md).
 
@@ -17,7 +24,9 @@ sobre un mismo proyecto con flujo de Pull Requests.
 ├── package.json                 Raíz del monorepo
 ├── lerna.json
 ├── tsconfig.json
+├── AGENTS.md                    Puntero para IAs: remite a docs/ai-context.md
 ├── docs/
+│   ├── ai-context.md            CONTEXTO PARA IA: léelo primero
 │   ├── flujo-de-ramas.md
 │   └── arquitectura.md
 ├── infra/                       MongoDB de desarrollo (Docker)

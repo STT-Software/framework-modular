@@ -29,8 +29,9 @@ sobre un mismo proyecto con flujo de Pull Requests.
             └── modules/
                 └── app/         Aplicación React + Vite + Tailwind
                     └── src/
-                        ├── app/       App, rutas, shell y sidebar
-                        ├── pages/     Páginas de cada módulo
+                        ├── app/       App, shell, sidebar y registro de módulos
+                        ├── modules/   Módulos de negocio (super-admin-auth)
+                        ├── pages/     Páginas del scaffolding
                         ├── elements/  Componentes UI compartidos
                         ├── layouts/   Layouts base
                         ├── shell/     Sidebar, header y menús
@@ -58,7 +59,12 @@ npm run typecheck  # tsc --noEmit
 npm run build      # tsc -b && vite build
 npm run db:up                # MongoDB en Docker
 npm run dev:super-admin-auth # servicio NestJS en http://localhost:8080
+npm run dev                  # app web en http://localhost:6020
 ```
+
+Con las tres cosas arriba, el acceso del superadmin está en
+`http://localhost:6020/super/login` (y `/super/register`). Detalles en
+[`src/modules/super-admin-auth/README.md`](packages/apps/web/modules/app/src/modules/super-admin-auth/README.md).
 
 El servicio y MongoDB necesitan archivos `.env`; los pasos están en
 [`packages/services/super-admin-auth/README.md`](packages/services/super-admin-auth/README.md).

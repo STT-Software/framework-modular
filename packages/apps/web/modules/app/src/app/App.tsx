@@ -1,6 +1,9 @@
-import { Routes, Route } from "react-router";
+import { Routes, Route, Navigate } from "react-router";
 import { AppShell } from "@/app/AppShell";
 import { WelcomePage } from "@/pages/WelcomePage";
+import { renderModuleRoutes } from "@/app/ModuleRoutes";
+import { RequireSuperAdmin } from "@/app/RequireSuperAdmin";
+import { modules } from "@/app/modules";
 
 /**
  * App - Clean starter application with minimal shell
@@ -78,9 +81,11 @@ export default function App() {
           RUTAS CON SHELL
           Páginas que comparten el layout AppShell (sidebar + header)
           ════════════════════════════════════════════════════════════════════ */}
-      <Route element={<AppShell />}>
-        <Route path="/" element={<WelcomePage />} />
-        {/* Agregar tus rutas aquí */}
+      <Route element={<RequireSuperAdmin />}>
+        <Route element={<AppShell />}>
+          <Route path="/" element={<WelcomePage />} />
+          {/* Agregar tus rutas aquí */}
+        </Route>
       </Route>
 
       {/* ════════════════════════════════════════════════════════════════════
@@ -88,6 +93,10 @@ export default function App() {
           Páginas sin shell - tienen su propio layout completo
           Ejemplo: <Route path="/login" element={<LoginPage />} />
           ════════════════════════════════════════════════════════════════════ */}
+      {/* Rutas de los módulos (cada una dentro de su ModuleBoundary) */}
+      {renderModuleRoutes(modules)}
+      {/* Cualquier otra URL vuelve a "/", que sin sesión lleva al login */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

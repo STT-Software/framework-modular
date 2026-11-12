@@ -17,7 +17,7 @@ Y cada módulo es **independiente**: si uno falla, los demás siguen funcionando
 | Parte | Estado |
 |-------|--------|
 | Backend | Alineado. El login del superadmin es un servicio propio: `packages/services/super-admin-auth`, con su base de datos y su usuario de base de datos. |
-| Frontend | Sin código de negocio todavía. El scaffolding de WebIAI Elements sigue organizado por tipo técnico (`pages/`, `elements/`, `shell/`...). Los módulos irán en `src/modules/`, empezando por `super-admin-auth`. |
+| Frontend | Alineado para el primer módulo: `src/modules/super-admin-auth/` (login y registro). `src/app/` registra los módulos (`modules.ts`) y renderiza sus rutas con carga diferida y `ModuleBoundary`. El resto del scaffolding de WebIAI Elements sigue organizado por tipo técnico (`pages/`, `elements/`, `shell/`...) y hace de base común. |
 
 ## Principios
 
@@ -234,6 +234,4 @@ export const superAdminAuthModule = {
 - **Cómo se ejecutan varios servicios en local.** Hoy hay un solo servicio y se
   levanta con `npm run dev:super-admin-auth`. Cuando haya más, un script que los
   levante todos con `concurrently`, o un `docker-compose.yml` en la raíz.
-- **`ErrorBoundary` y carga diferida** en `src/app/`, al crear el primer módulo
-  del frontend.
 - **Firma asimétrica del JWT**, cuando exista el segundo servicio.

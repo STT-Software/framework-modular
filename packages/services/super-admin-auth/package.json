@@ -1,0 +1,37 @@
+{
+  "name": "@stt/framework-modular.super-admin-auth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Super admin authentication service (NestJS + MongoDB)",
+  "scripts": {
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "dev": "nest start --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@nestjs/common": "12.5.0",
+    "@nestjs/config": "12.1.1",
+    "@nestjs/core": "12.5.0",
+    "@nestjs/jwt": "12.0.4",
+    "@nestjs/mongoose": "12.0.1",
+    "@nestjs/platform-express": "12.5.0",
+    "@nestjs/throttler": "6.7.1",
+    "bcryptjs": "3.0.3",
+    "class-transformer": "0.5.1",
+    "class-validator": "0.15.1",
+    "mongoose": "9.12.1",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "12.0.12",
+    "@nestjs/schematics": "12.0.13",
+    "@types/express": "5.0.6",
+    "@types/node": "26.6.6",
+    "typescript": "6.0.3"
+  }
+}

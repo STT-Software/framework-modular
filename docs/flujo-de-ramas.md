@@ -50,7 +50,32 @@ git push -u origin feat/nombre-corto
 gh pr create --base integration
 ```
 
-Convención sugerida para el nombre de la rama: `feat/...`, `fix/...`, `docs/...`.
+## Nomenclatura de ramas
+
+El nombre de cada rama de trabajo lleva un prefijo que indica qué tipo de cambio
+contiene, seguido de una descripción corta.
+
+| Prefijo | Para qué se usa | Ejemplo |
+|---------|-----------------|---------|
+| `feat/` o `feature/` | Desarrollo de una nueva funcionalidad. | `feature/add-login-page` |
+| `fix/` o `bugfix/` | Corrección de un error o fallo en el código. | `bugfix/fix-header-bug` |
+| `hotfix/` | Corrección urgente de un error crítico directamente en producción. | `hotfix/security-patch` |
+| `release/` | Preparación para una nueva versión o despliegue a producción. | `release/v1.2.0` |
+| `docs/` | Cambios exclusivos en la documentación. | `docs/nomenclatura` |
+| `refactor/` | Mejora de código sin alterar su funcionalidad externa. | `refactor/split-sidebar` |
+| `chore/` | Tareas de mantenimiento, actualización de dependencias o configuración. | `chore/update-dependencies` |
+
+Reglas del nombre:
+
+- Todo en minúsculas y con guiones para separar palabras (`add-login-page`, no
+  `AddLoginPage`).
+- Corto y descriptivo: debe bastar para saber de qué trata el cambio.
+
+Notas sobre este repo:
+
+- **Todas las ramas salen de `integration`, incluida `hotfix/`.** Producción solo
+  recibe código por la promoción `test → production`, así que un hotfix también
+  entra por PR a `integration` y baja por el mismo camino.
 
 ## Promociones entre ramas (GitHub Actions)
 

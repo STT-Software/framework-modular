@@ -79,8 +79,11 @@ forma de entrar.
   (credenciales incorrectas, cuenta duplicada por campo, demasiados intentos, sin conexión).
 - La sesión se guarda en `sessionStorage`: sobrevive a recargar la pestaña y se borra
   al cerrarla (una pestaña nueva siempre empieza en el login). Si el token ya venció al
-  cargar, se descarta. Aún no hay botón de cerrar sesión: `superAdminSessionStore.signOut()`
-  existe, falta conectarlo a la interfaz.
+  cargar, se descarta.
+- **Cerrar sesión:** el botón del encabezado (`src/app/SignOutButton.tsx`) llama a
+  `superAdminSessionStore.signOut()`, que borra la sesión del navegador; la puerta
+  `RequireSuperAdmin` lleva sola al login. El servicio no tiene endpoint de logout: el JWT
+  no tiene estado y sigue siendo válido hasta que venza (1 h por defecto).
 - Respeta `prefers-reduced-motion`: sin animaciones para quien lo pide.
 - Si el módulo falla al cargar o al renderizar, `ModuleBoundary` lo contiene: se ve un
   aviso con "Reintentar" y el resto de la app sigue funcionando.

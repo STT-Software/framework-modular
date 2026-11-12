@@ -6,6 +6,7 @@ import {
 } from "@/shell";
 import { ThemeToggleButton } from "@/shell";
 import { AppSidebar } from "@/app/AppSidebar";
+import { SignOutButton } from "@/app/SignOutButton";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // APP HEADER - Minimal header for new applications
@@ -21,6 +22,7 @@ const AppHeader = () => (
   >
     <div className="flex items-center gap-3">
       <ThemeToggleButton />
+      <SignOutButton />
     </div>
   </BaseAppHeader>
 );

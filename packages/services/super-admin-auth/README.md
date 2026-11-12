@@ -71,15 +71,19 @@ Si falta una variable obligatoria o el secreto es débil, el servicio no arranca
   "username": "admin.root",
   "email": "admin@company.com",
   "password": "at-least-8-characters",
-  "identityDocument": "1.032.556.778"
+  "identityDocumentType": "CC",
+  "identityDocument": "1.032.556.778",
+  "acceptTerms": true
 }
 ```
 
 - `username`: 3 a 30 caracteres (letras, números, `.`, `-`, `_`). No admite `@`. Se guarda en minúsculas.
 - `email`: válido; se guarda en minúsculas.
 - `password`: 8 a 72 caracteres. Se guarda como hash bcrypt, nunca en claro.
+- `identityDocumentType`: `CC` (cédula de ciudadanía), `CE` (cédula de extranjería), `PA` (pasaporte) o `NIT`. No distingue mayúsculas.
 - `identityDocument`: 5 a 20 caracteres (letras, números o guion). Se quitan puntos y espacios.
-- `username`, `email` e `identityDocument` son únicos. Si ya existe uno, responde `409`.
+- `acceptTerms`: debe ser `true`. El servidor guarda la fecha y hora de la aceptación (`termsAcceptedAt`).
+- `username` y `email` son únicos. El documento es único **junto con su tipo**: el mismo número puede existir con otro tipo (por ejemplo, una CC y un pasaporte). Si ya existe uno, responde `409`.
 - Cualquier campo que no esté en la lista se rechaza con `400`.
 
 Respuesta `201`: `{ "id", "username", "email" }`.

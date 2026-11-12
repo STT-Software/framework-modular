@@ -1,3 +1,5 @@
+import type { DocumentType } from "../documentTypes";
+
 /**
  * Cliente HTTP del servicio super-admin-auth (ver su README para el contrato).
  *
@@ -25,7 +27,10 @@ export interface RegisterInput {
   username: string;
   email: string;
   password: string;
+  identityDocumentType: DocumentType;
   identityDocument: string;
+  /** Debe ser true: el servidor rechaza el registro si no se aceptaron los términos. */
+  acceptTerms: boolean;
 }
 
 export interface LoginResult {

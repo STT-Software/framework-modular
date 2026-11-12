@@ -7,19 +7,23 @@ import {
   SuperAdminAuthError,
   type RegisterField,
 } from "../api/superAdminAuthApi";
-import { PasswordField, TextField } from "../components/AuthFields";
+import { DocumentField, PasswordField, TextField } from "../components/AuthFields";
 import { FormHeading } from "../components/FormHeading";
 import { SubmitButton } from "../components/SubmitButton";
+import { TermsCheckbox } from "../components/TermsCheckbox";
+import { DEFAULT_DOCUMENT_TYPE, type DocumentType } from "../documentTypes";
 import {
   normalizeIdentityDocument,
   normalizeUsername,
   validateEmail,
   validateIdentityDocument,
   validateNewPassword,
+  validatePasswordConfirmation,
+  validateTermsAccepted,
   validateUsername,
 } from "../validation";
 
-type FieldErrors = Partial<Record<RegisterField | "password", string | null>>;
+type FieldErrors = Partial<Record<RegisterField | "password" | "passwordConfirmation" | "terms", string | null>>;
 
 const CONFLICT_MESSAGES: Record<RegisterField, string> = {
   username: "Ya existe una cuenta con ese usuario.",
@@ -49,8 +53,11 @@ export default function RegisterPage() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [email, setEmail] = useState("");
+  const [documentType, setDocumentType] = useState<DocumentType>(DEFAULT_DOCUMENT_TYPE);
   const [identityDocument, setIdentityDocument] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -62,8 +69,10 @@ export default function RegisterPage() {
     const nextErrors: FieldErrors = {
       username: validateUsername(username),
       password: validateNewPassword(password),
+      passwordConfirmation: validatePasswordConfirmation(password, passwordConfirmation),
       email: validateEmail(email),
       identityDocument: validateIdentityDocument(identityDocument),
+      terms: validateTermsAccepted(acceptTerms),
     };
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
@@ -74,7 +83,9 @@ export default function RegisterPage() {
         username: normalizeUsername(username),
         email: email.trim().toLowerCase(),
         password,
+        identityDocumentType: documentType,
         identityDocument: normalizeIdentityDocument(identityDocument),
+        acceptTerms,
       });
       navigate("/super/login", { replace: true, state: { registeredUsername: created.username } });
     } catch (error) {
@@ -120,6 +131,16 @@ export default function RegisterPage() {
           error={errors.password}
           autoComplete="new-password"
         />
+        <PasswordField
+          id="register-password-confirmation"
+          name="passwordConfirmation"
+          label="Confirmar contraseña"
+          placeholder="Repite tu contraseña"
+          value={passwordConfirmation}
+          onChange={setPasswordConfirmation}
+          error={errors.passwordConfirmation}
+          autoComplete="new-password"
+        />
         <TextField
           id="register-email"
           name="email"
@@ -132,16 +153,14 @@ export default function RegisterPage() {
           autoComplete="email"
           maxLength={254}
         />
-        <TextField
-          id="register-document"
-          name="identityDocument"
-          label="Documento de identidad"
-          placeholder="Ingresa tu número de documento"
-          value={identityDocument}
-          onChange={setIdentityDocument}
+        <DocumentField
+          documentType={documentType}
+          onDocumentTypeChange={setDocumentType}
+          documentNumber={identityDocument}
+          onDocumentNumberChange={setIdentityDocument}
           error={errors.identityDocument}
-          maxLength={25}
         />
+        <TermsCheckbox checked={acceptTerms} onChange={setAcceptTerms} error={errors.terms} />
         <SubmitButton loading={loading}>Crear cuenta</SubmitButton>
       </form>
 

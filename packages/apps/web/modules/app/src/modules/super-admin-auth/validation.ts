@@ -46,3 +46,12 @@ export function validateIdentityDocument(value: string): string | null {
     ? null
     : "Usa de 5 a 20 caracteres: letras, números o guion.";
 }
+
+export function validatePasswordConfirmation(password: string, confirmation: string): string | null {
+  if (confirmation.length === 0) return "Confirma tu contraseña.";
+  return confirmation === password ? null : "Las contraseñas no coinciden.";
+}
+
+export function validateTermsAccepted(accepted: boolean): string | null {
+  return accepted ? null : "Debes aceptar los términos y condiciones para continuar.";
+}

@@ -1,20 +1,16 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { SuperAdmin, SuperAdminDocument } from './schemas/super-admin.schema';
+import { IdentityDocumentType, SuperAdmin, SuperAdminDocument } from './schemas/super-admin.schema';
 
 export interface CreateSuperAdminData {
   username: string;
   email: string;
   passwordHash: string;
+  identityDocumentType: IdentityDocumentType;
   identityDocument: string;
+  termsAcceptedAt: Date;
 }
-
-const DUPLICATE_FIELD_LABELS: Record<string, string> = {
-  username: 'username',
-  email: 'email',
-  identityDocument: 'identity document',
-};
 
 interface MongoDuplicateKeyError {
   code: number;
@@ -23,6 +19,14 @@ interface MongoDuplicateKeyError {
 
 function isDuplicateKeyError(error: unknown): error is MongoDuplicateKeyError {
   return typeof error === 'object' && error !== null && (error as MongoDuplicateKeyError).code === 11000;
+}
+
+/** Which field caused the duplicate. The document index is compound (type + number). */
+function duplicateFieldLabel(keyPattern: Record<string, unknown> = {}): string {
+  if ('identityDocument' in keyPattern) return 'identity document';
+  if ('username' in keyPattern) return 'username';
+  if ('email' in keyPattern) return 'email';
+  return 'value';
 }
 
 @Injectable()
@@ -34,9 +38,8 @@ export class SuperAdminService {
       return await this.model.create(data);
     } catch (error) {
       if (isDuplicateKeyError(error)) {
-        const field = Object.keys(error.keyPattern ?? {})[0];
         throw new ConflictException(
-          `A super admin with that ${DUPLICATE_FIELD_LABELS[field] ?? 'value'} already exists`,
+          `A super admin with that ${duplicateFieldLabel(error.keyPattern)} already exists`,
         );
       }
       throw error;

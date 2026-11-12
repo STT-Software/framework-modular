@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Input } from "@/elements/form/input";
 import { Label } from "@/elements/form/label";
+import { Select } from "@/elements/form/select";
 import { cn } from "@/utils";
+import { DOCUMENT_TYPE_OPTIONS, type DocumentType } from "../documentTypes";
 
 interface FieldProps {
   id: string;
@@ -113,6 +115,55 @@ export function PasswordField({
             )}
           </svg>
         </button>
+      </div>
+    </div>
+  );
+}
+
+interface DocumentFieldProps {
+  documentType: DocumentType;
+  onDocumentTypeChange: (value: DocumentType) => void;
+  documentNumber: string;
+  onDocumentNumberChange: (value: string) => void;
+  error?: string | null;
+}
+
+/** Documento de identidad: selector del tipo de documento y campo para el número. */
+export function DocumentField({
+  documentType,
+  onDocumentTypeChange,
+  documentNumber,
+  onDocumentNumberChange,
+  error,
+}: DocumentFieldProps) {
+  return (
+    <div>
+      <Label htmlFor="register-document" className={labelClassName}>
+        Documento de identidad
+      </Label>
+      <div className="grid gap-3 sm:grid-cols-[220px_minmax(0,1fr)]">
+        <Select
+          name="identityDocumentType"
+          aria-label="Tipo de documento"
+          options={DOCUMENT_TYPE_OPTIONS}
+          defaultValue={documentType}
+          onChange={(value) => onDocumentTypeChange(value as DocumentType)}
+          className={cn(
+            "h-12 text-[15px] shadow-[0_1px_2px_#10182805] dark:shadow-none dark:bg-gray-800/50",
+            "focus:border-necto focus:ring-necto/10 dark:focus:border-necto-link dark:focus:ring-necto-link/20",
+          )}
+        />
+        <Input
+          id="register-document"
+          name="identityDocument"
+          value={documentNumber}
+          placeholder="Número de documento"
+          onChange={(event) => onDocumentNumberChange(event.target.value)}
+          error={Boolean(error)}
+          hint={error ?? undefined}
+          maxLength={25}
+          className={inputClassName(Boolean(error))}
+        />
       </div>
     </div>
   );

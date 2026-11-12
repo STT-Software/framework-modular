@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { Equals, IsEmail, IsIn, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IDENTITY_DOCUMENT_TYPES, type IdentityDocumentType } from '../../super-admin/schemas/super-admin.schema';
 
 const toLowerTrimmed = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim().toLowerCase() : value;
@@ -27,6 +28,12 @@ export class RegisterSuperAdminDto {
   @MaxLength(72, { message: 'password must be at most 72 characters long' })
   password: string;
 
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @IsIn(IDENTITY_DOCUMENT_TYPES, {
+    message: `identityDocumentType must be one of: ${IDENTITY_DOCUMENT_TYPES.join(', ')}`,
+  })
+  identityDocumentType: IdentityDocumentType;
+
   /** Dots and spaces are removed (1.032.556.778 becomes 1032556778). */
   @Transform(({ value }) =>
     typeof value === 'string' ? value.replace(/[.\s]/g, '').toUpperCase() : value,
@@ -36,4 +43,8 @@ export class RegisterSuperAdminDto {
     message: 'identityDocument must be 5 to 20 characters: letters, numbers or hyphen',
   })
   identityDocument: string;
+
+  /** The terms and conditions must be accepted explicitly; the server records when. */
+  @Equals(true, { message: 'acceptTerms must be true: the terms and conditions must be accepted' })
+  acceptTerms: boolean;
 }

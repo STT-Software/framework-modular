@@ -34,7 +34,9 @@ export class AuthService {
     const created = await this.superAdmins.create({
       username: dto.username,
       email: dto.email,
+      identityDocumentType: dto.identityDocumentType,
       identityDocument: dto.identityDocument,
+      termsAcceptedAt: new Date(),
       passwordHash,
     });
     return this.toPublic(created);

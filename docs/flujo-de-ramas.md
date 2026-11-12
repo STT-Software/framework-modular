@@ -80,6 +80,18 @@ Están creadas como rulesets del repo (*Settings → Rules → Rulesets*):
   persona revisa los PRs de la otra. Se descartan las aprobaciones si llegan
   commits nuevos, las conversaciones deben quedar resueltas y no se permite force
   push ni borrar la rama.
+
+  **Excepción para administradores:** quien tenga rol Admin puede mezclar su PR
+  sin esperar la aprobación (por ejemplo, si el compañero no está disponible). La
+  excepción es solo vía PR: no permite empujar directo a `integration`. Para
+  usarla, en la página del PR pulsa **Merge without waiting for requirements**, o
+  desde la terminal:
+
+  ```bash
+  gh pr merge <numero> --squash --admin
+  ```
+
+  Úsala como último recurso. Lo normal es la revisión cruzada.
 - **`main-test-production-historial-protegido`**: no se permite force push, borrar
   las ramas ni historial con merge commits.
 

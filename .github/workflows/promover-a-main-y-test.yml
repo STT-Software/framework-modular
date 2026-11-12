@@ -1,0 +1,41 @@
+name: Promover integration -> main -> test
+
+# Cada vez que un PR se mezcla en integration, main y test avanzan al mismo
+# commit. Se avanza con fast-forward (sin force): si main o test tuvieran un
+# commit que integration no tiene, el push se rechaza y el workflow falla en
+# lugar de pisar nada.
+on:
+  push:
+    branches: [integration]
+
+permissions:
+  contents: write
+
+# Una promocion a la vez. Si llegan varias seguidas, se encolan.
+concurrency:
+  group: promover-main-test
+  cancel-in-progress: false
+
+jobs:
+  promover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Avanzar main
+        run: git push origin "${GITHUB_SHA}:refs/heads/main"
+
+      - name: Avanzar test
+        run: git push origin "${GITHUB_SHA}:refs/heads/test"
+
+      - name: Resumen
+        run: |
+          {
+            echo "### Promocion completada"
+            echo ""
+            echo "- Commit: \`${GITHUB_SHA::7}\`"
+            echo "- integration, main y test quedaron en el mismo commit."
+            echo "- Para llevarlo a produccion, ejecuta manualmente el workflow **Promover test -> production**."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,46 @@
+name: Promover test -> production
+
+# Se ejecuta a mano, solo cuando test fue aprobado. Lleva production al mismo
+# commit que test con fast-forward (sin force).
+#
+# Quien lo ejecuta es quien aprueba: queda registrado en el historial de
+# Actions con su usuario. Para ejecutarlo: Actions -> este workflow ->
+# "Run workflow" y escribir PRODUCCION en el campo de confirmacion.
+on:
+  workflow_dispatch:
+    inputs:
+      confirmar:
+        description: "Escribe PRODUCCION para confirmar que test fue aprobado"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: promover-production
+  cancel-in-progress: false
+
+jobs:
+  promover:
+    if: ${{ inputs.confirmar == 'PRODUCCION' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: test
+          fetch-depth: 0
+
+      - name: Avanzar production a test
+        run: git push origin "HEAD:refs/heads/production"
+
+      - name: Resumen
+        env:
+          ACTOR: ${{ github.actor }}
+        run: |
+          {
+            echo "### Promocion a produccion completada"
+            echo ""
+            echo "- Commit: \`$(git rev-parse --short HEAD)\`"
+            echo "- Aprobado y ejecutado por: @${ACTOR}"
+          } >> "$GITHUB_STEP_SUMMARY"

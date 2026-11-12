@@ -52,17 +52,55 @@ gh pr create --base integration
 
 Convención sugerida para el nombre de la rama: `feat/...`, `fix/...`, `docs/...`.
 
-## Protección de ramas (configurar en GitHub)
+## Promociones entre ramas (GitHub Actions)
 
-Estas reglas se configuran en *Settings → Branches* del repo (requiere permisos
-de administrador) y son las que hacen cumplir el flujo:
+Las promociones avanzan la rama destino al **mismo commit** con fast-forward, sin
+crear commits nuevos ni usar force. Por eso `integration`, `main` y `test` quedan
+siempre a la misma altura.
 
-- `integration`: exigir Pull Request y al menos una aprobación antes de mezclar.
-- `main`, `test` y `production`: bloquear pushes directos de personas.
+| Paso | Cómo se ejecuta | Workflow |
+|------|-----------------|----------|
+| `integration` → `main` → `test` | Automático al mezclar un PR en `integration` | `.github/workflows/promover-a-main-y-test.yml` |
+| `test` → `production` | Manual, solo cuando `test` fue aprobado | `.github/workflows/promover-a-production.yml` |
+
+**Pasar a producción:** en GitHub ve a *Actions → Promover test -> production →
+Run workflow*, escribe `PRODUCCION` en el campo de confirmación y ejecuta. Quien
+lo ejecuta es quien aprueba; queda registrado con su usuario en el historial.
+
+Si `main` o `test` tuvieran un commit que `integration` no tiene (alguien empujó
+directo), el push se rechaza y el workflow falla. Hay que corregirlo a mano antes
+de seguir; el workflow nunca pisa historial.
+
+## Reglas de protección configuradas
+
+Están creadas como rulesets del repo (*Settings → Rules → Rulesets*):
+
+- **`integration-solo-por-pr`**: todo cambio entra por Pull Request con 1
+  aprobación. La revisión es cruzada: nadie aprueba su propio PR, así que cada
+  persona revisa los PRs de la otra. Se descartan las aprobaciones si llegan
+  commits nuevos, las conversaciones deben quedar resueltas y no se permite force
+  push ni borrar la rama.
+
+  **Excepción para administradores:** quien tenga rol Admin puede mezclar su PR
+  sin esperar la aprobación (por ejemplo, si el compañero no está disponible). La
+  excepción es solo vía PR: no permite empujar directo a `integration`. Para
+  usarla, en la página del PR pulsa **Merge without waiting for requirements**, o
+  desde la terminal:
+
+  ```bash
+  gh pr merge <numero> --squash --admin
+  ```
+
+  Úsala como último recurso. Lo normal es la revisión cruzada.
+- **`main-test-production-historial-protegido`**: no se permite force push, borrar
+  las ramas ni historial con merge commits.
+
+Limitación conocida: `main`, `test` y `production` **no** bloquean pushes
+directos. El token de Actions no se puede añadir a la lista de excepciones de un
+ruleset, así que un bloqueo total impediría que los workflows las avancen. Para
+cerrarlo hace falta una GitHub App o un bot con permiso de excepción.
 
 ## Pendiente de definir
 
-- **Cómo se ejecutan las promociones** `integration → main → test → production`
-  (automatizadas con GitHub Actions o manuales). Lo que importa para el flujo es
-  que `main` termine a la misma altura que `integration`.
-- Quién aprueba el paso de `test` a `production` y con qué criterio.
+- Con qué criterio se aprueba el paso de `test` a `production`.
+- Si se agrega un workflow de CI (typecheck y build) que corra en cada PR.

@@ -15,7 +15,7 @@ interface TermsCheckboxProps {
   error?: string | null;
 }
 
-const linkClassName = "font-semibold text-necto hover:underline dark:text-necto-link";
+const linkClassName = "font-bold text-[#190088] hover:underline dark:text-[#97D6DF]";
 
 /** Casilla "Acepto los términos y condiciones", con enlace a la vista de términos. */
 export function TermsCheckbox({ checked, onChange, error }: TermsCheckboxProps) {
@@ -27,11 +27,11 @@ export function TermsCheckbox({ checked, onChange, error }: TermsCheckboxProps) 
           name="acceptTerms"
           checked={checked}
           onChange={onChange}
-          className="checked:bg-necto dark:checked:bg-necto-dark"
+          className="checked:bg-[#190088] dark:checked:bg-[#FF3F1A]"
         />
         <label
           htmlFor="register-terms"
-          className="cursor-pointer text-sm leading-5 text-gray-600 dark:text-gray-400"
+          className="cursor-pointer text-[14px] font-normal leading-5 text-[#212121] dark:text-[#ECECEC]"
         >
           Acepto los{" "}
           {TERMS_PATH ? (

@@ -11,7 +11,7 @@ export const AuthThemeToggle = observer(() => {
       onClick={() => uiStore.toggleTheme()}
       aria-label={dark ? "Activar modo claro" : "Activar modo oscuro"}
       aria-pressed={dark}
-      className="sa-theme-toggle flex h-11 items-center justify-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-600 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+      className="sa-theme-toggle flex h-11 items-center justify-center gap-2 rounded-full border border-[#ECECEC] bg-[#ECECEC]/40 px-3 text-[14px] font-normal text-[#212121] transition hover:bg-[#ECECEC] dark:border-gray-700 dark:bg-gray-800 dark:text-[#ECECEC] dark:hover:bg-gray-700"
     >
       <svg className="dark:hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path

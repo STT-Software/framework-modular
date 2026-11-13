@@ -12,7 +12,7 @@ export function SubmitButton({ children, loading = false }: SubmitButtonProps) {
     <Button
       type="submit"
       loading={loading}
-      className="sa-submit group flex h-12 w-full gap-3 bg-necto text-sm shadow-[0_3px_6px_#19008812] hover:bg-necto-hover disabled:bg-necto/60 dark:bg-necto-dark dark:shadow-[0_3px_12px_#00000020] dark:hover:bg-necto-dark-hover dark:disabled:bg-necto-dark/60"
+      className="sa-submit group flex h-12 w-full gap-3 bg-[#190088] text-[14px] font-bold text-white shadow-[0_3px_6px_#19008812] hover:bg-[#190088]/90 disabled:bg-[#190088]/60 dark:bg-[#FF3F1A] dark:text-white dark:shadow-[0_3px_12px_#00000020] dark:hover:bg-[#FF3F1A]/90 dark:disabled:bg-[#FF3F1A]/60"
       endIcon={
         <svg
           className="sa-arrow"

@@ -15,11 +15,11 @@ export function FormHeading({ id, eyebrow, title, subtitle }: FormHeadingProps) 
       </p>
       <h1
         id={id}
-        className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-white/90 sm:text-4xl"
+        className="text-[36px] font-bold tracking-tight text-[#190088] dark:text-white leading-tight"
       >
         {title}
       </h1>
-      <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-400 sm:text-base">{subtitle}</p>
+      <p className="mt-3 text-[16px] font-normal leading-6 text-[#212121] dark:text-[#ECECEC]">{subtitle}</p>
     </div>
   );
 }

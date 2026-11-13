@@ -21,14 +21,14 @@ interface FieldProps {
 /** Acabado Necto sobre el Input de Elements: más alto y con foco índigo. */
 function inputClassName(hasError: boolean, extra?: string) {
   return cn(
-    "h-12 text-[15px] shadow-[0_1px_2px_#10182805] dark:shadow-none dark:bg-gray-800/50 dark:placeholder:text-gray-400",
+    "h-12 text-[14px] font-normal text-[#212121] shadow-[0_1px_2px_#10182805] dark:shadow-none dark:bg-gray-800/50 dark:text-[#ECECEC] dark:placeholder:text-[#ECECEC]/40",
     !hasError &&
-      "focus:border-necto focus:ring-necto/10 dark:focus:border-necto-link dark:focus:ring-necto-link/20",
+      "focus:border-[#190088] focus:ring-[#190088]/10 dark:focus:border-[#97D6DF] dark:focus:ring-[#97D6DF]/20",
     extra,
   );
 }
 
-const labelClassName = "mb-2 text-gray-700 dark:text-gray-300";
+const labelClassName = "mb-2 text-[14px] font-bold text-[#212121] dark:text-[#ECECEC]";
 
 export function TextField({
   id,
@@ -99,7 +99,7 @@ export function PasswordField({
           onClick={() => setVisible((current) => !current)}
           aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
           aria-pressed={visible}
-          className="absolute right-1 top-0 flex h-12 w-11 items-center justify-center rounded-lg text-gray-400 hover:text-necto dark:hover:text-necto-link"
+          className="absolute right-1 top-0 flex h-12 w-11 items-center justify-center rounded-lg text-[#212121]/60 hover:text-[#190088] dark:text-[#ECECEC]/60 dark:hover:text-[#97D6DF]"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
@@ -149,8 +149,8 @@ export function DocumentField({
           defaultValue={documentType}
           onChange={(value) => onDocumentTypeChange(value as DocumentType)}
           className={cn(
-            "h-12 text-[15px] shadow-[0_1px_2px_#10182805] dark:shadow-none dark:bg-gray-800/50",
-            "focus:border-necto focus:ring-necto/10 dark:focus:border-necto-link dark:focus:ring-necto-link/20",
+            "h-12 text-[14px] font-normal text-[#212121] shadow-[0_1px_2px_#10182805] dark:shadow-none dark:bg-gray-800/50 dark:text-[#ECECEC]",
+            "focus:border-[#190088] focus:ring-[#190088]/10 dark:focus:border-[#97D6DF] dark:focus:ring-[#97D6DF]/20",
           )}
         />
         <Input

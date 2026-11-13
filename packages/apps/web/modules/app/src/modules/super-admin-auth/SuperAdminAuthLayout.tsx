@@ -1,10 +1,33 @@
+import "@fontsource/dm-sans/300.css";
 import "@fontsource/dm-sans/400.css";
-import "@fontsource/dm-sans/500.css";
-import "@fontsource/dm-sans/600.css";
+import "@fontsource/dm-sans/700.css";
 import "./styles/auth-layout.css";
-import { Link, Outlet, useLocation } from "react-router";
+import { Link, Outlet } from "react-router";
 import { AuthThemeToggle } from "./components/AuthThemeToggle";
+import { DecorativeCircles } from "./components/DecorativeCircles";
+import InteractiveDotGrid from "./components/InteractiveDotGrid";
 import { NectoLogo } from "./components/NectoLogo";
+import {
+  BrandMessageDisplay,
+  BrandMessageIndicators,
+  useRotatingBrandMessages,
+  type BrandMessage,
+} from "./components/RotatingBrandMessages";
+
+const BRAND_MESSAGES: BrandMessage[] = [
+  {
+    title: "Más conexiones. Más posibilidades.",
+    subtitle: "Conecta, comparte y crece con tu comunidad.",
+  },
+  {
+    title: "El poder de conectar.",
+    subtitle: "Tu próxima gran conexión empieza aquí.",
+  },
+  {
+    title: "Crece en buena compañía.",
+    subtitle: "Plataforma modular e integral para tus operaciones.",
+  },
+];
 
 /**
  * Layout de acceso del superadmin: formulario a la izquierda y panel de marca
@@ -12,8 +35,8 @@ import { NectoLogo } from "./components/NectoLogo";
  * este layout, así el panel de marca no se reinicia al cambiar de pantalla.
  */
 export default function SuperAdminAuthLayout() {
-  const { pathname } = useLocation();
-  const isRegister = pathname.endsWith("/register");
+  const { index, fadeState, selectIndex } = useRotatingBrandMessages(BRAND_MESSAGES.length);
+  const currentMessage = BRAND_MESSAGES[index] ?? BRAND_MESSAGES[0];
 
   return (
     <main className="sa-auth grid min-h-screen lg:grid-cols-2">
@@ -31,8 +54,8 @@ export default function SuperAdminAuthLayout() {
           </div>
         </div>
 
-        <footer className="sa-footer text-xs text-gray-400">
-          © {new Date().getFullYear()} Necto <span>Crece en buena compañía.</span>
+        <footer className="sa-footer text-[12px] font-light text-[#212121]/70 dark:text-[#ECECEC]/70">
+          © {new Date().getFullYear()} Necto
         </footer>
       </section>
 
@@ -40,36 +63,37 @@ export default function SuperAdminAuthLayout() {
         className="sa-brand-side relative flex items-center justify-center overflow-hidden"
         aria-label="Necto, conecta, comparte y crece"
       >
-        <div className="sa-brand-grid" aria-hidden="true" />
-        <div className="sa-brand-glow" aria-hidden="true" />
-        <div className="sa-orbits" aria-hidden="true">
-          <div className="sa-orbit sa-orbit-outer"><span /></div>
-          <div className="sa-orbit sa-orbit-inner"><span /></div>
+        <InteractiveDotGrid
+          dotGap={24}
+          baseRadius={1.5}
+          activeRadius={3.0}
+          glowDistance={160}
+        />
+        <div className="dark:hidden">
+          <DecorativeCircles variant="brand" />
         </div>
-
-        <div className="sa-brand-topline"><span />EL PODER DE CONECTAR</div>
+        <div className="hidden dark:block">
+          <DecorativeCircles variant="indigo" />
+        </div>
+        <div className="sa-brand-glow" aria-hidden="true" />
 
         <div className="sa-brand-content relative z-10 text-center">
           <div className="sa-brand-logo-large">
             <NectoLogo tone="on-brand" />
           </div>
           <div className="sa-brand-divider" />
-          <h2 className="sa-brand-headline">
-            {isRegister ? (
-              <>Tu próxima conexión<br />empieza aquí<span>.</span></>
-            ) : (
-              <>Más conexiones.<br />Más posibilidades<span>.</span></>
-            )}
-          </h2>
-          <p className="sa-brand-description">
-            Conecta, comparte y crece<br />con tu comunidad.
-          </p>
+          <BrandMessageDisplay
+            message={currentMessage}
+            messageKey={index}
+            fadeState={fadeState}
+          />
         </div>
 
-        <div className="sa-brand-bottom">
-          <span className="sa-brand-bottom-dots"><i /><i /><i /></span>
-          <span>Conecta. Comparte. Crece.</span>
-        </div>
+        <BrandMessageIndicators
+          count={BRAND_MESSAGES.length}
+          activeIndex={index}
+          onSelect={selectIndex}
+        />
       </aside>
     </main>
   );

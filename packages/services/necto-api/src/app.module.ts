@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './modules/auth/public';
+import { BusinessAccessModule } from './modules/business-access/public';
+import { BusinessesModule } from './modules/businesses/public';
 import { OnboardingModule } from './modules/onboarding/public';
 import { PlatformConfigModule } from './platform/config/config.module';
 import { DatabaseModule } from './platform/database/database.module';
@@ -22,6 +24,8 @@ import { RateLimitModule } from './platform/security/rate-limit.module';
     // Business modules.
     AuthModule,
     OnboardingModule,
+    BusinessesModule,
+    BusinessAccessModule,
   ],
 })
 export class AppModule {}

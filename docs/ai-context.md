@@ -100,7 +100,7 @@ independientes). **Hoy está construido el acceso del SuperAdmin, su bienvenida 
 
 | Pieza | Dónde | Estado |
 |-------|-------|--------|
-| Backend: monolito modular `necto-api` (login/registro del SuperAdmin + onboarding) | `packages/services/necto-api` (un solo proceso, puerto 8080) | Funciona, probado con MongoDB real y con 30 pruebas automáticas. `platform/` (config, database, security, errors, observability) + `modules/auth` + `modules/onboarding` |
+| Backend: monolito modular `necto-api` (login/registro del SuperAdmin + onboarding) | `packages/services/necto-api` (un solo proceso, puerto 8080) | Funciona, probado con MongoDB real. `platform/` (config, database, security, errors, observability) + `modules/auth` + `modules/onboarding` |
 | MongoDB de desarrollo (Docker) | `infra/` | Funciona; una base (`super_admin_auth`) y un usuario para el backend |
 | Pantallas `/super/login` y `/super/register` | `packages/apps/web/modules/app/src/modules/super-admin-auth` | Funcionan, conectadas al servicio |
 | Cerrar sesión | `src/app/SignOutButton.tsx` | Funciona (borra la sesión del navegador) |
@@ -109,6 +109,7 @@ independientes). **Hoy está construido el acceso del SuperAdmin, su bienvenida 
 | Workspace de negocios | `src/modules/workspace` (solo frontend, README propio) | Funciona: `/workspace` con sidebar, barra superior y el directorio de negocios **vacío** (0 negocios, filtros apagados) con la tienda animada **en movimiento continuo**; `/workspace/profile` ("Mi perfil") muestra solo el nombre del usuario. Solo se entra con sesión **y** perfil completo |
 | Puertas de acceso | `src/app/RequireSuperAdmin.tsx` y `RequireOnboardingCompleted.tsx` | Sin sesión, `/` y URLs desconocidas llevan a `/super/login`; con sesión, a `/workspace`. Los módulos con `requiresSuperAdmin: true` quedan detrás de la primera; los que además llevan `requiresOnboardingCompleted: true` (el workspace) detrás de la segunda: sin perfil completo, `/welcome` |
 | Registro de módulos + aislamiento de fallos | `src/app/modules.ts`, `ModuleRoutes.tsx`, `ModuleBoundary.tsx` | Funciona |
+| **Negocios + acceso del jefe (solo backend)** | `src/modules/businesses` y `src/modules/business-access` de `necto-api`; rama `feature/businesses` (apilada sobre `feature/workspace`, sin PR ni push) | Backend completo y verificado con MongoDB real y un servidor SMTP de pruebas local (115 pruebas automáticas en verde): crear negocio con jefe y módulos (idempotente), editar, reemplazar jefe, pausar/reanudar, CSV, invitación por correo con OTP, sesión del jefe validada en cada petición. **El frontend NO está hecho** (ver "Lo que NO existe") |
 | CI de promoción de ramas | `.github/workflows/` | Existe; `production` aún no se ha promovido nunca |
 
 El registro pide: usuario, contraseña + confirmación, correo, tipo y número de documento
@@ -116,9 +117,11 @@ El registro pide: usuario, contraseña + confirmación, correo, tipo y número d
 
 ### Lo que NO existe (no lo des por hecho)
 
-- Login del **admin de un negocio**.
+- **Frontend de negocios y de acceso del jefe**: `referencias html/necto-negocio-completo.html` está **vacío (0 bytes)**, así que no se construyó. Hay que pedir que se vuelva a subir. Rutas previstas: tarjetas en `/workspace`, modal de 3 pasos, ficha (Resumen, Módulos, Equipo) y `/business/access?business=<id>`.
+- **Envío real de correo**: no hay credenciales SMTP ni dominio remitente. Solo se verificó contra un SMTP de pruebas local (Mailpit). Nunca afirmes que un correo "llegó": solo hay `accepted` por el proveedor, nunca recepción confirmada.
+- Los seis **módulos funcionales** (reservas, turnos, agendamiento, referidos, inventario, pedidos) como sistemas: solo existen el catálogo y la habilitación por negocio.
 - Los módulos **Turnos, Agendamiento, Reservas y Referidos** no están portados a este repo.
-- **Negocios**: no hay módulo, ni servicio, ni modelo de datos. El workspace muestra siempre 0 negocios y *Crear negocio* solo da la respuesta visual de la referencia (resplandor y aviso para lectores de pantalla); no crea nada ni lleva a ninguna pantalla. Qué es un negocio y cómo se crea no está definido: pregunta antes de construirlo.
+- **Negocios en el workspace**: el backend ya existe, pero el workspace sigue mostrando siempre 0 negocios y *Crear negocio* solo da la respuesta visual de la referencia; no está conectado al backend hasta que llegue el HTML.
 - La **vista de términos y condiciones** (el enlace del registro no navega: `TERMS_PATH` está vacío
   en `components/TermsCheckbox.tsx`).
 - **Validación de la sesión contra el servidor**: la puerta de acceso solo mira que haya un token
@@ -325,7 +328,7 @@ olvidado bloquea ese número.
 
 ## 9. Contrato del backend
 
-Un solo servicio (puerto 8080) con dos módulos. El contrato completo y vigente de cada uno está en el README del servicio.
+Un solo servicio (puerto 8080) con cuatro módulos. El contrato completo y vigente de cada uno está en el README del servicio.
 
 ### Módulo auth
 
@@ -415,6 +418,20 @@ secas falla por autenticación.
 Si una carpeta de referencia no existe en tu sesión (porque cambió el entorno), pídesela a la persona
 o vuelve a clonarla; no inventes su contenido.
 
+### Módulos businesses y business-access
+
+Contrato completo en el README del servicio. Resumen:
+
+- Superadmin (solo ve **sus** negocios; ajeno = `404`): `GET /businesses/catalog`, `GET /businesses/export.csv`, `GET/POST /businesses`
+  (`POST` exige `Idempotency-Key`, 8 a 64 caracteres), `GET/PUT /businesses/:id`, `POST /businesses/:id/pause|resume`,
+  `GET /businesses/:id/invitation`, `POST /businesses/:id/invitation/resend`.
+- Públicas: `POST /business-access/otp/request` (`202` siempre igual) y `POST /business-access/otp/verify` (`200` con token, o `401 Invalid or expired code` genérico).
+- Jefe: `GET /business-access/me` (token con `role: business-boss`, validado contra la base en cada petición: reemplazado `401`, pausado `403`).
+- Errores `400` con `fields` por campo. Módulos: `reservas, turnos, agendamiento, referidos, inventario, pedidos` (0 a 6).
+- Correo: sin `MAIL_SMTP_HOST` la invitación queda `failed: not-configured`; `deliveryConfirmed` siempre `false`.
+- Variables nuevas (en `.env.example`): `OTP_SECRET` (obligatoria, ≥32 caracteres y distinta de `JWT_SECRET`), `PUBLIC_APP_URL`, `OTP_*`, `MAIL_*`.
+- Probar el correo en local: contenedor `axllent/mailpit` (SMTP 1025, web 8025) y arrancar el backend con `MAIL_SMTP_HOST=127.0.0.1 MAIL_SMTP_PORT=1025 MAIL_SMTP_REQUIRE_TLS=false MAIL_FROM=...`. Eso prueba nuestro envío, **no** una entrega real.
+
 ## 12. Herramientas del entorno y trampas conocidas
 
 **Git y GitHub**
@@ -454,6 +471,10 @@ o vuelve a clonarla; no inventes su contenido.
   viejo o chocará con el nombre.
 
 **Datos locales**
+- **Puerto 6020:** puede estar ocupado por el Vite de `Repo-prueba` ("WebForge Elements"). Comprueba el título de la página: el de este repo es "Framework Modular".
+- **Límites que confunden al probar:** el login y el registro permiten 5 por minuto (`429` del throttler) y el OTP limita por IP (30 intentos / 15 min). Tras muchas pruebas seguidas desde `127.0.0.1` verás `429`: espera o vacía `access_rate_limits` (solo contadores de prueba).
+- Las pruebas con `node --test` se corren **desde `packages/services/necto-api`** (no desde la raíz) y con el glob entre comillas; los scripts que importan paquetes del proyecto deben estar dentro del proyecto, no en `/tmp`.
+- Los esquemas de Mongoose declaran `@Prop({ type: ... })` explícito: las pruebas corren con `tsx`, que no emite metadatos de decoradores.
 - **El entorno Docker puede reiniciarse y perder el volumen de Mongo.** Los `.env` sobreviven. Tras
   un reinicio, `npm run db:up` recrea Mongo vacío y vuelve a crear los usuarios: hay que **registrar de
   nuevo** el SuperAdmin.
@@ -486,6 +507,7 @@ o vuelve a clonarla; no inventes su contenido.
   la referencia. Se añadió un botón de **cerrar sesión** que la referencia no trae, porque el workspace no usa el `AppShell`.
 - El logotipo (`brand/NectoLogo`) y el botón de tema redondo (`ThemeIconButton` en `shell`) pasaron a la base común al aparecer el
   tercer uso. `super-admin-auth` conserva su propio `NectoLogo` (colores por clases), pendiente de unificar.
+- **Negocios y acceso del jefe** (`feature/businesses`): dos módulos del mismo backend. `business-access` depende de `businesses/public`, y `businesses` avisa con el evento `BossAssigned` por `platform/events` (sin ciclos). El jefe vive **dentro** del documento del negocio (Mongo standalone sin transacciones: una escritura atómica garantiza un jefe vigente). Creación idempotente con `Idempotency-Key`. OTP de 6 dígitos con HMAC, un solo uso, 5 intentos, 10 min, límites por persona+negocio e IP en Mongo y respuestas genéricas. La sesión del jefe se valida contra la base en cada petición. El correo se envía en segundo plano y nunca se declara "entregado" (solo `sending`/`accepted`/`failed`). La rama está apilada sobre `feature/workspace` (sin push): el PR de workspace va primero.
 - La sesión vive en `platform/security` (emitir/verificar el token, autenticar, autorizar por rol) para que ningún módulo dependa de otro ni toque el secreto JWT.
 - El nombre de la aplicación (`necto-api`) es independiente del de la base de datos (`super_admin_auth`, histórico): renombrar el código no obligó a migrar datos.
 - Ramas end to end; flujo `integration → main → test → production`; revisión cruzada de PRs con
@@ -503,8 +525,9 @@ o vuelve a clonarla; no inventes su contenido.
   el guard que ya existe, cuando haya datos sensibles.
 - Firma **asimétrica** del JWT: solo si algún módulo se separa algún día en su propio servicio.
 - **Nombre físico de la base** (`super_admin_auth`): refleja el primer módulo, no la aplicación. Cambiarlo es opcional y sí implica migrar datos (infra, `MONGODB_URI`).
-- **Contratos públicos entre módulos**: hoy ningún módulo necesita algo de otro; las `public.ts` solo exportan el módulo.
-- **Módulo de negocios** (crear, listar, filtrar y exportar negocios): el workspace ya tiene el lugar y los controles apagados, pero falta definir qué es un negocio y su flujo.
+- **Frontend de negocios**: falta el HTML de referencia (`necto-negocio-completo.html`, vacío).
+- **Envío real de correo**: faltan proveedor SMTP, remitente con dominio verificado (SPF/DKIM) y un buzón de prueba para confirmar la recepción.
+- **Pruebas de integración con MongoDB** (idempotencia, carreras del OTP): hoy se verificaron a mano con el backend real.
 - **Tema por defecto del workspace**: la referencia abre en oscuro; hoy sigue el tema único de la app (claro). Misma pregunta abierta que la del login.
 - Unificar `NectoLogo` de `super-admin-auth` con `brand/NectoLogo`.
 - Dos módulos de frontend (`onboarding` → `super-admin-auth`) se importan por la puerta pública; se podría mover el store de sesión a la base común para que sean independientes.

@@ -19,7 +19,7 @@ módulo por cada uno.
 
 | Parte | Estado |
 |-------|--------|
-| Backend | Alineado: un **monolito modular**, `packages/services/necto-api`. Una sola aplicación (un proceso, un puerto, una conexión a MongoDB) con `platform/` (infraestructura transversal) y `modules/` (un módulo por capacidad: `auth` y `onboarding`), cada uno con sus capas y su puerta pública. |
+| Backend | Alineado: un **monolito modular**, `packages/services/necto-api`. Una sola aplicación (un proceso, un puerto, una conexión a MongoDB) con `platform/` (infraestructura transversal) y `modules/` (un módulo por capacidad: `auth`, `onboarding`, `businesses` y `business-access`), cada uno con sus capas y su puerta pública. |
 | Frontend | Alineado para tres módulos: `src/modules/super-admin-auth/` (login y registro), `src/modules/onboarding/` (bienvenida y pasos de perfil) y `src/modules/workspace/` (el workspace de negocios). Lo común sin reglas de negocio, como el logotipo (`src/brand/`), vive en la base común. `src/app/` registra los módulos (`modules.ts`) y renderiza sus rutas con carga diferida y `ModuleBoundary`. El resto del scaffolding de WebIAI Elements sigue organizado por tipo técnico (`pages/`, `elements/`, `shell/`...) y hace de base común. |
 
 ## Principios
@@ -93,7 +93,10 @@ packages/services/necto-api/           ← el backend (el nombre es el de la apl
     │   ├── config/                    ← lee y valida el entorno
     │   ├── database/                  ← la única conexión a MongoDB
     │   ├── security/                  ← tokens, autenticación, autorización por rol, límite de peticiones
-    │   ├── errors/                    ← errores de dominio -> respuestas HTTP
+    │   ├── errors/                    ← errores de dominio -> respuestas HTTP (y errores por campo)
+    │   ├── events/                    ← bus de eventos en memoria entre módulos
+    │   ├── mail/                      ← transporte de correo (SMTP, o "no configurado")
+    │   ├── time/  text/               ← reloj inyectable y normalización compartida
     │   └── observability/             ← GET /health
     └── modules/                       ← un módulo por capacidad de negocio
         ├── auth/
@@ -103,7 +106,9 @@ packages/services/necto-api/           ← el backend (el nombre es el de la apl
         │   ├── application/           ← casos de uso
         │   ├── domain/                ← entidades, reglas, errores y puertos (repositorios abstractos)
         │   └── infrastructure/        ← esquemas de Mongo y repositorios
-        └── onboarding/ ...            ← misma forma
+        ├── onboarding/ ...            ← misma forma
+        ├── businesses/ ...            ← negocios, jefe vigente y módulos habilitados
+        └── business-access/ ...       ← invitación y acceso del jefe por OTP (depende de businesses/public)
 
 infra/                                 ← infraestructura de desarrollo compartida
 ├── docker-compose.yml                 ← MongoDB
@@ -263,9 +268,15 @@ export const superAdminAuthModule = {
   Un módulo solo importa a otro por su `public.ts`. En el frontend, los imports entre módulos se permiten por su
   `index.ts` y declarados en el README.
 
+- **Jefe dentro del documento del negocio:** MongoDB de desarrollo es standalone (sin transacciones), así que un único
+  guardado atómico es lo que asegura "exactamente un jefe vigente". El historial de jefes queda en el mismo documento.
+- **Estado del correo sin "entregado":** un proveedor que acepta un mensaje no prueba que llegó; solo se registran
+  `sending`, `accepted` y `failed`.
+
 ## Pendiente
 
 - **Firma asimétrica del JWT**, solo si alguna parte se separa en su propio servicio.
 - **Pruebas de integración con MongoDB** (índices únicos y carreras de escritura): hoy se verifican a mano levantando el backend.
-- **Contratos públicos entre módulos:** hoy ningún módulo necesita algo de otro, así que las puertas públicas solo exportan el
-  módulo. Se amplían cuando aparezca el primer consumidor real.
+- **Contratos públicos entre módulos:** el primer consumidor real es `business-access`, que usa `businesses/public`
+  (`BusinessDirectory`, `BusinessModuleAccess` y el evento `BossAssigned`). El sentido es único: `businesses` no importa
+  a `business-access`; le avisa por el bus de eventos (`platform/events`) y así no hay ciclo.

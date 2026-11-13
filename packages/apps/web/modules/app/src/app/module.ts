@@ -15,5 +15,7 @@ export interface ModuleRoute {
 /** Lo que un módulo expone a la app: su identificador y sus rutas. */
 export interface AppModule {
   id: string;
+  /** Si es true, la app pone sus rutas detrás de la puerta de acceso (`RequireSuperAdmin`). */
+  requiresSuperAdmin?: boolean;
   routes: ModuleRoute[];
 }

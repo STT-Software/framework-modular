@@ -15,7 +15,7 @@ vive solo en la máquina de quien la tiene (`referencias html/`, ignorada por gi
 | `/super/login` | Inicio de sesión con **usuario o correo** y contraseña. |
 | `/super/register` | Registro con usuario, contraseña (y su confirmación), correo, documento de identidad (tipo + número) y aceptación de términos. |
 
-Tras iniciar sesión se guarda la sesión y se navega a `/`. Tras registrarse se navega
+Tras iniciar sesión se guarda la sesión y se navega a `/welcome` (módulo [`onboarding`](../onboarding/README.md)), que al terminar lleva a `/`. Tras registrarse se navega
 a `/super/login` con un aviso de "Cuenta creada" y el usuario ya escrito.
 
 ## Estructura

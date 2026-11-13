@@ -16,8 +16,8 @@ Y cada módulo es **independiente**: si uno falla, los demás siguen funcionando
 
 | Parte | Estado |
 |-------|--------|
-| Backend | Alineado. El login del superadmin es un servicio propio: `packages/services/super-admin-auth`, con su base de datos y su usuario de base de datos. |
-| Frontend | Alineado para el primer módulo: `src/modules/super-admin-auth/` (login y registro). `src/app/` registra los módulos (`modules.ts`) y renderiza sus rutas con carga diferida y `ModuleBoundary`. El resto del scaffolding de WebIAI Elements sigue organizado por tipo técnico (`pages/`, `elements/`, `shell/`...) y hace de base común. |
+| Backend | Alineado. Dos servicios propios, cada uno con su base y su usuario de base de datos: `packages/services/super-admin-auth` (login del superadmin) y `packages/services/onboarding` (teléfono y origen del usuario tras el primer login). |
+| Frontend | Alineado para dos módulos: `src/modules/super-admin-auth/` (login y registro) y `src/modules/onboarding/` (bienvenida y pasos de perfil). `src/app/` registra los módulos (`modules.ts`) y renderiza sus rutas con carga diferida y `ModuleBoundary`. El resto del scaffolding de WebIAI Elements sigue organizado por tipo técnico (`pages/`, `elements/`, `shell/`...) y hace de base común. |
 
 ## Principios
 
@@ -73,6 +73,8 @@ configuración.
 
 ```
 packages/services/
+├── onboarding/                    ← servicio del perfil de bienvenida: teléfono y origen (existe hoy)
+│   └── ...                        ← misma forma que super-admin-auth (auth/ solo verifica el token)
 └── super-admin-auth/              ← servicio del login del superadmin (existe hoy)
     ├── package.json
     ├── .env.example
@@ -116,9 +118,11 @@ capacidad (`registration/`, `login/`), siguiendo el mismo principio.
 Para que la caída del servicio de login no tumbe a los demás, los otros servicios
 deben poder **validar un token sin llamar al servicio que lo emitió**.
 
-- **Hoy:** el token se firma con un secreto compartido (HS256). Con un único
-  servicio es suficiente.
-- **Cuando exista el segundo servicio:** pasar a firma asimétrica (RS256 o
+- **Hoy:** el token se firma con un secreto compartido (HS256). `onboarding` ya es un
+  segundo servicio y valida el token con **el mismo `JWT_SECRET`**, sin llamar a
+  `super-admin-auth`. Funciona, pero quien tenga el secreto puede firmar tokens: es
+  provisional.
+- **Siguiente paso (ya hay un segundo servicio):** pasar a firma asimétrica (RS256 o
   EdDSA). El servicio de login firma con la clave privada y los demás solo
   necesitan la clave pública. Así un servicio de login caído solo impide nuevos
   inicios de sesión; quien ya tiene un token vigente sigue trabajando.
@@ -231,7 +235,7 @@ export const superAdminAuthModule = {
 
 ## Pendiente
 
-- **Cómo se ejecutan varios servicios en local.** Hoy hay un solo servicio y se
-  levanta con `npm run dev:super-admin-auth`. Cuando haya más, un script que los
+- **Cómo se ejecutan varios servicios en local.** Hoy hay dos servicios y se
+  levantan por separado (`npm run dev:super-admin-auth` y `npm run dev:onboarding`). Con más, un script que los
   levante todos con `concurrently`, o un `docker-compose.yml` en la raíz.
-- **Firma asimétrica del JWT**, cuando exista el segundo servicio.
+- **Firma asimétrica del JWT**: el segundo servicio (`onboarding`) ya existe y hoy comparte el secreto.

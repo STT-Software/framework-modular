@@ -23,6 +23,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in infra/.env}
       # One password per service database (used by mongo-init/).
       SUPER_ADMIN_AUTH_DB_PASSWORD: ${SUPER_ADMIN_AUTH_DB_PASSWORD:?Set SUPER_ADMIN_AUTH_DB_PASSWORD in infra/.env}
+      ONBOARDING_DB_PASSWORD: ${ONBOARDING_DB_PASSWORD:?Set ONBOARDING_DB_PASSWORD in infra/.env}
     volumes:
       - mongo-data:/data/db
       - ./mongo-init:/docker-entrypoint-initdb.d:ro

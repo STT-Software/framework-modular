@@ -29,6 +29,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api\/super-admin-auth/, ""),
       },
+      // onboarding: igual que el anterior, hacia el servicio del onboarding.
+      "/api/onboarding": {
+        target: process.env.ONBOARDING_URL ?? "http://localhost:8081",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api\/onboarding/, ""),
+      },
     },
   },
 });

@@ -94,7 +94,11 @@ export default function App() {
           Ejemplo: <Route path="/login" element={<LoginPage />} />
           ════════════════════════════════════════════════════════════════════ */}
       {/* Rutas de los módulos (cada una dentro de su ModuleBoundary) */}
-      {renderModuleRoutes(modules)}
+      {renderModuleRoutes(modules.filter((module) => !module.requiresSuperAdmin))}
+      {/* Módulos sin shell que exigen sesión (por ejemplo, la bienvenida) */}
+      <Route element={<RequireSuperAdmin />}>
+        {renderModuleRoutes(modules.filter((module) => module.requiresSuperAdmin))}
+      </Route>
       {/* Cualquier otra URL vuelve a "/", que sin sesión lleva al login */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

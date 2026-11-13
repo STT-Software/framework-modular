@@ -4,8 +4,8 @@
 > (Kiro, Claude, Copilot, Codex u otra). Está pensado para retomar el trabajo en una
 > sesión nueva, sin el historial de la anterior. Léelo completo antes de tocar nada.
 >
-> **Es una foto, no la verdad absoluta.** Se escribió el **2026-11-12**, con `integration`
-> en `781e6e5`. Si algo de aquí contradice el código, manda el código: verifica con
+> **Es una foto, no la verdad absoluta.** Se actualizó el **2026-11-13**, con `integration`
+> en `fb5a075` más la rama `feature/welcome-onboarding` (onboarding con su servicio). Si algo de aquí contradice el código, manda el código: verifica con
 > `git log`, `git status` y leyendo los archivos. Y **actualízalo** cuando cambie el
 > estado del proyecto (ver la última sección).
 
@@ -19,7 +19,7 @@
 6. [Arquitectura en resumen](#6-arquitectura-en-resumen)
 7. [Flujo de ramas y PRs](#7-flujo-de-ramas-y-prs)
 8. [Levantar y verificar todo (runbook)](#8-levantar-y-verificar-todo-runbook)
-9. [Contrato del servicio super-admin-auth](#9-contrato-del-servicio-super-admin-auth)
+9. [Contrato de los servicios](#9-contrato-de-los-servicios)
 10. [Frontend: patrones y diseño](#10-frontend-patrones-y-diseño)
 11. [Carpetas y repos de referencia](#11-carpetas-y-repos-de-referencia)
 12. [Herramientas del entorno y trampas conocidas](#12-herramientas-del-entorno-y-trampas-conocidas)
@@ -83,7 +83,7 @@ Origen: antes el trabajo estaba repartido en dos repos independientes (ver
 | `necto_reservas_y_referidos` | Un compañero | **Reservas** y **Referidos** |
 
 La idea es traer todo a `framework-modular` con la arquitectura nueva (modular, un servicio por
-módulo). **Hoy solo está construido el acceso del SuperAdmin.**
+módulo). **Hoy solo está construido el acceso del SuperAdmin y su bienvenida con perfil (onboarding: teléfono y dónde nos conoció).**
 
 **Actores del producto (según lo hablado):**
 - **SuperAdmin**: administra toda la plataforma. Inicia sesión con usuario o correo + contraseña.
@@ -101,7 +101,9 @@ módulo). **Hoy solo está construido el acceso del SuperAdmin.**
 | MongoDB de desarrollo (Docker) | `infra/` | Funciona; una base y un usuario por servicio |
 | Pantallas `/super/login` y `/super/register` | `packages/apps/web/modules/app/src/modules/super-admin-auth` | Funcionan, conectadas al servicio |
 | Cerrar sesión | `src/app/SignOutButton.tsx` | Funciona (borra la sesión del navegador) |
-| Puerta de acceso | `src/app/RequireSuperAdmin.tsx` | Sin sesión, `/` y URLs desconocidas llevan a `/super/login` |
+| Servicio del perfil de bienvenida | `packages/services/onboarding` (puerto 8081, base `onboarding`) | Funciona, probado con MongoDB real: guarda teléfono (único entre usuarios) y dónde nos conoció, por id de usuario |
+| Onboarding (bienvenida + perfil) | `src/modules/onboarding` (README propio) | Funciona: `/welcome` (animación, sin Omitir ni Pausar) → *Comenzar* → `/welcome/phone` → `/welcome/source` → `/`. Con el perfil ya completo, solo se ve la primera escena y entra a `/` |
+| Puerta de acceso | `src/app/RequireSuperAdmin.tsx` | Sin sesión, `/` y URLs desconocidas llevan a `/super/login`. Los módulos con `requiresSuperAdmin: true` (el onboarding) quedan detrás de ella |
 | Registro de módulos + aislamiento de fallos | `src/app/modules.ts`, `ModuleRoutes.tsx`, `ModuleBoundary.tsx` | Funciona |
 | CI de promoción de ramas | `.github/workflows/` | Existe; `production` aún no se ha promovido nunca |
 
@@ -128,6 +130,8 @@ El registro pide: usuario, contraseña + confirmación, correo, tipo y número d
   `/workspaces`. La cuenta `oscarprueba` que la persona había creado **ya no existe**: hay que
   volver a registrarla.
 - Se verificó un **arranque en frío completo** (sección 8): Mongo, servicio y web funcionan.
+- El volumen de Mongo de la sesión del onboarding ya existía cuando se creó el servicio `onboarding`, así que su
+  usuario de base de datos se creó **a mano** (`mongo-init` solo corre al crear el volumen; ver el README del servicio).
 
 ## 4. Mapa del repo
 
@@ -150,17 +154,20 @@ framework-modular/
 ├── webiai.config.mjs, lerna.json, tsconfig.json   Esqueleto WebIAI (el CLI no se pudo instalar)
 └── packages/
     ├── services/
-    │   └── super-admin-auth/      Servicio NestJS + MongoDB (README con el contrato)
-    │       └── src/{main.ts, app.module.ts, config/, health.controller.ts, auth/, super-admin/}
+    │   ├── super-admin-auth/      Servicio NestJS + MongoDB, puerto 8080 (README con el contrato)
+    │   │   └── src/{main.ts, app.module.ts, config/, health.controller.ts, auth/, super-admin/}
+    │   └── onboarding/            Servicio NestJS + MongoDB, puerto 8081: teléfono y origen del usuario
+    │       └── src/{main.ts, app.module.ts, config/, health.controller.ts, auth/, profile/}
     └── apps/web/modules/app/      App React + Vite + Tailwind
         ├── .kiro/skills/webiai-elements/SKILL.md   Guía del MCP de Elements
         └── src/
             ├── app/               App, shell, sidebar, registro de módulos, puerta de acceso, ModuleBoundary
             ├── modules/super-admin-auth/   Primer módulo (README propio)
+            ├── modules/onboarding/         Bienvenida + pasos de perfil (teléfono, dónde nos conoció) (README propio)
             ├── elements/          Componentes de Elements instalados (no se modifican)
             ├── css/theme.css      Tema y tokens (incluye los colores `necto-*`)
             ├── shell/ layouts/ icons/ hooks/ utils/ stores/   Base común del scaffolding
-            └── pages/WelcomePage.tsx   Página de bienvenida del scaffolding (destino tras el login)
+            └── pages/WelcomePage.tsx   Página de bienvenida del scaffolding (destino tras pulsar *Comenzar* en la bienvenida)
 ```
 
 **Elements instalados hoy** (`src/elements/`): `Button`, `Input`, `Label`, `Alert`, `Select`,
@@ -200,11 +207,13 @@ Detalle completo en [`arquitectura.md`](arquitectura.md). Lo esencial:
   definición por `index.ts` (rutas) y se registra en `src/app/modules.ts`.
 - Las rutas de cada módulo van con `React.lazy` y dentro de un `ModuleBoundary`: si un módulo falla
   al cargar o al renderizar, se contiene y el resto de la app sigue funcionando.
-- El navegador llama a `/api/super-admin-auth/...`; el **proxy del dev server de Vite** lo reenvía al
-  servicio (`SUPER_ADMIN_AUTH_URL`, por defecto `http://localhost:8080`). Fuera de desarrollo hay
-  que definir `VITE_SUPER_ADMIN_AUTH_API_URL` y `CORS_ORIGIN` en el servicio.
-- Límites conocidos (más detalle en `arquitectura.md`): el JWT se firma hoy con secreto compartido;
-  con el segundo servicio habrá que pasar a firma asimétrica. Una sola instancia de Mongo sirve a
+- El navegador llama a `/api/super-admin-auth/...` y `/api/onboarding/...`; el **proxy del dev server de Vite** los
+  reenvía a cada servicio (`SUPER_ADMIN_AUTH_URL`, por defecto `http://localhost:8080`; `ONBOARDING_URL`, por defecto
+  `http://localhost:8081`). Fuera de desarrollo hay que definir `VITE_SUPER_ADMIN_AUTH_API_URL`,
+  `VITE_ONBOARDING_API_URL` y `CORS_ORIGIN` en cada servicio.
+- Límites conocidos (más detalle en `arquitectura.md`): el JWT se firma con secreto compartido (HS256) y
+  **ya hay un segundo servicio** (`onboarding`) que lo valida con el mismo `JWT_SECRET`: la firma asimétrica sigue
+  pendiente y es la deuda técnica más clara. Una sola instancia de Mongo sirve a
   todos en desarrollo.
 
 ## 7. Flujo de ramas y PRs
@@ -242,34 +251,45 @@ Todo desde la raíz del repo (`/workspaces/framework-modular`). Requiere Node 22
 
 **Primera vez en una máquina** (los `.env` no se versionan):
 ```bash
-cp infra/.env.example infra/.env                              # completar 2 contraseñas
+cp infra/.env.example infra/.env                              # completar 3 contraseñas
 cp packages/services/super-admin-auth/.env.example packages/services/super-admin-auth/.env
+cp packages/services/onboarding/.env.example packages/services/onboarding/.env   # mismo JWT_SECRET que super-admin-auth
 openssl rand -hex 16     # cada contraseña de infra/.env
 openssl rand -hex 48     # JWT_SECRET (mínimo 32 caracteres)
 npm install --prefix packages/services/super-admin-auth
+npm install --prefix packages/services/onboarding
 npm install --prefix packages/apps/web/modules/app
 ```
-La contraseña de `MONGODB_URI` (servicio) debe ser igual a `SUPER_ADMIN_AUTH_DB_PASSWORD` de `infra/.env`.
+La contraseña de `MONGODB_URI` de cada servicio debe ser igual a su variable en `infra/.env`
+(`SUPER_ADMIN_AUTH_DB_PASSWORD`, `ONBOARDING_DB_PASSWORD`). El `JWT_SECRET` de `onboarding` debe ser **idéntico**
+al de `super-admin-auth`: si no, el onboarding rechaza todos los tokens con `401`.
 
-**Arranque (3 procesos)**
+**Arranque (4 procesos)**
 ```bash
 npm run db:up                  # MongoDB en 127.0.0.1:27017 (espera a que esté "healthy")
 npm run dev:super-admin-auth   # servicio en http://localhost:8080
+npm run dev:onboarding         # servicio en http://localhost:8081
 npm run dev                    # app web en http://localhost:6020
 ```
-- **Si eres una IA con herramienta de procesos en segundo plano**, lanza los dos `npm run dev...`
+- **Si eres una IA con herramienta de procesos en segundo plano**, lanza los tres `npm run dev...`
   con esa herramienta (en Kiro: `control_bash_process`, que hay que cargar antes con `tool_load`).
   Si los pones en el comando normal del shell, la herramienta avisa y **no los ejecuta**.
 - Si `infra/.env` y los datos de Mongo no coinciden (por ejemplo, perdiste el `.env`), la base no
   acepta las contraseñas: borra el volumen con `docker compose -f infra/docker-compose.yml down -v` y
   vuelve a levantar. **Esto borra los datos.**
+- Si tu volumen de Mongo es anterior al servicio `onboarding`, su usuario no existe (el init solo corre al crear el
+  volumen): créalo a mano con el comando del README del servicio, sin borrar datos.
+- Un servicio en segundo plano puede **salir solo sin error en el log**: antes de probar, comprueba `/health` de cada uno.
 
 **Verificación rápida**
 ```bash
 curl http://localhost:8080/health                              # servicio directo
 curl http://localhost:6020/api/super-admin-auth/health         # a través del proxy de Vite
+curl http://localhost:8081/health                              # servicio onboarding
+curl http://localhost:6020/api/onboarding/health               # onboarding a través del proxy (reinicia Vite si cambias vite.config.ts)
 ```
-Pantallas: `http://localhost:6020/super/login` y `/super/register`. Al abrir `/` sin sesión te manda
+Pantallas: `http://localhost:6020/super/login` y `/super/register`; tras iniciar sesión, `/welcome`,
+`/welcome/phone` y `/welcome/source`. Al abrir `/` sin sesión te manda
 al login. Sesión y datos: ver trampas en la sección 12.
 
 **Comprobaciones antes de entregar**
@@ -277,6 +297,7 @@ al login. Sesión y datos: ver trampas en la sección 12.
 npm run typecheck             # frontend
 npm run build                 # frontend (tsc -b && vite build)
 npm run build:super-admin-auth
+npm run build:onboarding
 ```
 
 **Limpiar datos de prueba** (borra solo por nombre de usuario, nunca todo):
@@ -285,13 +306,19 @@ PW=$(grep '^MONGO_ROOT_PASSWORD=' infra/.env | cut -d= -f2-)
 docker exec framework-modular-mongo mongosh --quiet -u root -p "$PW" --authenticationDatabase admin \
   super_admin_auth --eval 'db.super_admins.deleteMany({username:"mi.cuenta.de.prueba"})'
 ```
+El perfil de esa cuenta vive en **otra base** (`onboarding`, colección `onboarding_profiles`, campo `userId` = `_id` de
+la cuenta): bórralo también, buscando primero el id de tu cuenta de prueba. El teléfono es único, así que un perfil
+de prueba olvidado bloquea ese número.
 
 **Limitaciones al probar**
 - `register` y `login` aceptan **5 peticiones por minuto por IP**; la sexta da `429`. Espacia las pruebas.
+- `PUT /onboarding/profile/phone` acepta **10 por minuto por IP** (cuentan también las que dan `400`).
 - Si tu Mongo viene de una versión anterior del esquema, hay que borrar el índice
   `identityDocument_1` (el actual es compuesto: tipo + número).
 
-## 9. Contrato del servicio super-admin-auth
+## 9. Contrato de los servicios
+
+### super-admin-auth (puerto 8080)
 
 Contrato completo y vigente en
 [`packages/services/super-admin-auth/README.md`](../packages/services/super-admin-auth/README.md).
@@ -312,6 +339,22 @@ Registro: `username`, `email`, `password`, `identityDocumentType` (`CC`/`CE`/`PA
 - Usuario inexistente y contraseña incorrecta dan el mismo `401 Invalid credentials` y tardan lo mismo.
 - Cualquier campo fuera de la lista se rechaza con `400`.
 - Colección Mongo: `super_admins`, en la base `super_admin_auth`.
+
+### onboarding (puerto 8081)
+
+Contrato completo y vigente en
+[`packages/services/onboarding/README.md`](../packages/services/onboarding/README.md). Resumen:
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/onboarding/profile/me` | Perfil de quien tiene el token: `{ phone, sources, completed }` (vacío si no hay). |
+| `PUT` | `/onboarding/profile/phone` | Paso 1. Cuerpo `{ phone }` en E.164 (`+573001234567`). `409` si otra cuenta ya lo usa. |
+| `PUT` | `/onboarding/profile/sources` | Paso 2. Cuerpo `{ sources: [...] }` con `instagram`, `tiktok`, `facebook`, `youtube`, `whatsapp`, `linkedin`, `family`, `business`, `other`. Marca el perfil como completo. `409` si aún no hay teléfono. |
+| `GET` | `/health` | Estado. |
+
+- Exige el JWT de `super-admin-auth` (mismo `JWT_SECRET`, HS256, rol `superadmin`). El id del usuario sale del `sub`
+  del token, nunca del cuerpo. Valida el token localmente: no llama a `super-admin-auth`.
+- Colección Mongo `onboarding_profiles` en la base `onboarding`; `userId` y `phone` son **únicos** (índices).
 
 ## 10. Frontend: patrones y diseño
 
@@ -354,7 +397,7 @@ Son **solo para consultar**. No se versionan en este repo.
 
 | Ubicación | Qué es | Cómo usarla |
 |-----------|--------|-------------|
-| `/workspaces/framework-modular/referencias html/` | Diseños HTML de referencia. Hoy solo `necto-superlogin.html` (login + registro, claro/oscuro, animaciones). La persona mencionó dos HTML; **solo llegó este**. Está en `.gitignore`: solo existe en la máquina de quien la tiene. | Fuente de verdad del **diseño** del login/registro. Para ver su CSS propio, extráelo del `<style>` (trae fuentes en base64 que conviene saltarse). Ábrelo en el navegador para comparar. |
+| `/workspaces/framework-modular/referencias html/` | Diseños HTML de referencia. Hoy: `necto-superlogin.html` (login + registro), `necto-onboardingBienvenida.html` (animación de bienvenida), `necto-telefono.html` y `necto-origen` (este último **sin extensión**; los dos son el mismo documento con otra vista inicial: pasos de teléfono y origen). Está en `.gitignore`: solo existe en la máquina de quien la tiene. | Fuente de verdad del **diseño** del login/registro. Para ver su CSS propio, extráelo del `<style>` (trae fuentes en base64 que conviene saltarse). Ábrelo en el navegador para comparar. |
 | `/workspaces/Repo-prueba` | Repo de la persona: **Turnos** y **Agendamiento**. Remoto `STT-Software/STT-Necto-Turnos-Agendamiento`, rama `master`. Backend Express + Bun + DynamoDB con el SDK de WebIAI; frontend React con stores *mock* (localStorage). Tiene también un SuperAdmin/negocios/OTP *mock* y el backend de Referidos ya portado (`ReferidosDAO`) con su dominio de frontend, **sin pantallas de referidos**. | Referencia de **qué hacen** Turnos y Agendamiento. Docs útiles en `docs/`: `flujo-modulo-turnos.md`, `flujo-modulo-agendamiento.md`, `flujo-superadmin.md`, `correr-local.md`, `arquitectura-infraestructura.md`. **Su arquitectura es distinta** (WebIAI/DynamoDB); no la copies, tradúcela a la de este repo. |
 | `/workspaces/_necto_referidos_src` | Clon superficial (`--depth 1`) y **solo lectura** de `STT-Software/necto_reservas_y_referidos` (rama `main`), repo del compañero: **Reservas** y **Referidos**. Backend: Lambda única con DynamoDB y JWT de Cognito. | Documentación de producto en `Docs/`: `Modulo-Referidos.md`, `Modulo-Reservas.md`, `Producto-Necto-MVP.md`. Referidos: backend en `packages/services/core/src/referrals/`, frontend en `packages/web/app/src/{domain,pages}/referrals/`. **No lo modifiques.** |
 
@@ -417,6 +460,13 @@ o vuelve a clonarla; no inventes su contenido.
 - Backend con **NestJS + MongoDB (Docker)**; no se usa la arquitectura de WebIAI/DynamoDB de `Repo-prueba`.
 - Los **dos logins son distintos**: el SuperAdmin ya está; el del admin de un negocio vendrá después.
 - Registro del SuperAdmin con confirmación de contraseña, tipo de documento y términos.
+- **Onboarding = servicio propio** (`packages/services/onboarding`, puerto 8081, base `onboarding`): teléfono único entre
+  usuarios (E.164, índice único) y orígenes, un documento por `userId`. Se guarda el teléfono al pulsar *Continuar* (para
+  avisar el duplicado ahí) y los orígenes al *Finalizar*. Quien ya completó el perfil no lo repite (los pasos lo llevan a `/`);
+  la bienvenida animada (sin Omitir ni Pausar) se ve entera (~11 s) solo si el perfil está sin completar; si ya está
+  completo, se ve únicamente la primera escena (el logo, 2,6 s) y entra sola a `/`.
+- El onboarding valida el token con el **mismo secreto compartido** (HS256) que usa `super-admin-auth`: es la solución
+  provisional hasta pasar a firma asimétrica.
 - Ramas end to end; flujo `integration → main → test → production`; revisión cruzada de PRs con
   excepción de administrador.
 
@@ -430,7 +480,7 @@ o vuelve a clonarla; no inventes su contenido.
   app (claro).
 - Validar la sesión contra el servidor (`GET /auth/super/me`) al cargar y proteger rutas del backend con
   el guard que ya existe, cuando haya datos sensibles.
-- Firma **asimétrica** del JWT cuando exista un segundo servicio.
+- Firma **asimétrica** del JWT (RS256/EdDSA): el segundo servicio ya existe y hoy comparte el secreto.
 - Cómo levantar varios servicios en local (script con `concurrently` o un compose en la raíz).
 - Bundle de WebIAI para los servicios, cuando el registro vuelva.
 - `feature/superLogin` se nombró con mayúscula; las ramas nuevas deben ir en minúsculas.

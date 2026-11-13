@@ -10,7 +10,9 @@
     "db:up": "docker compose -f infra/docker-compose.yml up -d",
     "db:down": "docker compose -f infra/docker-compose.yml down",
     "dev:super-admin-auth": "npm run dev --prefix packages/services/super-admin-auth",
-    "build:super-admin-auth": "npm run build --prefix packages/services/super-admin-auth"
+    "build:super-admin-auth": "npm run build --prefix packages/services/super-admin-auth",
+    "dev:onboarding": "npm run dev --prefix packages/services/onboarding",
+    "build:onboarding": "npm run build --prefix packages/services/onboarding"
   },
   "engines": {
     "node": ">=22.0.0"

@@ -16,4 +16,11 @@ db.createUser({
   pwd: '${SUPER_ADMIN_AUTH_DB_PASSWORD}',
   roles: [{ role: 'readWrite', db: 'super_admin_auth' }]
 });
+
+db = db.getSiblingDB('onboarding');
+db.createUser({
+  user: 'onboarding',
+  pwd: '${ONBOARDING_DB_PASSWORD}',
+  roles: [{ role: 'readWrite', db: 'onboarding' }]
+});
 EOF

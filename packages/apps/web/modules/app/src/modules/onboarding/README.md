@@ -14,20 +14,21 @@ propio del prototipo: los botones **Omitir** y **Pausar**, y los enlaces "Volver
 
 | Ruta | Pantalla |
 |------|----------|
-| `/welcome` | Bienvenida animada (~11 s) y pantalla final con el botón **Comenzar**. Si el perfil ya está completo, solo la primera escena y entra a la app (ver abajo). |
+| `/welcome` | Bienvenida animada (~11 s) y pantalla final con el botón **Comenzar**. Si el perfil ya está completo, solo la primera escena y entra al workspace (ver abajo). |
 | `/welcome/phone` | Paso 1 de 2: país y número de teléfono. |
 | `/welcome/source` | Paso 2 de 2: dónde nos conociste (selección múltiple). |
 
 Todas exigen sesión de SuperAdmin: sin sesión llevan a `/super/login`.
 
 Flujo: `/super/login` → `/welcome` → **Comenzar** → `/welcome/phone` → **Continuar** → `/welcome/source` →
-**Finalizar** → "¡Listo! Gracias por contarnos." → `/`.
+**Finalizar** → "¡Listo! Gracias por contarnos." → `/workspace` (el [workspace](../workspace/README.md)).
 
 Reglas del flujo (se deciden con el perfil guardado en el servicio, no con el navegador):
 
 - **Perfil ya completo:** la bienvenida muestra **solo la primera escena** (el logo, "Todo empieza con una conexión.",
-  2,6 s) y entra sola a `/`, sin pasar por el resto ni por el botón Comenzar. `/welcome/phone` y `/welcome/source`
-  también llevan directo a `/`.
+  2,6 s) y entra sola a `/workspace`, sin pasar por el resto ni por el botón Comenzar. `/welcome/phone` y
+  `/welcome/source` también llevan directo a `/workspace`: un perfil completo no vuelve a ver los pasos ("Mi perfil" del
+  workspace solo muestra el nombre, no los reabre).
 - **Perfil sin completar:** la bienvenida se ve entera y termina en **Comenzar**.
 - **Cómo se decide:** la primera escena es igual para todos y mientras suena se consulta el perfil al servicio. Si la
   consulta aún no responde cuando termina la escena, el logo se queda en pantalla hasta saberlo. Si **falla** (servicio
@@ -63,7 +64,7 @@ Las duraciones y los textos están en `sequence.ts`. No se puede pausar ni salta
   Se puede marcar más de una; hay que marcar al menos una.
 - Al servicio se envían identificadores en inglés (`instagram`, `family`, `business`, `other`...); las etiquetas en
   español están en `sources.tsx`.
-- **Finalizar** guarda y marca el perfil como completo. Tras el aviso de éxito (~1,5 s) se entra a la app.
+- **Finalizar** guarda y marca el perfil como completo. Tras el aviso de éxito (~1,5 s) se entra al workspace.
 
 ## Estructura
 
@@ -76,7 +77,7 @@ onboarding/
 ├── serviceErrors.ts               Errores del servicio traducidos a avisos para la persona
 ├── pages/                         OnboardingPage (bienvenida), PhoneStepPage, SourceStepPage
 ├── scenes/                        LogoScene, ConnectScene, ShareScene, GrowScene, ReadyScene
-├── components/                    Cabecera, progreso, logotipo, ProfileSetupLayout, ProfileGate, ThemeIconButton
+├── components/                    Cabecera, progreso, ProfileSetupLayout, ProfileGate
 ├── api/onboardingApi.ts           Cliente HTTP del servicio (timeout y errores tipados)
 ├── stores/                        Perfil del onboarding (MobX, en memoria)
 ├── hooks/                         Secuencia de la bienvenida, animaciones por escena, movimiento reducido
@@ -86,7 +87,7 @@ onboarding/
 ## Comportamiento a tener en cuenta
 
 - **Movimiento reducido** (`prefers-reduced-motion`): no hay animaciones. Con el perfil sin completar se salta directo a la
-  pantalla final; con el perfil completo se entra a `/` sin mostrar nada.
+  pantalla final; con el perfil completo se entra a `/workspace` sin mostrar nada.
 - **Tema:** el botón de la cabecera usa el mismo `uiStore` que el resto de la app (claro por defecto).
 - **Sesión vencida:** si el servicio responde `401`, se cierra la sesión y la puerta de acceso lleva al login.
 - **Perfil en memoria:** el store recarga el perfil cada vez que se abre un paso, así no se ve el de otra cuenta si se
@@ -106,11 +107,12 @@ onboarding/
   no se tocó `src/elements/`. Las tarjetas de "dónde nos conociste" son `checkbox` nativos propios porque el
   `Checkbox` de Elements solo admite texto. La bienvenida animada es una composición propia (SVG, CSS y
   animaciones), igual que la referencia.
-- **Base común:** `uiStore` (tema), `PageMeta`, `cn` y el campo `requiresSuperAdmin` de `AppModule`
-  (la app, no el módulo, pone la puerta de acceso `RequireSuperAdmin`).
+- **Base común:** `brand/NectoLogo` (logotipo), `ThemeIconButton` (de `@/shell`), `uiStore` (tema), `PageMeta`, `cn` y el campo
+  `requiresSuperAdmin` de `AppModule` (la app, no el módulo, pone la puerta de acceso `RequireSuperAdmin`).
 - **Fuente:** DM Sans 400/500/600 (`@fontsource/dm-sans`), cargada solo con este módulo.
-- El logotipo está repetido en este módulo y en `super-admin-auth` (`NectoLogo`), a propósito, para que
-  ninguno dependa del otro. Si aparece un tercer uso, conviene moverlo a un lugar común.
+- **Lo que ofrece a otros** (desde `@/modules/onboarding`): `onboardingModule` (sus rutas), y `onboardingProfileStore` (la app lo usa
+  para saber si el perfil está completo antes de abrir el workspace). El logotipo y el botón de tema vivían aquí y pasaron a la base común cuando el workspace los necesitó.
+- `super-admin-auth` conserva su propio `NectoLogo` (pinta los colores con clases); queda pendiente unificarlo con `brand/NectoLogo`.
 
 ## Configuración
 

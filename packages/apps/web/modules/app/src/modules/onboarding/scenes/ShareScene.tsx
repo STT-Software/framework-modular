@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { OnboardingLogo } from "../components/OnboardingLogo";
+import { NectoLogo } from "@/brand/NectoLogo";
 import { useSceneMotion } from "../hooks/useSceneMotion";
 
 /** Cada tarjeta: selector, desplazamiento horizontal final (px) y giro final (grados). */
@@ -53,7 +53,7 @@ export function ShareScene() {
         <div className="ob-motion-card ob-card-front">
           <span className="ob-card-mini">LO QUE TE MUEVE</span>
           <div className="ob-card-mark">
-            <OnboardingLogo variant="mark" width={64} height={64} />
+            <NectoLogo variant="mark" width={64} height={64} />
           </div>
           <span className="ob-card-line" />
           <span className="ob-card-line short" />

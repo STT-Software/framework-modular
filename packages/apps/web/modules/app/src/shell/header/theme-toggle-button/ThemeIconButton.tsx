@@ -1,7 +1,10 @@
 import { observer } from "mobx-react-lite";
 import { uiStore } from "@/stores";
 
-/** Botón redondo para cambiar entre tema claro y oscuro. Usa el mismo `uiStore` que el resto de la app. */
+/**
+ * Botón redondo para cambiar entre tema claro y oscuro. Usa el mismo `uiStore` que el resto de la app y deja
+ * el acabado (tamaño, borde, colores) a quien lo usa mediante `className`.
+ */
 export const ThemeIconButton = observer(({ className }: { className: string }) => {
   const dark = uiStore.isDarkMode;
   return (

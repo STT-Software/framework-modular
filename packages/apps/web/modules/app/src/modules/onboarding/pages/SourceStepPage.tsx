@@ -6,6 +6,7 @@ import type { Profile } from "../api/onboardingApi";
 import { ProfileGate } from "../components/ProfileGate";
 import { ProfileSetupLayout } from "../components/ProfileSetupLayout";
 import { serviceErrorMessage } from "../serviceErrors";
+import { AFTER_ONBOARDING_PATH, PHONE_STEP_PATH } from "../paths";
 import { SOURCE_OPTIONS, type SourceId } from "../sources";
 import { onboardingProfileStore } from "../stores/onboardingProfile.store";
 
@@ -36,7 +37,7 @@ function SourceForm({ initialSources }: { initialSources: SourceId[] }) {
   // Con el perfil guardado se muestra "¡Listo!" un momento y se entra a la app.
   useEffect(() => {
     if (phase !== "done") return;
-    const timer = window.setTimeout(() => navigate("/", { replace: true }), ENTER_APP_DELAY_MS);
+    const timer = window.setTimeout(() => navigate(AFTER_ONBOARDING_PATH, { replace: true }), ENTER_APP_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [phase, navigate]);
 
@@ -110,7 +111,7 @@ function SourceForm({ initialSources }: { initialSources: SourceId[] }) {
           </div>
         )}
         <div className="ob-setup-actions">
-          <Link className="ob-setup-back" to="/welcome/phone">
+          <Link className="ob-setup-back" to={PHONE_STEP_PATH}>
             <span aria-hidden="true">←</span> Volver
           </Link>
           <Button type="submit" loading={phase === "saving"} disabled={phase === "done"} className="ob-setup-primary">
@@ -142,8 +143,8 @@ function SourceForm({ initialSources }: { initialSources: SourceId[] }) {
  */
 function SourceStep({ loaded }: { loaded: Profile }) {
   const [initial] = useState(loaded);
-  if (initial.completed) return <Navigate to="/" replace />;
-  if (!initial.phone) return <Navigate to="/welcome/phone" replace />;
+  if (initial.completed) return <Navigate to={AFTER_ONBOARDING_PATH} replace />;
+  if (!initial.phone) return <Navigate to={PHONE_STEP_PATH} replace />;
   return <SourceForm initialSources={initial.sources} />;
 }
 

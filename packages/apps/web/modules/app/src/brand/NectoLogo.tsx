@@ -1,6 +1,6 @@
 import { LOGO_PATHS, MARK_PATH_COUNT, TAGLINE_PATH_COUNT } from "./logoPaths";
 
-interface OnboardingLogoProps {
+interface NectoLogoProps {
   /** "full": logotipo completo con lema. "mark": solo la marca (la N con su esquina). */
   variant?: "full" | "mark";
   width: number;
@@ -8,10 +8,11 @@ interface OnboardingLogoProps {
 }
 
 /**
- * Logotipo de Necto para la bienvenida. Los colores salen de `onboarding.css`: en tema oscuro
- * el índigo (#190088) pasa a blanco y el naranja se mantiene.
+ * Logotipo vectorial de Necto ("grow together"), de la base común. Los trazos llevan su color en el atributo
+ * `fill` (índigo #190088 y naranja #FF3F1A): cada pantalla que lo usa lo recolorea en CSS según su tema, por ejemplo
+ * pasando el índigo a blanco en modo oscuro con un selector `path[fill="#190088"]`.
  */
-export function OnboardingLogo({ variant = "full", width, height }: OnboardingLogoProps) {
+export function NectoLogo({ variant = "full", width, height }: NectoLogoProps) {
   const full = variant === "full";
   const paths = full ? LOGO_PATHS : LOGO_PATHS.slice(TAGLINE_PATH_COUNT, TAGLINE_PATH_COUNT + MARK_PATH_COUNT);
   return (

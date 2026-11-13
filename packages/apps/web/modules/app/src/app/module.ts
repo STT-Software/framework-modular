@@ -17,5 +17,10 @@ export interface AppModule {
   id: string;
   /** Si es true, la app pone sus rutas detrás de la puerta de acceso (`RequireSuperAdmin`). */
   requiresSuperAdmin?: boolean;
+  /**
+   * Si es true, además de la sesión exige tener el perfil de onboarding completo (`RequireOnboardingCompleted`):
+   * quien no lo tiene va a /welcome. Implica `requiresSuperAdmin`.
+   */
+  requiresOnboardingCompleted?: boolean;
   routes: ModuleRoute[];
 }

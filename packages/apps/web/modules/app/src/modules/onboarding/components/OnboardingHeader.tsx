@@ -1,4 +1,4 @@
-import { ThemeIconButton } from "./ThemeIconButton";
+import { ThemeIconButton } from "@/shell";
 
 /** Cabecera de la bienvenida: etiqueta de la edición y cambio de tema. */
 export function OnboardingHeader() {

@@ -39,7 +39,7 @@ sobre un mismo proyecto con flujo de Pull Requests.
                 └── app/         Aplicación React + Vite + Tailwind
                     └── src/
                         ├── app/       App, shell, sidebar y registro de módulos
-                        ├── modules/   Módulos de negocio (super-admin-auth, onboarding)
+                        ├── modules/   Módulos de negocio (super-admin-auth, onboarding, workspace)
                         ├── pages/     Páginas del scaffolding
                         ├── elements/  Componentes UI compartidos
                         ├── layouts/   Layouts base
@@ -73,7 +73,7 @@ npm run dev                  # app web en http://localhost:6020
 ```
 
 Con las tres cosas arriba, el acceso del superadmin está en
-`http://localhost:6020/super/login` (y `/super/register`); al iniciar sesión sigue la bienvenida (`/welcome`) y los pasos de perfil. Detalles en
+`http://localhost:6020/super/login` (y `/super/register`); al iniciar sesión sigue la bienvenida (`/welcome`), los pasos de perfil y el workspace (`/workspace`). Detalles en
 [`src/modules/super-admin-auth/README.md`](packages/apps/web/modules/app/src/modules/super-admin-auth/README.md).
 
 El servicio y MongoDB necesitan archivos `.env`; los pasos están en

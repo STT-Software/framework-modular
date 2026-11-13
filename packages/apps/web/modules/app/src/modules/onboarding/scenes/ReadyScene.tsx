@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { OnboardingLogo } from "../components/OnboardingLogo";
+import { NectoLogo } from "@/brand/NectoLogo";
 import { useSceneMotion } from "../hooks/useSceneMotion";
 
 interface ReadySceneProps {
@@ -30,7 +30,7 @@ export function ReadyScene({ onContinue }: ReadySceneProps) {
       <div className="ob-ready-emblem" aria-hidden="true">
         <span />
         <div>
-          <OnboardingLogo variant="mark" width={64} height={64} />
+          <NectoLogo variant="mark" width={64} height={64} />
         </div>
       </div>
       <span className="ob-kicker" data-reveal>

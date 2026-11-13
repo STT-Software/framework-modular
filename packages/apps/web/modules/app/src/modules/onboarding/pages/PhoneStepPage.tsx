@@ -9,6 +9,7 @@ import { cn } from "@/utils";
 import { OnboardingError, type Profile } from "../api/onboardingApi";
 import { ProfileGate } from "../components/ProfileGate";
 import { ProfileSetupLayout } from "../components/ProfileSetupLayout";
+import { AFTER_ONBOARDING_PATH, SOURCE_STEP_PATH } from "../paths";
 import { checkPhone, COUNTRIES, PHONE_FORMAT_ERROR, splitPhone } from "../phone";
 import { serviceErrorMessage } from "../serviceErrors";
 import { onboardingProfileStore } from "../stores/onboardingProfile.store";
@@ -56,7 +57,7 @@ function PhoneForm({ profile }: { profile: Profile }) {
     setSaving(true);
     try {
       await onboardingProfileStore.savePhone(check.e164);
-      navigate("/welcome/source");
+      navigate(SOURCE_STEP_PATH);
     } catch (error) {
       const message = phoneFieldError(error);
       if (message) {
@@ -139,12 +140,14 @@ function PhoneForm({ profile }: { profile: Profile }) {
   );
 }
 
-/** Paso 1 de 2: teléfono. Si el perfil ya está completo, entra directo a la app. */
+/** Paso 1 de 2: teléfono. Si el perfil ya está completo, entra directo al workspace. */
 export default function PhoneStepPage() {
   return (
     <ProfileSetupLayout step={1} title="Necto · Tu teléfono" headingId={HEADING_ID} width="narrow">
       <ProfileGate>
-        {(profile) => (profile.completed ? <Navigate to="/" replace /> : <PhoneForm profile={profile} />)}
+        {(profile) =>
+          profile.completed ? <Navigate to={AFTER_ONBOARDING_PATH} replace /> : <PhoneForm profile={profile} />
+        }
       </ProfileGate>
     </ProfileSetupLayout>
   );

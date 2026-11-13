@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { OnboardingLogo } from "../components/OnboardingLogo";
+import { NectoLogo } from "@/brand/NectoLogo";
 import { useSceneMotion } from "../hooks/useSceneMotion";
 
 /** Escena 1 (Conecta): una red de nodos que se une alrededor de la marca. */
@@ -59,7 +59,7 @@ export function ConnectScene() {
           <circle cx="240" cy="150" r="48" className="ob-network-center" />
         </svg>
         <div className="ob-center-mark">
-          <OnboardingLogo variant="mark" width={64} height={64} />
+          <NectoLogo variant="mark" width={64} height={64} />
         </div>
       </div>
       <div className="ob-scene-copy">

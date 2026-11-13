@@ -20,7 +20,7 @@ módulo por cada uno.
 | Parte | Estado |
 |-------|--------|
 | Backend | Alineado: un **monolito modular**, `packages/services/necto-api`. Una sola aplicación (un proceso, un puerto, una conexión a MongoDB) con `platform/` (infraestructura transversal) y `modules/` (un módulo por capacidad: `auth` y `onboarding`), cada uno con sus capas y su puerta pública. |
-| Frontend | Alineado para dos módulos: `src/modules/super-admin-auth/` (login y registro) y `src/modules/onboarding/` (bienvenida y pasos de perfil). `src/app/` registra los módulos (`modules.ts`) y renderiza sus rutas con carga diferida y `ModuleBoundary`. El resto del scaffolding de WebIAI Elements sigue organizado por tipo técnico (`pages/`, `elements/`, `shell/`...) y hace de base común. |
+| Frontend | Alineado para tres módulos: `src/modules/super-admin-auth/` (login y registro), `src/modules/onboarding/` (bienvenida y pasos de perfil) y `src/modules/workspace/` (el workspace de negocios). Lo común sin reglas de negocio, como el logotipo (`src/brand/`), vive en la base común. `src/app/` registra los módulos (`modules.ts`) y renderiza sus rutas con carga diferida y `ModuleBoundary`. El resto del scaffolding de WebIAI Elements sigue organizado por tipo técnico (`pages/`, `elements/`, `shell/`...) y hace de base común. |
 
 ## Principios
 

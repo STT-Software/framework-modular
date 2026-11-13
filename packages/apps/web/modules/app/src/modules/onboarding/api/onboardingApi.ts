@@ -2,10 +2,11 @@ import { superAdminSessionStore } from "@/modules/super-admin-auth";
 import type { SourceId } from "../sources";
 
 /**
- * Cliente HTTP del servicio onboarding (ver su README para el contrato).
+ * Cliente HTTP de las rutas de onboarding del backend (contrato en el README de
+ * packages/services/necto-api).
  *
- * Por defecto llama a "/api/onboarding", que el dev server de Vite redirige al
- * servicio. En otros entornos se define VITE_ONBOARDING_API_URL.
+ * Por defecto llama a "/api/onboarding", que el dev server de Vite redirige al backend.
+ * En otros entornos se define VITE_ONBOARDING_API_URL.
  */
 const BASE_URL =
   (import.meta.env.VITE_ONBOARDING_API_URL as string | undefined)?.replace(/\/$/, "") ?? "/api/onboarding";

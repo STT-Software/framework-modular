@@ -1,7 +1,7 @@
 # Módulo super-admin-auth (frontend)
 
-Pantallas de **login** y **registro** del SuperAdmin. Consume el servicio
-[`super-admin-auth`](../../../../../../services/super-admin-auth/README.md).
+Pantallas de **login** y **registro** del SuperAdmin. Consume el módulo `auth` del backend
+[`necto-api`](../../../../../../services/necto-api/README.md).
 
 El diseño sale de la referencia visual `necto-superlogin` (dos columnas, panel de
 marca con rejilla, brillo y órbitas animadas, tema claro/oscuro). Esa referencia
@@ -49,7 +49,7 @@ forma de entrar.
 
 ## Dependencias
 
-- **Servicio:** `super-admin-auth` (endpoints `/auth/super/register`, `/auth/super/login`, `/auth/super/me`).
+- **Backend:** módulo `auth` de `necto-api` (endpoints `/auth/super/register`, `/auth/super/login`, `/auth/super/me`).
 - **Elements:** `Button`, `Input`, `Label`, `Alert`, `Select` y `Checkbox`. El acabado Necto (altura, foco
   índigo, flecha animada) se aplica con `className` desde este módulo; los
   componentes de `src/elements/` no se modificaron.
@@ -61,8 +61,8 @@ forma de entrar.
 
 | Variable | Descripción |
 |----------|-------------|
-| `VITE_SUPER_ADMIN_AUTH_API_URL` | URL base del servicio. Por defecto `/api/super-admin-auth`, que el dev server de Vite reenvía al servicio. |
-| `SUPER_ADMIN_AUTH_URL` | Solo dev server: dónde corre el servicio. Por defecto `http://localhost:8080`. |
+| `VITE_SUPER_ADMIN_AUTH_API_URL` | URL base de las rutas de auth. Por defecto `/api/super-admin-auth`, que el dev server de Vite reenvía al backend. |
+| `API_URL` | Solo dev server: dónde corre el backend `necto-api`. Por defecto `http://localhost:8080` (`SUPER_ADMIN_AUTH_URL`, el nombre anterior, se sigue aceptando). |
 
 ## Registro: campos especiales
 

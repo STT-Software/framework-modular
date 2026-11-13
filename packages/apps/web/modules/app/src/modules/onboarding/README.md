@@ -1,8 +1,9 @@
 # Módulo onboarding (frontend)
 
 Lo que ve el SuperAdmin **justo después de iniciar sesión**: una bienvenida animada y dos pasos de
-perfil, **teléfono** y **dónde nos conoció**. Los datos se guardan en el servicio
-[`onboarding`](../../../../../../services/onboarding/README.md), asociados al id de la persona.
+perfil, **teléfono** y **dónde nos conoció**. Los datos se guardan en el módulo `onboarding` del backend
+([`necto-api`](../../../../../../services/necto-api/README.md#módulo-onboarding), el mismo proceso y la misma
+base del login), asociados al id de la persona.
 
 El diseño sale de las referencias visuales `necto-onboardingBienvenida`, `necto-telefono` y `necto-origen`
 (viven solo en la máquina de quien las tiene: `referencias html/`, ignorada por git). Se quitó lo que era
@@ -96,7 +97,8 @@ onboarding/
 
 ## Dependencias
 
-- **Servicio:** `onboarding` (`GET /onboarding/profile/me`, `PUT /onboarding/profile/phone`, `PUT /onboarding/profile/sources`).
+- **Backend:** módulo `onboarding` del backend `necto-api` (`GET /onboarding/profile/me`, `PUT /onboarding/profile/phone`,
+  `PUT /onboarding/profile/sources`).
 - **Otro módulo:** `super-admin-auth`, solo por su puerta pública (`@/modules/super-admin-auth`): usa
   `superAdminSessionStore` para obtener el token que manda al servicio y para cerrar la sesión si vence.
   A la inversa, `super-admin-auth` solo conoce la **ruta** `/welcome` (a donde navega tras el login), no su código.
@@ -114,5 +116,4 @@ onboarding/
 
 | Variable | Descripción |
 |----------|-------------|
-| `VITE_ONBOARDING_API_URL` | URL base del servicio. Por defecto `/api/onboarding`, que el dev server de Vite reenvía al servicio. |
-| `ONBOARDING_URL` | Solo dev server: dónde corre el servicio. Por defecto `http://localhost:8081`. |
+| `VITE_ONBOARDING_API_URL` | URL base de las rutas de onboarding. Por defecto `/api/onboarding`, que el dev server de Vite reenvía al backend (`API_URL`, por defecto `http://localhost:8080`). |

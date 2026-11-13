@@ -1,14 +1,18 @@
 @theme {
   --font-*: initial;
-  --font-outfit: Outfit, sans-serif;
+  --font-outfit: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
 
-  /* Marca Necto (login del superadmin y futuras pantallas con la identidad Necto) */
+  /* Marca Necto (paleta oficial) */
   --color-necto: #190088;
-  --color-necto-hover: #2f13a3;
-  --color-necto-dark: #6250e8;
-  --color-necto-dark-hover: #7464f0;
-  --color-necto-link: #b7adff;
+  --color-necto-hover: #17016c;
+  --color-necto-dark: #ff3f1a;
+  --color-necto-dark-hover: #e5351a;
+  --color-necto-link: #97d6df;
   --color-necto-accent: #ff3f1a;
+  --color-cream: #efe6d3;
+  --color-ink-title: #190088;
+  --color-ink-body: #212121;
 
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;
@@ -42,18 +46,21 @@
   --color-white: #ffffff;
   --color-black: #101828;
 
-  --color-brand-25: #f2f7ff;
-  --color-brand-50: #ecf3ff;
-  --color-brand-100: #dde9ff;
-  --color-brand-200: #c2d6ff;
-  --color-brand-300: #9cb9ff;
-  --color-brand-400: #7592ff;
-  --color-brand-500: #465fff;
-  --color-brand-600: #3641f5;
-  --color-brand-700: #2a31d8;
-  --color-brand-800: #252dae;
-  --color-brand-900: #262e89;
-  --color-brand-950: #161950;
+  --color-brand-25: #fff5f2;
+  --color-brand-50: #ffede8;
+  --color-brand-100: #ffd6cc;
+  --color-brand-200: #feb3a4;
+  --color-brand-300: #fe8f79;
+  --color-brand-400: #fe674a;
+  --color-brand-500: #ff3f1a;
+  --color-brand-600: #e5351a;
+  --color-brand-700: #be2a15;
+  --color-brand-800: #982111;
+  --color-brand-900: #791b0d;
+  --color-brand-950: #4d0f07;
+
+  --color-secondary-600: #190088;
+  --color-accent-300: #97d6df;
 
   --color-blue-light-25: #f5fbff;
   --color-blue-light-50: #f0f9ff;
@@ -70,7 +77,7 @@
 
   --color-gray-25: #fcfcfd;
   --color-gray-50: #f9fafb;
-  --color-gray-100: #f2f4f7;
+  --color-gray-100: #ececec;
   --color-gray-200: #e4e7ec;
   --color-gray-300: #d0d5dd;
   --color-gray-400: #98a2b3;

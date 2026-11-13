@@ -170,9 +170,9 @@ export default function RegisterPage() {
         </div>
       )}
 
-      <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
+      <p className="mt-6 text-[14px] font-normal text-[#212121] dark:text-[#ECECEC]">
         ¿Ya tienes una cuenta?
-        <Link to="/super/login" className="ml-1 font-semibold text-necto hover:underline dark:text-necto-link">
+        <Link to="/super/login" className="ml-1 font-bold text-[#190088] hover:underline dark:text-[#97D6DF]">
           Inicia sesión
         </Link>
       </p>

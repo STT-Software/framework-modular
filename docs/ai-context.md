@@ -315,12 +315,14 @@ Registro: `username`, `email`, `password`, `identityDocumentType` (`CC`/`CE`/`PA
 
 ## 10. Frontend: patrones y diseño
 
-**Diseño de referencia:** `referencias html/necto-superlogin.html` (sección 11). Dos columnas:
-formulario a la izquierda y panel de marca a la derecha (rejilla, brillo y **órbitas animadas**).
-Tema **claro** (panel naranja `#ff3f1a`) y **oscuro** (panel índigo `#100548`). Fuente **DM Sans**.
+**Diseño de referencia:** `referencias html/necto-superlogin.html` (sección 11) y diseño NECTO en StockFlow. Dos columnas:
+formulario a la izquierda y panel de marca a la derecha con fondo interactivo de puntos (`InteractiveDotGrid`),
+aros decorativos (`DecorativeCircles`) y mensajes rotativos con transición escalonada (`RotatingBrandMessages`).
+Tema **claro** (panel naranja `#ff3f1a`) y **oscuro** (panel azul profundo `#190088`). Fuente **DM Sans** (300, 400, 700).
 
-**Tokens de marca** (en `src/css/theme.css`): `necto` `#190088`, `necto-hover` `#2f13a3`,
-`necto-dark` `#6250e8`, `necto-dark-hover` `#7464f0`, `necto-link` `#b7adff`, `necto-accent` `#ff3f1a`.
+**Tokens de marca** (en `src/css/theme.css`): `necto` / `secondary-600` `#190088`, `necto-hover` `#17016c`,
+`necto-dark` / `brand-500` / `necto-accent` `#ff3f1a`, `necto-dark-hover` / `brand-600` `#e5351a`,
+`necto-link` / `accent-300` `#97d6df`, `gray-100` `#ececec`, `ink-body` `#212121`, `cream` `#efe6d3`.
 
 **Cómo está hecho el módulo** (`src/modules/super-admin-auth`, README propio):
 `SuperAdminAuthLayout` (layout compartido, el panel de marca no se reinicia al cambiar de pantalla),

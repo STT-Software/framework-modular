@@ -110,9 +110,9 @@ export default function LoginPage() {
         </div>
       )}
 
-      <p className="mt-7 text-sm text-gray-500 dark:text-gray-400">
+      <p className="mt-7 text-[14px] font-normal text-[#212121] dark:text-[#ECECEC]">
         ¿Aún no tienes una cuenta?
-        <Link to="/super/register" className="ml-1 font-semibold text-necto hover:underline dark:text-necto-link">
+        <Link to="/super/register" className="ml-1 font-bold text-[#190088] hover:underline dark:text-[#97D6DF]">
           Regístrate
         </Link>
       </p>

@@ -17,8 +17,8 @@
 .sa-body { padding: 34px 64px 44px; }
 .sa-footer { justify-content: space-between; gap: 12px; padding: 20px 48px 28px; display: flex; }
 
-.sa-eyebrow { color: #667085; letter-spacing: 0.13em; font-size: 11px; font-weight: 600; }
-.dark .sa-eyebrow { color: #98a2b3; }
+.sa-eyebrow { color: #212121; letter-spacing: 0.13em; font-size: 12px; font-weight: 700; }
+.dark .sa-eyebrow { color: #97d6df; }
 .sa-eyebrow span { background: #ff3f1a; border-radius: 2px; width: 6px; height: 6px; }
 
 .sa-theme-toggle { flex-shrink: 0; min-width: 100px; }
@@ -47,7 +47,7 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
 
 /* ── Panel de marca ─────────────────────────────────────────────────────── */
 .sa-brand-side { isolation: isolate; min-height: 800px; background: #ff3f1a; }
-.dark .sa-brand-side { background: #100548; border-left: 1px solid #ffffff06; }
+.dark .sa-brand-side { background: #190088; border-left: 1px solid #ffffff06; }
 
 .sa-brand-grid {
   background-image:
@@ -79,18 +79,52 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
 .sa-brand-divider { background: #190088; border-radius: 3px; width: 32px; height: 3px; margin: 35px auto 28px; }
 .dark .sa-brand-divider { background: #ff3f1a; }
 
+@keyframes sa-msg-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.sa-msg-enter-title {
+  animation: sa-msg-enter 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sa-msg-enter-subtitle {
+  animation: sa-msg-enter 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.sa-msg-exit {
+  opacity: 0;
+  transform: translateY(-10px);
+  filter: blur(4px);
+  transition: opacity 0.24s ease, transform 0.24s ease, filter 0.24s ease;
+}
+
 .sa-brand-headline {
   color: #212121;
   letter-spacing: -0.035em;
-  font-size: clamp(30px, 3vw, 44px);
-  font-weight: 500;
+  font-size: 36px;
+  font-weight: 700;
   line-height: 1.18;
 }
 .dark .sa-brand-headline { color: #fff; }
 .sa-brand-headline span { color: #190088; }
 .dark .sa-brand-headline span { color: #ff3f1a; }
 
-.sa-brand-description { color: #212121; margin-top: 22px; font-size: 16px; line-height: 1.7; }
+.sa-brand-description {
+  color: #212121;
+  margin-top: 22px;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.7;
+}
 .dark .sa-brand-description { color: #c3c0e8; }
 
 .sa-brand-topline {
@@ -188,7 +222,7 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
   .sa-brand-topline, .sa-brand-bottom { display: none; }
   .sa-brand-logo-large { width: 210px; }
   .sa-brand-divider { margin: 22px auto 18px; }
-  .sa-brand-headline { font-size: 28px; }
+  .sa-brand-headline { font-size: 24px; }
   .sa-brand-description { margin-top: 16px; font-size: 14px; }
   .sa-orbits { width: 360px; }
 }
@@ -199,7 +233,7 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
   .sa-header { padding-left: 24px; padding-right: 24px; }
   .sa-logo-link { width: 161px; }
   .sa-body { padding: 28px 24px 40px; }
-  .sa-footer { gap: 8px; padding-left: 24px; padding-right: 24px; font-size: 10px; }
+  .sa-footer { gap: 8px; padding-left: 24px; padding-right: 24px; font-size: 12px; }
   .sa-brand-logo-large { width: 210px; }
 }
 

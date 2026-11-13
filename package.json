@@ -9,8 +9,9 @@
     "typecheck": "npm run typecheck --prefix packages/apps/web/modules/app",
     "db:up": "docker compose -f infra/docker-compose.yml up -d",
     "db:down": "docker compose -f infra/docker-compose.yml down",
-    "dev:super-admin-auth": "npm run dev --prefix packages/services/super-admin-auth",
-    "build:super-admin-auth": "npm run build --prefix packages/services/super-admin-auth"
+    "dev:api": "npm run dev --prefix packages/services/necto-api",
+    "build:api": "npm run build --prefix packages/services/necto-api",
+    "test:api": "npm test --prefix packages/services/necto-api"
   },
   "engines": {
     "node": ">=22.0.0"

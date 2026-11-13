@@ -55,7 +55,7 @@ export default function LoginPage() {
     try {
       const result = await superAdminAuthApi.login({ identifier: identifier.trim(), password });
       superAdminSessionStore.signIn(result);
-      navigate("/", { replace: true });
+      navigate("/welcome", { replace: true });
     } catch (error) {
       setFormError(loginErrorMessage(error));
     } finally {

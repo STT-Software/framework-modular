@@ -32,7 +32,7 @@ sobre un mismo proyecto con flujo de Pull Requests.
 ├── infra/                       MongoDB de desarrollo (Docker)
 └── packages/
     ├── services/
-    │   └── necto-api/           El backend: monolito modular NestJS + MongoDB con los módulos auth y onboarding (ver su README)
+    │   └── necto-api/           El backend: monolito modular NestJS + MongoDB con los módulos auth, onboarding, businesses y business-access (ver su README)
     └── apps/
         └── web/                 Bundle app.web
             └── modules/

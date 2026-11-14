@@ -3,6 +3,9 @@
 #   npm run db:up      start MongoDB   (from the repo root)
 #   npm run db:down    stop it         (data is kept in the volume)
 #
+# It also starts Mailpit, a LOCAL mail server for development only: it accepts any email on SMTP port 1025 and
+# shows it at http://127.0.0.1:8025. Nothing leaves this machine, so it proves our sending works, NOT real delivery.
+#
 # One MongoDB instance serves every service in development, but each service has
 # its own database and its own user (see mongo-init/). A service can only access
 # its own database.
@@ -32,5 +35,13 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:v1.33.1
+    container_name: framework-modular-mailpit
+    restart: unless-stopped
+    # Only reachable from this machine, not from the network.
+    ports:
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${MAILPIT_WEB_PORT:-8025}:8025"
 volumes:
   mongo-data:

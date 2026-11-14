@@ -1,10 +1,9 @@
 # Módulo workspace (frontend)
 
 El **workspace de negocios**: la pantalla a la que llega el SuperAdmin cuando ya inició sesión y completó su perfil
-(teléfono y dónde nos conoció). Hoy muestra el **directorio de negocios vacío**, con la invitación a crear el primero.
-
-Es solo frontend y no guarda ni consulta nada propio: todavía no existe un módulo de negocios (ni su servicio ni su modelo
-de datos), así que el directorio siempre tiene 0 negocios.
+(teléfono y dónde nos conoció). Muestra el **directorio de sus negocios** (reales, del backend) o, si no tiene ninguno, la
+invitación animada a crear el primero. El workspace es el marco (layout) y las rutas; los datos, el asistente de creación y la
+ficha son del módulo [`businesses`](../businesses/README.md), que importa por su puerta pública.
 
 El diseño sale de la referencia visual `necto-workspace` (vive solo en la máquina de quien la tiene: `referencias html/`,
 ignorada por git): marca y colores de Necto, tipografía DM Sans, tema claro/oscuro y la animación de la tienda.
@@ -13,7 +12,9 @@ ignorada por git): marca y colores de Necto, tipografía DM Sans, tema claro/osc
 
 | Ruta | Pantalla |
 |------|----------|
-| `/workspace` | Directorio de negocios (estado vacío). |
+| `/workspace` | Directorio de negocios (lista real con filtros, o estado vacío). |
+| `/workspace/businesses/new` | Crear un negocio (asistente de 3 pasos). |
+| `/workspace/businesses/:id/edit` | Editar un negocio conservando su id. |
 | `/workspace/profile` | Mi perfil: solo el nombre de la persona. |
 
 Solo se entra con sesión de SuperAdmin **y** con el perfil de onboarding completo; esas dos puertas las pone la app, no el módulo
@@ -28,8 +29,9 @@ Flujo completo: `/super/login` → `/welcome` → *Comenzar* → `/welcome/phone
   *Mi perfil*) y un remate decorativo.
 - **Barra superior:** ubicación ("Mi workspace / Negocios"), el rol (*Superadministrador*), cambio de tema, **cerrar sesión** y el
   avatar con las iniciales del usuario (`admin.root` → `AR`).
-- **Directorio:** título, *Exportar CSV* (apagado hasta que haya negocios), *Crear negocio*, buscador y filtros por industria y
-  estado (apagados), y el estado vacío con la **tienda animada**.
+- **Directorio:** título, *Exportar CSV* (apagado hasta que haya negocios; descarga los de la vista filtrada), *Crear negocio*,
+  buscador y filtros por industria y estado (apagados mientras no haya negocios), tarjetas con paginación y, si no hay ninguno,
+  el estado vacío con la **tienda animada**. *Ver ficha completa* abre la ficha (Resumen, Módulos y Equipo).
 - **Animación de la tienda:** al entrar, se arma (el edificio sube, el toldo cae, una línea se dibuja y el logotipo aparece) y
   **después no se detiene**: la casa "respira", el toldo ondea, las fichas y el logotipo flotan, la chispa pulsa y la órbita punteada
   gira, sin fin. Seguir pulsando *Crear negocio*, repetir la entrada o cambiar de tema no la interrumpe. El botón de la esquina del
@@ -39,9 +41,9 @@ Flujo completo: `/super/login` → `/welcome` → *Comenzar* → `/welcome/phone
 
 ## Comportamiento a tener en cuenta
 
-- **Crear negocio** (el del encabezado y el del estado vacío) **no crea nada ni lleva a ninguna pantalla**: solo da la respuesta de
-  la referencia (un resplandor sobre la tienda y el aviso "Crear negocio seleccionado." para lectores de pantalla). Qué es un
-  negocio y cómo se crea no está definido.
+- **Crear negocio** (el del encabezado y el del estado vacío) lleva a `/workspace/businesses/new`. Al guardar, vuelve al directorio con
+  un aviso que se puede cerrar; el estado real de la invitación al jefe está en la ficha, pestaña Equipo.
+- Los **datos son del servidor**: cada superadmin ve solo sus negocios; uno ajeno o inexistente responde "no encontrado".
 - **Mi perfil** no lleva a los pasos de teléfono y origen del onboarding: esos ya quedaron resueltos y un perfil completo no los
   repite. Muestra solo el nombre; si más adelante debe mostrar o editar otros datos, hay que definirlo.
 - **Cerrar sesión** no está en la referencia: se añadió porque el workspace no usa el `AppShell` de la app (que es donde estaba ese
@@ -56,24 +58,25 @@ Flujo completo: `/super/login` → `/welcome` → *Comenzar* → `/welcome/phone
 ```
 workspace/
 ├── index.ts                        Puerta pública: definición del módulo
-├── paths.ts · businesses.ts · initials.ts   Rutas, cantidad de negocios (0) e iniciales del avatar
+├── paths.ts · initials.ts          Rutas (y la de editar por id) e iniciales del avatar
 ├── pages/
-│   ├── WorkspacePage.tsx           Directorio de negocios; maneja la animación y el aviso de "crear"
+│   ├── WorkspacePage.tsx           Directorio de negocios: animación, aviso, exportar CSV y crear
+│   ├── BusinessSetupPage.tsx       Crear (`/new`) y editar (`/:id/edit`): monta el asistente de `businesses`
 │   └── ProfilePage.tsx             Mi perfil: solo el nombre
 ├── components/
 │   ├── WorkspaceLayout.tsx         Marco común: lateral, barra superior y pie
 │   ├── WorkspaceSidebar.tsx        Lateral
 │   ├── WorkspaceTopbar.tsx         Barra superior
-│   ├── BusinessDirectory.tsx       Encabezado, filtros y pie del directorio
+│   ├── BusinessDirectory.tsx       Encabezado, filtros, tarjetas, paginación y ficha (datos del store de `businesses`)
 │   └── BusinessEmptyState.tsx      La tienda animada y la invitación a crear el primer negocio
 └── styles/workspace.css            Estilos (prefijo `ws-`) y animaciones, claro y oscuro
 ```
 
 ## Dependencias
 
-- **Backend:** ninguno.
-- **Otro módulo**, solo por su puerta pública: `super-admin-auth` (`superAdminSessionStore`, para el nombre, el avatar y cerrar
-  sesión). No depende del onboarding, y a la inversa tampoco: el onboarding solo conoce la ruta `/workspace`; la app es quien
+- **Backend:** el de `businesses`, a través de ese módulo (el workspace no llama al servicio por su cuenta).
+- **Otros módulos**, solo por su puerta pública: `super-admin-auth` (`superAdminSessionStore`, para el nombre, el avatar y cerrar
+  sesión) y `businesses` (store, tarjetas, ficha y asistente). `businesses` **no** importa al workspace: no hay ciclo. No depende del onboarding, y a la inversa tampoco: el onboarding solo conoce la ruta `/workspace`; la app es quien
   consulta su perfil antes de abrir el workspace.
 - **Elements:** `Button`, `Input` y `Select`, con el acabado de la referencia por `className`; no se tocó `src/elements/`. El
   directorio, el lateral y la barra superior son composición propia (como la referencia).

@@ -57,6 +57,10 @@ Para borrar también los datos y volver a crear las bases y usuarios:
 | `JWT_EXPIRES_IN` | No | Duración del token. Por defecto `1h`. |
 | `PORT` | No | Puerto del servicio. Por defecto `8080`. |
 | `CORS_ORIGIN` | No | Origen del frontend. Por defecto `http://localhost:6020`. |
+| `OTP_SECRET` | Sí | Secreto para firmar los códigos de acceso (HMAC). Mínimo 32 caracteres y **distinto** de `JWT_SECRET`. |
+| `PUBLIC_APP_URL` | No | Dirección pública del frontend; el correo enlaza a `<PUBLIC_APP_URL>/business/access?business=<id>`. Por defecto `http://localhost:6020`. |
+| `OTP_*` | No | Vigencia, intentos y límites de los códigos (TTL 10 min, 5 intentos por código, 60 s entre códigos, 10 intentos por persona+negocio y 30 por IP cada 15 min, 5 envíos por persona+negocio y 20 por IP cada hora). Lista completa y comentada en `.env.example`. |
+| `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT`, `MAIL_SMTP_SECURE`, `MAIL_SMTP_REQUIRE_TLS`, `MAIL_SMTP_USER`, `MAIL_SMTP_PASS`, `MAIL_FROM` | No | Proveedor SMTP. **Sin `MAIL_SMTP_HOST` no se puede enviar ningún correo**: el negocio se crea igual y la invitación queda `failed` con `not-configured`. |
 
 Si falta una variable obligatoria o el secreto es débil, el servicio no arranca.
 
@@ -70,10 +74,24 @@ Si falta una variable obligatoria o el secreto es débil, el servicio no arranca
 | `GET` | `/onboarding/profile/me` | Perfil de bienvenida de quien tiene el token (requiere token). |
 | `PUT` | `/onboarding/profile/phone` | Onboarding, paso 1: guarda el teléfono (requiere token). |
 | `PUT` | `/onboarding/profile/sources` | Onboarding, paso 2: guarda dónde nos conoció (requiere token). |
+| `GET` | `/businesses/catalog` | Catálogo de módulos y categorías (superadmin). |
+| `GET` / `POST` | `/businesses` | Lista los negocios del superadmin / crea uno con su jefe y módulos (requiere cabecera `Idempotency-Key`). |
+| `GET` / `PUT` | `/businesses/:id` | Ficha / edición (perfil, módulos y jefe) conservando el id. |
+| `POST` | `/businesses/:id/pause` y `/resume` | Pausa o reanuda el negocio. |
+| `GET` | `/businesses/export.csv` | Exporta los negocios del superadmin (neutraliza fórmulas). |
+| `GET` | `/businesses/:businessId/invitation` | Estado de la invitación al jefe. |
+| `POST` | `/businesses/:businessId/invitation/resend` | Envía un código nuevo al jefe vigente. |
+| `POST` | `/business-access/otp/request` | Pide un código de acceso por correo. Responde `202` siempre igual. |
+| `POST` | `/business-access/otp/verify` | Canjea el código y devuelve la sesión del jefe. |
+| `GET` | `/business-access/me` | Negocio y jefe de la sesión (requiere token de jefe). |
 | `GET` | `/health` | Estado del servicio. |
 
-Los módulos y sus rutas: `auth` (`/auth/super/...`) y `onboarding` (`/onboarding/...`). El contrato de cada uno
+Los módulos y sus rutas: `auth` (`/auth/super/...`), `onboarding` (`/onboarding/...`), `businesses` (`/businesses/...`) y
+`business-access` (`/business-access/...` y la invitación en `/businesses/:id/invitation`). El contrato de cada uno
 está en su sección de abajo.
+
+Los errores de validación (`400`) traen `message` (lista de textos) y `fields` (`{ "boss.email": ["..."] }`, con la ruta
+del campo) para que el formulario marque cada campo.
 
 ### Registro
 
@@ -193,6 +211,67 @@ Colección `onboarding_profiles` (un documento por usuario), en la misma base `s
 
 El módulo **no consulta** la colección `super_admins`: confía en la firma del token para saber quién es el usuario.
 
+## Módulo businesses
+
+Negocios reales y persistidos, con su jefe y los módulos habilitados. Todas las rutas son `@SuperAdminOnly()` y **solo ven
+los negocios de quien los creó** (un negocio ajeno responde `404`, igual que uno inexistente).
+
+- **Catálogo.** Módulos: `reservas`, `turnos`, `agendamiento`, `referidos`, `inventario`, `pedidos` (de 0 a 6, sin repetir,
+  identificador desconocido = `400`). Categorías: `gastronomy`, `retail`, `professional-services`, `health-wellness`,
+  `other` (esta exige `categoryOther`). Moneda `COP` y zona `America/Bogota` por defecto.
+- **Crear (`POST /businesses`).** Exige `Idempotency-Key` (8 a 64 caracteres `A-Za-z0-9_-`). Con la misma clave y la misma
+  solicitud devuelve el mismo negocio (`200`, sin segundo evento ni segundo correo); con la misma clave y otra solicitud, `409`.
+  El doble clic no duplica: lo garantiza el índice único `{ ownerId, idempotencyKey }`.
+- **Un jefe vigente.** El jefe vive **dentro** del documento del negocio (`boss` + `bossHistory`), así un único guardado
+  atómico asegura "exactamente un jefe" (MongoDB local es standalone, sin transacciones). El mismo correo puede ser jefe de
+  varios negocios.
+- **Editar (`PUT /businesses/:id`).** Si cambia el correo del jefe (normalizado), se crea una asignación nueva, la anterior
+  pasa al historial y se publica `BossAssigned`; si solo cambia el nombre, no se invita de nuevo. Guarda con control de
+  concurrencia por `version` (dos escrituras simultáneas: la perdedora recibe `409`).
+- **Pausar / reanudar.** Un negocio pausado bloquea al jefe (sesión `403`, no recibe códigos).
+- **Ficha.** Resumen, módulos y equipo; `summary.hasActivity` es `false` (no se inventan métricas). Nunca expone códigos,
+  hashes ni secretos.
+- **Puerta pública** (`public.ts`): `BusinessDirectory` (consulta de un negocio y su jefe vigente), el evento `BossAssigned`
+  y `BusinessModuleAccess` (para que un módulo futuro compruebe en el servidor si un módulo está habilitado).
+
+Datos: colección `businesses`, índices `{ ownerId, idempotencyKey }` (único), `{ ownerId, createdAt }` y
+`{ ownerId, status, category }`.
+
+## Módulo business-access
+
+Acceso del jefe **sin contraseña**: un código de 6 dígitos por correo.
+
+- **Invitación.** Al crear un negocio (o reemplazar al jefe), `businesses` publica `BossAssigned` y este módulo envía el
+  primer código. `business-access` depende de `businesses/public`, nunca al revés (sin ciclos).
+- **Código.** Aleatorio (`crypto.randomInt`), se guarda solo su HMAC-SHA256 atado a negocio, asignación, correo y propósito;
+  se compara en tiempo constante. Vence a los 10 min, admite 5 intentos y se canjea **una sola vez** (si llegan dos
+  verificaciones simultáneas, solo una gana). Pedir un código nuevo invalida el anterior.
+- **Respuestas que no filtran información.** `request` responde `202` igual exista o no el correo/negocio, esté pausado o no;
+  `verify` responde siempre el mismo `401 Invalid or expired code` (código errado, vencido, usado, de otro negocio o de un
+  jefe reemplazado). Las únicas respuestas visibles distintas son `429` con `Retry-After`.
+- **Límites** (en MongoDB, ventana fija; cada solicitud cuenta aunque sea rechazada): por persona+negocio y por IP, tanto
+  para intentos como para envíos. Pedir códigos nuevos no reinicia los intentos.
+- **Sesión del jefe.** Token con `role: business-boss`, `businessId` y `assignmentId`. `BusinessBossGuard` lo valida contra la
+  base **en cada petición**: jefe reemplazado `401`, negocio pausado `403`, token de superadmin en ruta de jefe `403`.
+- **Correo.** Se envía en segundo plano; si falla, el negocio ya está creado. Estados de entrega: `sending`, `accepted`
+  (el proveedor aceptó el mensaje) y `failed` (con `not-configured`, `rejected`, `timeout`, `connection` o `unknown`).
+  **No existe "entregado"**: `deliveryConfirmed` es siempre `false`, porque que un proveedor acepte un mensaje no prueba que
+  la persona lo recibió. El reenvío (`/invitation/resend`) respeta 60 s entre envíos y el tope por hora.
+- **Enlace del correo.** `<PUBLIC_APP_URL>/business/access?business=<id>`; el código nunca va en la URL.
+
+Datos: `access_challenges` (índices por negocio/correo/estado y expiración a 24 h) y `access_rate_limits` (TTL por `expiresAt`).
+
+### Configurar y probar el correo
+
+1. Sin configurar nada: todo funciona, pero cada invitación queda `failed: not-configured` (se ve en la ficha).
+2. **Prueba local** con Mailpit, un servidor de correo de desarrollo que ya viene en `infra/docker-compose.yml` (`npm run db:up` lo
+   levanta junto con MongoDB). En el `.env` del backend: `MAIL_SMTP_HOST=127.0.0.1`, `MAIL_SMTP_PORT=1025`,
+   `MAIL_SMTP_REQUIRE_TLS=false` y `MAIL_FROM="Necto (local) <no-reply@necto.local>"`; reinicia el backend. Los mensajes se ven en
+   `http://127.0.0.1:8025`. Que Mailpit los acepte solo prueba que *nuestro* envío funciona, no que un correo llegue a un buzón real.
+3. **Envío real** (pendiente): hacen falta un proveedor SMTP con sus credenciales (`MAIL_SMTP_*`), un remitente `MAIL_FROM`
+   de un dominio verificado (SPF/DKIM) y un buzón de prueba donde confirmar la recepción. Hasta confirmar la recepción en
+   un buzón real, no debe afirmarse que el correo "llegó".
+
 ## Estructura
 
 ```
@@ -203,7 +282,11 @@ src/
 │   ├── config/                  Lee y valida el entorno (.env) al arrancar
 │   ├── database/                La única conexión a MongoDB
 │   ├── security/                Tokens, autenticación, autorización por rol y límite de peticiones
-│   ├── errors/                  Errores de dominio -> respuestas HTTP
+│   ├── errors/                  Errores de dominio -> respuestas HTTP (y errores de campo)
+│   ├── events/                  Bus de eventos en memoria entre módulos
+│   ├── mail/                    Transporte de correo (SMTP con nodemailer, o "no configurado")
+│   ├── time/                    Reloj inyectable (pruebas con tiempo fijo)
+│   ├── text/                    Normalización compartida (correos, textos opcionales)
 │   └── observability/           GET /health
 └── modules/                     Un módulo por capacidad de negocio
     ├── auth/
@@ -213,13 +296,15 @@ src/
     │   ├── application/         Casos de uso: registro, login y perfil
     │   ├── domain/              SuperAdmin, reglas de unicidad, errores y el puerto del repositorio
     │   └── infrastructure/      Esquema de Mongo y repositorio de `super_admins`
-    └── onboarding/
-        ├── public.ts            Puerta pública
-        ├── onboarding.module.ts
-        ├── api/                 Controlador y DTOs
-        ├── application/         Casos de uso: teléfono (paso 1), orígenes (paso 2) y lectura
-        ├── domain/              Perfil, orígenes permitidos, errores y el puerto del repositorio
-        └── infrastructure/      Esquema de Mongo y repositorio de `onboarding_profiles`
+    ├── onboarding/
+    │   ├── public.ts            Puerta pública
+    │   ├── onboarding.module.ts
+    │   ├── api/                 Controlador y DTOs
+    │   ├── application/         Casos de uso: teléfono (paso 1), orígenes (paso 2) y lectura
+    │   ├── domain/              Perfil, orígenes permitidos, errores y el puerto del repositorio
+    │   └── infrastructure/      Esquema de Mongo y repositorio de `onboarding_profiles`
+    ├── businesses/              Negocios, jefe vigente y módulos habilitados (colección `businesses`)
+    └── business-access/         Invitación y acceso del jefe por código OTP (`access_challenges`, `access_rate_limits`)
 ```
 
 Dentro de un módulo, las capas dependen en una sola dirección: `api` y `infrastructure` -> `application` y `domain`;
@@ -232,13 +317,15 @@ habla con un repositorio abstracto (`domain/*.repository.ts`) que implementa `in
 |--------|-----------------|---------------------------|-------|
 | `auth` | Registro y login del superadmin; emite la sesión | Colección `super_admins` | `/auth/super/*` |
 | `onboarding` | Teléfono (único entre usuarios) y dónde conoció Necto el usuario | Colección `onboarding_profiles` | `/onboarding/profile/*` |
+| `businesses` | Negocios, jefe vigente, catálogo y habilitación de módulos | Colección `businesses` | `/businesses/*` |
+| `business-access` | Invitación por correo y acceso del jefe con código OTP | `access_challenges`, `access_rate_limits` | `/business-access/*`, `/businesses/:id/invitation*` |
 
 - **Puertas públicas.** `modules/<módulo>/public.ts` es lo único que otro código puede importar de un módulo. Hoy exporta
-  solo el módulo de Nest (para que `app.module.ts` lo registre): ningún módulo necesita nada de otro, porque la identidad
-  del usuario llega desde `platform/security`. Cuando un módulo necesite algo de otro, se agrega a su `public.ts` como
-  contrato (un caso de uso o una interfaz exportados), nunca su repositorio, su esquema ni su controlador.
+  el módulo de Nest (para que `app.module.ts` lo registre) y, si otro módulo lo necesita, contratos: `businesses` exporta
+  `BusinessDirectory`, `BusinessModuleAccess` y el evento `BossAssigned`. Nunca se exporta un repositorio, un esquema ni un controlador.
 - **Dependencias permitidas.** Un módulo puede depender de `platform/` y, a través de `public.ts`, de otros módulos. Hoy
-  `auth` y `onboarding` solo dependen de `platform/`. `platform/` no depende de ningún módulo.
+  `auth` y `onboarding` solo dependen de `platform/`, y `business-access` depende de `businesses` (nunca al revés: `businesses`
+  publica `BossAssigned` en el bus de eventos y `business-access` lo escucha). `platform/` no depende de ningún módulo.
 - **Datos.** Hay un único propietario por colección. Los dos módulos comparten la conexión y la base (`super_admin_auth`),
   pero no leen ni escriben las colecciones del otro. El perfil de onboarding apunta al usuario por su id (el de la sesión),
   sin consultar `super_admins`.
@@ -265,14 +352,18 @@ Son tres cosas distintas y viven en lugares distintos:
 
 - **Casos de uso** de `auth` y `onboarding` con repositorios en memoria (registro, duplicados, login, teléfono único entre
   usuarios, orden de los pasos, fecha de completado).
-- **Seguridad:** emisión y verificación de tokens, `AuthenticationGuard` y `SuperAdminGuard`.
+- **Seguridad:** emisión y verificación de tokens (incluido el de jefe), `AuthenticationGuard` y `SuperAdminGuard`.
+- **`businesses`:** creación, idempotencia, validación del catálogo, edición, reemplazo del jefe, pausa y CSV.
+- **`business-access`:** códigos (un solo uso, vencimiento, intentos, límites, carrera de dos verificaciones), invitación y
+  reenvío, estados de entrega del correo (sin afirmar entrega), sesión del jefe y `BusinessBossGuard`.
 - **Arquitectura** (`src/architecture.spec.ts`): lee los imports reales y comprueba que `platform/` no depende de los
   módulos, que los módulos solo se alcanzan por `public.ts`, que las capas respetan su sentido, que Mongoose solo está en
-  `infrastructure` y que `@nestjs/jwt` solo está en `platform/security`, y que no hay ciclos entre archivos ni entre módulos.
+  `infrastructure`, que `@nestjs/jwt` solo está en `platform/security` y `nodemailer` solo en `platform/mail`, y que no hay ciclos entre archivos ni entre módulos.
   Incluye pruebas con violaciones inventadas para asegurar que las reglas de verdad detectan lo que dicen detectar.
 
-La persistencia real (índices únicos, carrera de dos guardados del mismo teléfono) se verifica contra MongoDB levantando el
-backend: no hay pruebas automáticas de integración con base de datos.
+La persistencia real (índices únicos, idempotencia, carreras) se verifica contra MongoDB levantando el backend: no hay
+pruebas automáticas de integración con base de datos. Para el correo, la verificación local usa un servidor SMTP de pruebas
+(ver "Configurar y probar el correo"); no sustituye una prueba de recepción real.
 
 ## Agregar un módulo
 

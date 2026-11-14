@@ -13,7 +13,8 @@ import { describe, it } from 'node:test';
  *     The domain knows nothing about the others; application and api never touch infrastructure.
  *  4. Persistence (mongoose) lives in infrastructure and in the module files that declare collections;
  *     tokens (@nestjs/jwt) live only in platform/security.
- *  5. No import cycles, between files or between modules.
+ *  5. Email (nodemailer) lives only in platform/mail.
+ *  6. No import cycles, between files or between modules.
  */
 
 const SRC = resolve(__dirname);
@@ -92,6 +93,9 @@ export function findViolations(edges: Edge[]): string[] {
       if (isMongoose && !mayUseMongoose) say(edge, 'mongoose only in infrastructure, module files and platform/database');
       if (edge.specifier === '@nestjs/jwt' && !(source.kind === 'platform' && source.area === 'security')) {
         say(edge, '@nestjs/jwt only in platform/security');
+      }
+      if (edge.specifier === 'nodemailer' && !(source.kind === 'platform' && source.area === 'mail')) {
+        say(edge, 'nodemailer only in platform/mail');
       }
       continue;
     }
@@ -181,7 +185,7 @@ describe('backend architecture', () => {
   it('sees the real code (the checks below are not vacuous)', () => {
     assert.ok(files.length > 20, `only ${files.length} files found`);
     assert.ok(edges.some((edge) => edge.to !== null));
-    assert.deepEqual([...modules].sort(), ['auth', 'onboarding']);
+    assert.deepEqual([...modules].sort(), ['auth', 'business-access', 'businesses', 'onboarding']);
   });
 
   it('every module has an explicit public door and a module file', () => {
@@ -243,10 +247,17 @@ describe('the rules detect violations', () => {
       edge('modules/auth/api/x.ts', 'modules/auth/infrastructure/y.ts'),
       edge('modules/auth/application/x.ts', null, 'mongoose'),
       edge('modules/auth/api/x.ts', null, '@nestjs/jwt'),
+      edge('modules/auth/infrastructure/x.ts', null, 'nodemailer'),
     ]);
-    assert.equal(found.length, 7);
+    assert.equal(found.length, 8);
   });
 
+  it('allows the domain to use platform/errors and nodemailer inside platform/mail', () => {
+    assert.deepEqual(
+      findViolations([edge('modules/auth/domain/x.ts', 'platform/errors/domain-error.ts'), edge('platform/mail/smtp.ts', null, 'nodemailer')]),
+      [],
+    );
+  });
   it('finds a cycle', () => {
     const graph = new Map([
       ['a', new Set(['b'])],

@@ -1,0 +1,43 @@
+/*
+ * Estilos del módulo business-access (prefijo `ba-`, raíz `.ba`): la pantalla pública donde el jefe de un negocio
+ * entra con un código por correo. Misma paleta y tipografía del workspace; claro y oscuro con `.dark` en <html>.
+ */
+.ba {
+  --ba-bg:#f9fafb;--ba-surface:#fff;--ba-ink:#101828;--ba-muted:#667085;--ba-border:#e4e7ec;
+  --ba-accent:#ff3f1a;--ba-primary-ink:#212121;--ba-blue:#190088;--ba-error:#b42318;
+  display:flex;flex-direction:column;min-height:100svh;background:var(--ba-bg);color:var(--ba-ink);
+  font-family:"DM Sans",Arial,sans-serif;
+}
+.dark .ba {--ba-bg:#0c111d;--ba-surface:#101828;--ba-ink:#f2f4f7;--ba-muted:#98a2b3;--ba-border:#1d2939;--ba-blue:#b7adff;--ba-error:#fda29b;}
+.ba * {box-sizing:border-box;}
+.ba button,.ba input {font-family:inherit;}
+.dark .ba-topbar path[fill="#190088"] {fill:#f2f4f7;}
+.ba-topbar {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 32px;border-bottom:1px solid var(--ba-border);background:var(--ba-surface);}
+.ba-topbar svg {display:block;}
+.ba-icon-button {width:38px;height:38px;display:grid;place-items:center;color:var(--ba-muted);border:1px solid var(--ba-border);border-radius:50%;background:var(--ba-surface);}
+.ba-icon-button:hover {color:var(--ba-ink);}
+.ba-main {flex:1;display:grid;place-items:center;padding:40px 20px;}
+.ba-card {width:100%;max-width:440px;padding:34px;border:1px solid var(--ba-border);border-radius:18px;background:var(--ba-surface);box-shadow:0 1px 2px #1018280a;}
+.ba-eyebrow {display:block;font-size:9px;font-weight:500;letter-spacing:.14em;color:var(--ba-muted);margin-bottom:10px;}
+.ba-card h1 {font-size:26px;font-weight:600;letter-spacing:-.035em;line-height:1.2;margin:0 0 12px;overflow-wrap:anywhere;}
+.ba-card h1:focus {outline:none;}
+.ba-lead {font-size:13px;line-height:1.7;color:var(--ba-muted);margin:0 0 22px;}
+.ba-lead strong {color:var(--ba-ink);font-weight:600;}
+.ba-field {margin-bottom:6px;}
+.ba-field label {display:block;font-size:12px;font-weight:500;margin-bottom:8px;color:var(--ba-ink);}
+.ba-code-input {letter-spacing:.35em;font-size:20px;text-align:center;font-family:ui-monospace,SFMono-Regular,monospace;}
+.ba-error {font-size:12px;line-height:1.6;color:var(--ba-error);margin:8px 0 0;}
+.ba-primary {display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;margin-top:20px;padding:10px 16px;border-radius:8px;background:var(--ba-accent);color:var(--ba-primary-ink);font-size:13px;font-weight:600;cursor:pointer;}
+.ba-primary:hover {background:#ff6648;}
+.ba-primary:disabled {opacity:.55;cursor:not-allowed;}
+.ba-links {display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;}
+.ba-link {padding:8px 0;font-size:12px;font-weight:500;color:var(--ba-blue);cursor:pointer;background:none;border:0;}
+.ba-link:hover {text-decoration:underline;}
+.ba-link:disabled {color:var(--ba-muted);cursor:not-allowed;text-decoration:none;}
+.ba-data {display:grid;gap:16px;margin:0 0 20px;}
+.ba-data dt {font-size:10px;color:var(--ba-muted);margin-bottom:5px;}
+.ba-data dd {font-size:13px;line-height:1.6;margin:0;overflow-wrap:anywhere;}
+.ba-note {font-size:11px;line-height:1.7;color:var(--ba-muted);margin:0 0 14px;}
+.ba-footer {display:flex;justify-content:space-between;gap:20px;padding:20px 32px;font-size:10px;color:var(--ba-muted);}
+.ba :focus-visible {outline:3px solid var(--ba-blue);outline-offset:3px;}
+@media(max-width:480px) {.ba-card {padding:26px 20px;}.ba-topbar,.ba-footer {padding-left:18px;padding-right:18px;}}

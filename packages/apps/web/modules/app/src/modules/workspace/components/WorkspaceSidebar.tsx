@@ -3,7 +3,7 @@ import { NectoLogo } from "@/brand/NectoLogo";
 import { PROFILE_PATH, WORKSPACE_PATH } from "../paths";
 
 /** Workspace sidebar: brand, space name, navigation and a decorative footer. Hidden on narrow screens. */
-export function WorkspaceSidebar({ businessCount }: { businessCount: number }) {
+export function WorkspaceSidebar({ businessCount }: { businessCount: number | null }) {
   return (
     <aside className="ws-sidebar" aria-label="Navegación del workspace">
       <Link className="ws-brand" to={WORKSPACE_PATH} aria-label="Necto, inicio del workspace">
@@ -33,7 +33,7 @@ export function WorkspaceSidebar({ businessCount }: { businessCount: number }) {
             <path d="M10 20v-6h5v6" stroke="currentColor" strokeWidth="1.6" />
           </svg>
           <span>Negocios</span>
-          <b>{businessCount}</b>
+          {businessCount !== null && <b>{businessCount}</b>}
         </NavLink>
 
         <p className="ws-nav-account-label">CUENTA</p>

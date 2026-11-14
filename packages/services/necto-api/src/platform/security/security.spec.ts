@@ -32,6 +32,14 @@ describe('TokenService', () => {
     assert.equal(await tokens.verify(await jwt().signAsync({ role: 'superadmin' })), null);
   });
 
+  it('round-trips a business boss token with its business and assignment', async () => {
+    const boss: AuthenticatedUser = { userId: 'ana@x.co', role: 'business-boss', businessId: 'b1', assignmentId: 'a1' };
+    assert.deepEqual(await tokens.verify(await tokens.issue(boss)), boss);
+  });
+  it('rejects a boss token missing its business or assignment', async () => {
+    assert.equal(await tokens.verify(await jwt().signAsync({ sub: 'ana@x.co', role: 'business-boss', aid: 'a1' })), null);
+    assert.equal(await tokens.verify(await jwt().signAsync({ sub: 'ana@x.co', role: 'business-boss', bid: 'b1' })), null);
+  });
   it('rejects an expired token', async () => {
     const expired = await jwt().signAsync({ sub: 'user-1', role: 'superadmin' }, { expiresIn: -10 });
     assert.equal(await tokens.verify(expired), null);
@@ -79,6 +87,10 @@ describe('SuperAdminGuard (what can you do?)', () => {
     assert.throws(() => guard.canActivate(contextFor({ user })), ForbiddenException);
   });
 
+  it('answers 403 to a business boss', () => {
+    const user: AuthenticatedUser = { userId: 'ana@x.co', role: 'business-boss', businessId: 'b1', assignmentId: 'a1' };
+    assert.throws(() => guard.canActivate(contextFor({ user })), ForbiddenException);
+  });
   it('answers 401 if nobody authenticated the request first', () => {
     assert.throws(() => guard.canActivate(contextFor({})), UnauthorizedException);
   });

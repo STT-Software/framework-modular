@@ -2,9 +2,10 @@ import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/500.css";
 import "@fontsource/dm-sans/600.css";
 import "../styles/workspace.css";
-import type { ReactNode } from "react";
+import { observer } from "mobx-react-lite";
+import { useEffect, type ReactNode } from "react";
+import { businessesStore } from "@/modules/businesses";
 import { cn } from "@/utils";
-import { BUSINESS_COUNT } from "../businesses";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
 import { WorkspaceTopbar } from "./WorkspaceTopbar";
 
@@ -19,10 +20,13 @@ interface WorkspaceLayoutProps {
 }
 
 /** The frame of every workspace screen: sidebar, top bar and page footer around the screen's own content. */
-export function WorkspaceLayout({ section, className, announcement = "", children }: WorkspaceLayoutProps) {
+export const WorkspaceLayout = observer(({ section, className, announcement = "", children }: WorkspaceLayoutProps) => {
+  useEffect(() => {
+    void businessesStore.ensureCount();
+  }, []);
   return (
     <div className={cn("ws", className)}>
-      <WorkspaceSidebar businessCount={BUSINESS_COUNT} />
+      <WorkspaceSidebar businessCount={businessesStore.count} />
 
       <div className="ws-body">
         <WorkspaceTopbar section={section} />
@@ -41,4 +45,4 @@ export function WorkspaceLayout({ section, className, announcement = "", childre
       </p>
     </div>
   );
-}
+});

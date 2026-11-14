@@ -38,6 +38,18 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api\/onboarding/, ""),
       },
+      // Mismo backend; prefijo propio del módulo businesses (negocios y su invitación).
+      "/api/businesses": {
+        target: API_URL,
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api\/businesses/, ""),
+      },
+      // Mismo backend; prefijo propio del módulo business-access (acceso del jefe por código).
+      "/api/business-access": {
+        target: API_URL,
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api\/business-access/, ""),
+      },
     },
   },
 });

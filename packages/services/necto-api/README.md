@@ -264,9 +264,10 @@ Datos: `access_challenges` (índices por negocio/correo/estado y expiración a 2
 ### Configurar y probar el correo
 
 1. Sin configurar nada: todo funciona, pero cada invitación queda `failed: not-configured` (se ve en la ficha).
-2. **Prueba local** con un servidor SMTP de pruebas (no es entrega real): `docker run -d -p 127.0.0.1:1025:1025 -p 127.0.0.1:8025:8025 axllent/mailpit`
-   y arrancar con `MAIL_SMTP_HOST=127.0.0.1 MAIL_SMTP_PORT=1025 MAIL_SMTP_REQUIRE_TLS=false MAIL_FROM="Necto <no-reply@necto.test>"`.
-   Los mensajes se ven en `http://127.0.0.1:8025`. Que Mailpit los acepte solo prueba que *nuestro* envío funciona.
+2. **Prueba local** con Mailpit, un servidor de correo de desarrollo que ya viene en `infra/docker-compose.yml` (`npm run db:up` lo
+   levanta junto con MongoDB). En el `.env` del backend: `MAIL_SMTP_HOST=127.0.0.1`, `MAIL_SMTP_PORT=1025`,
+   `MAIL_SMTP_REQUIRE_TLS=false` y `MAIL_FROM="Necto (local) <no-reply@necto.local>"`; reinicia el backend. Los mensajes se ven en
+   `http://127.0.0.1:8025`. Que Mailpit los acepte solo prueba que *nuestro* envío funciona, no que un correo llegue a un buzón real.
 3. **Envío real** (pendiente): hacen falta un proveedor SMTP con sus credenciales (`MAIL_SMTP_*`), un remitente `MAIL_FROM`
    de un dominio verificado (SPF/DKIM) y un buzón de prueba donde confirmar la recepción. Hasta confirmar la recepción en
    un buzón real, no debe afirmarse que el correo "llegó".

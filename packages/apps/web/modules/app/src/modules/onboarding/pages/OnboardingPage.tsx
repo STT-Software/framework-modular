@@ -16,12 +16,9 @@ import { LogoScene } from "../scenes/LogoScene";
 import { ReadyScene } from "../scenes/ReadyScene";
 import { ShareScene } from "../scenes/ShareScene";
 import { READY_ANNOUNCEMENT, SEQUENCE, type SceneId } from "../sequence";
+import { AFTER_ONBOARDING_PATH, PHONE_STEP_PATH } from "../paths";
 import { onboardingProfileStore } from "../stores/onboardingProfile.store";
 
-/** Primer paso del perfil, a donde lleva el botón "Comenzar". */
-const PROFILE_START_PATH = "/welcome/phone";
-/** A donde entra quien ya completó su perfil: la pantalla principal de la app. */
-const APP_HOME_PATH = "/";
 
 const SCENES: Record<SceneId, () => React.JSX.Element> = {
   logo: LogoScene,
@@ -35,7 +32,7 @@ const SCENES: Record<SceneId, () => React.JSX.Element> = {
  *
  * - Perfil sin completar: cuatro escenas (logo, conecta, comparte, crece) y una pantalla final con
  *   el botón "Comenzar", que lleva a pedir el teléfono y dónde nos conoció.
- * - Perfil ya completo: solo la primera escena (el logo) y entra solo a la app.
+ * - Perfil ya completo: solo la primera escena (el logo) y entra solo al workspace.
  *
  * El perfil se consulta mientras suena la primera escena, que es igual para todos. Si la consulta
  * falla se trata como "sin completar": se ve la bienvenida entera y los pasos de perfil muestran
@@ -63,7 +60,7 @@ const OnboardingPage = observer(function OnboardingPage() {
   const { index, finished } = useWelcomeSequence({
     reducedMotion,
     profileCompleted,
-    onProfileCompleted: () => navigate(APP_HOME_PATH, { replace: true }),
+    onProfileCompleted: () => navigate(AFTER_ONBOARDING_PATH, { replace: true }),
   });
 
   // Con movimiento reducido no se muestra la pantalla final hasta saber que el perfil está sin completar.
@@ -85,7 +82,7 @@ const OnboardingPage = observer(function OnboardingPage() {
         {Scene ? (
           <Scene key={SEQUENCE[index].id} />
         ) : showReady ? (
-          <ReadyScene onContinue={() => navigate(PROFILE_START_PATH)} />
+          <ReadyScene onContinue={() => navigate(PHONE_STEP_PATH)} />
         ) : null}
       </div>
       <footer className="ob-footer">

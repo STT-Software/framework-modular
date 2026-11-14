@@ -5,8 +5,8 @@ import "../styles/profile-setup.css";
 import type { ReactNode } from "react";
 import { PageMeta } from "@/shell/meta";
 import { cn } from "@/utils";
-import { OnboardingLogo } from "./OnboardingLogo";
-import { ThemeIconButton } from "./ThemeIconButton";
+import { NectoLogo } from "@/brand/NectoLogo";
+import { ThemeIconButton } from "@/shell";
 
 const TOTAL_STEPS = 2;
 
@@ -29,7 +29,7 @@ export function ProfileSetupLayout({ step, title, headingId, width, children }: 
       <PageMeta title={title} />
       <header className="ob-setup-header">
         <div className="ob-setup-logo">
-          <OnboardingLogo width={161} height={23} />
+          <NectoLogo width={161} height={23} />
         </div>
         <ThemeIconButton className="ob-setup-theme" />
       </header>

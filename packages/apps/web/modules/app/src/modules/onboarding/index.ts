@@ -15,3 +15,6 @@ export const onboardingModule: AppModule = {
     { path: "/welcome/source", component: lazy(() => import("./pages/SourceStepPage")) },
   ],
 };
+
+// Para quien necesite saber si el perfil está completo (la app, antes de abrir el workspace).
+export { onboardingProfileStore } from "./stores/onboardingProfile.store";

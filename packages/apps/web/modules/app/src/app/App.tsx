@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from "react-router";
 import { AppShell } from "@/app/AppShell";
-import { WelcomePage } from "@/pages/WelcomePage";
 import { renderModuleRoutes } from "@/app/ModuleRoutes";
+import { RequireOnboardingCompleted } from "@/app/RequireOnboardingCompleted";
 import { RequireSuperAdmin } from "@/app/RequireSuperAdmin";
 import { modules } from "@/app/modules";
 
@@ -83,7 +83,6 @@ export default function App() {
           ════════════════════════════════════════════════════════════════════ */}
       <Route element={<RequireSuperAdmin />}>
         <Route element={<AppShell />}>
-          <Route path="/" element={<WelcomePage />} />
           {/* Agregar tus rutas aquí */}
         </Route>
       </Route>
@@ -97,9 +96,17 @@ export default function App() {
       {renderModuleRoutes(modules.filter((module) => !module.requiresSuperAdmin))}
       {/* Módulos sin shell que exigen sesión (por ejemplo, la bienvenida) */}
       <Route element={<RequireSuperAdmin />}>
-        {renderModuleRoutes(modules.filter((module) => module.requiresSuperAdmin))}
+        {/* "/" no tiene pantalla propia: la persona entra por su workspace */}
+        <Route path="/" element={<Navigate to="/workspace" replace />} />
+        {renderModuleRoutes(
+          modules.filter((module) => module.requiresSuperAdmin && !module.requiresOnboardingCompleted),
+        )}
+        {/* Módulos que además exigen el perfil de onboarding completo (por ejemplo, el workspace) */}
+        <Route element={<RequireOnboardingCompleted />}>
+          {renderModuleRoutes(modules.filter((module) => module.requiresOnboardingCompleted))}
+        </Route>
       </Route>
-      {/* Cualquier otra URL vuelve a "/", que sin sesión lleva al login */}
+      {/* Cualquier otra URL vuelve a "/", que sin sesión lleva al login y con sesión al workspace */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

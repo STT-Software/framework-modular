@@ -1,6 +1,6 @@
 import { useRef } from "react";
-import { OnboardingLogo } from "../components/OnboardingLogo";
-import { TAGLINE_PATH_COUNT } from "../components/logoPaths";
+import { NectoLogo } from "@/brand/NectoLogo";
+import { TAGLINE_PATH_COUNT } from "@/brand/logoPaths";
 import { useSceneMotion } from "../hooks/useSceneMotion";
 
 /** Escena 0: el logotipo se arma trazo a trazo. */
@@ -54,7 +54,7 @@ export function LogoScene() {
     >
       <div className="ob-logo-aura" aria-hidden="true" />
       <div className="ob-hero-logo">
-        <OnboardingLogo width={161} height={23} />
+        <NectoLogo width={161} height={23} />
       </div>
       <p className="ob-logo-caption">Todo empieza con una conexión.</p>
     </section>

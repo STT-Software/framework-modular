@@ -5,7 +5,7 @@
 > sesión nueva, sin el historial de la anterior. Léelo completo antes de tocar nada.
 >
 > **Es una foto, no la verdad absoluta.** Se actualizó el **2026-11-13**, con `integration`
-> en `fb5a075` más la rama `feature/welcome-onboarding` (onboarding y backend reorganizado como monolito modular, `necto-api`). Si algo de aquí contradice el código, manda el código: verifica con
+> en `fb5a075` más la rama `feature/workspace` (workspace de negocios, la pantalla a la que se llega al terminar el onboarding). Si algo de aquí contradice el código, manda el código: verifica con
 > `git log`, `git status` y leyendo los archivos. Y **actualízalo** cuando cambie el
 > estado del proyecto (ver la última sección).
 
@@ -86,7 +86,7 @@ Origen: antes el trabajo estaba repartido en dos repos independientes (ver
 | `necto_reservas_y_referidos` | Un compañero | **Reservas** y **Referidos** |
 
 La idea es traer todo a `framework-modular` con la arquitectura nueva (modular: un backend con módulos
-independientes). **Hoy solo está construido el acceso del SuperAdmin y su bienvenida con perfil (onboarding: teléfono y dónde nos conoció).**
+independientes). **Hoy está construido el acceso del SuperAdmin, su bienvenida con perfil (onboarding: teléfono y dónde nos conoció) y su workspace de negocios (vacío: aún no hay módulo de negocios).**
 
 **Actores del producto (según lo hablado):**
 - **SuperAdmin**: administra toda la plataforma. Inicia sesión con usuario o correo + contraseña.
@@ -105,8 +105,9 @@ independientes). **Hoy solo está construido el acceso del SuperAdmin y su bienv
 | Pantallas `/super/login` y `/super/register` | `packages/apps/web/modules/app/src/modules/super-admin-auth` | Funcionan, conectadas al servicio |
 | Cerrar sesión | `src/app/SignOutButton.tsx` | Funciona (borra la sesión del navegador) |
 | Módulo `onboarding` del backend | `packages/services/necto-api/src/modules/onboarding` | Funciona, probado con MongoDB real: guarda teléfono (único entre usuarios) y dónde nos conoció, por id de usuario, en la colección `onboarding_profiles` |
-| Onboarding (bienvenida + perfil) | `src/modules/onboarding` (README propio) | Funciona: `/welcome` (animación, sin Omitir ni Pausar) → *Comenzar* → `/welcome/phone` → `/welcome/source` → `/`. Con el perfil ya completo, solo se ve la primera escena y entra a `/` |
-| Puerta de acceso | `src/app/RequireSuperAdmin.tsx` | Sin sesión, `/` y URLs desconocidas llevan a `/super/login`. Los módulos con `requiresSuperAdmin: true` (el onboarding) quedan detrás de ella |
+| Onboarding (bienvenida + perfil) | `src/modules/onboarding` (README propio) | Funciona: `/welcome` (animación, sin Omitir ni Pausar) → *Comenzar* → `/welcome/phone` → `/welcome/source` → `/workspace`. Con el perfil ya completo, solo se ve la primera escena y entra a `/workspace`; no vuelve a ver los pasos |
+| Workspace de negocios | `src/modules/workspace` (solo frontend, README propio) | Funciona: `/workspace` con sidebar, barra superior y el directorio de negocios **vacío** (0 negocios, filtros apagados) con la tienda animada **en movimiento continuo**; `/workspace/profile` ("Mi perfil") muestra solo el nombre del usuario. Solo se entra con sesión **y** perfil completo |
+| Puertas de acceso | `src/app/RequireSuperAdmin.tsx` y `RequireOnboardingCompleted.tsx` | Sin sesión, `/` y URLs desconocidas llevan a `/super/login`; con sesión, a `/workspace`. Los módulos con `requiresSuperAdmin: true` quedan detrás de la primera; los que además llevan `requiresOnboardingCompleted: true` (el workspace) detrás de la segunda: sin perfil completo, `/welcome` |
 | Registro de módulos + aislamiento de fallos | `src/app/modules.ts`, `ModuleRoutes.tsx`, `ModuleBoundary.tsx` | Funciona |
 | CI de promoción de ramas | `.github/workflows/` | Existe; `production` aún no se ha promovido nunca |
 
@@ -117,6 +118,7 @@ El registro pide: usuario, contraseña + confirmación, correo, tipo y número d
 
 - Login del **admin de un negocio**.
 - Los módulos **Turnos, Agendamiento, Reservas y Referidos** no están portados a este repo.
+- **Negocios**: no hay módulo, ni servicio, ni modelo de datos. El workspace muestra siempre 0 negocios y *Crear negocio* solo da la respuesta visual de la referencia (resplandor y aviso para lectores de pantalla); no crea nada ni lleva a ninguna pantalla. Qué es un negocio y cómo se crea no está definido: pregunta antes de construirlo.
 - La **vista de términos y condiciones** (el enlace del registro no navega: `TERMS_PATH` está vacío
   en `components/TermsCheckbox.tsx`).
 - **Validación de la sesión contra el servidor**: la puerta de acceso solo mira que haya un token
@@ -168,10 +170,12 @@ framework-modular/
             ├── app/               App, shell, sidebar, registro de módulos, puerta de acceso, ModuleBoundary
             ├── modules/super-admin-auth/   Primer módulo (README propio)
             ├── modules/onboarding/         Bienvenida + pasos de perfil (teléfono, dónde nos conoció) (README propio)
+            ├── modules/workspace/          Workspace de negocios: sidebar, barra superior y directorio vacío (README propio)
+            ├── brand/             NectoLogo (logotipo vectorial completo o solo la marca): lo usan onboarding y workspace
             ├── elements/          Componentes de Elements instalados (no se modifican)
             ├── css/theme.css      Tema y tokens (incluye los colores `necto-*`)
             ├── shell/ layouts/ icons/ hooks/ utils/ stores/   Base común del scaffolding
-            └── pages/WelcomePage.tsx   Página de bienvenida del scaffolding (destino tras pulsar *Comenzar* en la bienvenida)
+            └── pages/WelcomePage.tsx   Página de ejemplo del scaffolding; ya no se usa (`/` redirige a `/workspace`)
 ```
 
 **Elements instalados hoy** (`src/elements/`): `Button`, `Input`, `Label`, `Alert`, `Select`,
@@ -278,6 +282,10 @@ npm run dev                    # app web en http://localhost:6020
 - Si `infra/.env` y los datos de Mongo no coinciden (por ejemplo, perdiste el `.env`), la base no
   acepta las contraseñas: borra el volumen con `docker compose -f infra/docker-compose.yml down -v` y
   vuelve a levantar. **Esto borra los datos.**
+- **El puerto 6020 puede estar ocupado por otro proyecto.** `Repo-prueba` usa el mismo puerto: si su Vite está corriendo, el
+  de este repo no arranca ahí (o, sin `--strictPort`, salta a otro puerto). Antes de probar, mira qué proyecto responde
+  (`<title>`: este es "Framework Modular"; el otro, "WebForge Elements") y, si hace falta, levanta este con
+  `npm run dev -- --port 6021 --strictPort` dentro de `packages/apps/web/modules/app`. **No cierres el proceso del otro proyecto.**
 - Un proceso en segundo plano puede **salir solo sin error en el log**: antes de probar, comprueba `/health` del backend
   y que Vite responda.
 
@@ -288,8 +296,8 @@ curl http://localhost:6020/api/super-admin-auth/health         # a través del p
 curl http://localhost:6020/api/onboarding/health               # la otra ruta del proxy (mismo backend; reinicia Vite si cambias vite.config.ts)
 ```
 Pantallas: `http://localhost:6020/super/login` y `/super/register`; tras iniciar sesión, `/welcome`,
-`/welcome/phone` y `/welcome/source`. Al abrir `/` sin sesión te manda
-al login. Sesión y datos: ver trampas en la sección 12.
+`/welcome/phone`, `/welcome/source` y por último `/workspace`. Al abrir `/` sin sesión te manda
+al login y con sesión al workspace. Sesión y datos: ver trampas en la sección 12.
 
 **Comprobaciones antes de entregar**
 ```bash
@@ -467,8 +475,17 @@ o vuelve a clonarla; no inventes su contenido.
 - **Onboarding = módulo del mismo backend** (`modules/onboarding` en `necto-api`, mismo proceso, puerto 8080 y base): teléfono
   único entre usuarios (E.164, índice único) y orígenes, un documento por `userId`. Se guarda el teléfono al pulsar *Continuar*
   (para avisar el duplicado ahí) y los orígenes al *Finalizar*. Quien ya completó el perfil no lo repite (los pasos lo llevan
-  a `/`); la bienvenida animada (sin Omitir ni Pausar) se ve entera (~11 s) solo si el perfil está sin completar; si ya está
-  completo, se ve únicamente la primera escena (el logo, 2,6 s) y entra sola a `/`.
+  a `/workspace`; **"Mi perfil" no los reabre**, solo muestra el nombre); la bienvenida animada (sin Omitir ni Pausar) se ve entera
+  (~11 s) solo si el perfil está sin completar; si ya está completo, se ve únicamente la primera escena (el logo, 2,6 s) y
+  entra sola a `/workspace`.
+- **Workspace = destino del onboarding** (`/workspace`, módulo de frontend `workspace`, sin backend propio por ahora). Se entra con
+  sesión de superadmin **y** perfil completo (`RequireOnboardingCompleted`, que consulta al backend una vez al entrar; si la consulta
+  falla, se trata como incompleto y lleva a `/welcome`). `/` redirige a `/workspace`. Fiel a la referencia `necto-workspace`
+  (animación de la tienda con el movimiento, logotipo y colores; la casa, el toldo, las fichas, la chispa y la órbita se mueven
+  sin parar, y solo se apagan con `prefers-reduced-motion`); respeta el tema de la app (claro por defecto) en vez del oscuro de
+  la referencia. Se añadió un botón de **cerrar sesión** que la referencia no trae, porque el workspace no usa el `AppShell`.
+- El logotipo (`brand/NectoLogo`) y el botón de tema redondo (`ThemeIconButton` en `shell`) pasaron a la base común al aparecer el
+  tercer uso. `super-admin-auth` conserva su propio `NectoLogo` (colores por clases), pendiente de unificar.
 - La sesión vive en `platform/security` (emitir/verificar el token, autenticar, autorizar por rol) para que ningún módulo dependa de otro ni toque el secreto JWT.
 - El nombre de la aplicación (`necto-api`) es independiente del de la base de datos (`super_admin_auth`, histórico): renombrar el código no obligó a migrar datos.
 - Ramas end to end; flujo `integration → main → test → production`; revisión cruzada de PRs con
@@ -487,6 +504,9 @@ o vuelve a clonarla; no inventes su contenido.
 - Firma **asimétrica** del JWT: solo si algún módulo se separa algún día en su propio servicio.
 - **Nombre físico de la base** (`super_admin_auth`): refleja el primer módulo, no la aplicación. Cambiarlo es opcional y sí implica migrar datos (infra, `MONGODB_URI`).
 - **Contratos públicos entre módulos**: hoy ningún módulo necesita algo de otro; las `public.ts` solo exportan el módulo.
+- **Módulo de negocios** (crear, listar, filtrar y exportar negocios): el workspace ya tiene el lugar y los controles apagados, pero falta definir qué es un negocio y su flujo.
+- **Tema por defecto del workspace**: la referencia abre en oscuro; hoy sigue el tema único de la app (claro). Misma pregunta abierta que la del login.
+- Unificar `NectoLogo` de `super-admin-auth` con `brand/NectoLogo`.
 - Dos módulos de frontend (`onboarding` → `super-admin-auth`) se importan por la puerta pública; se podría mover el store de sesión a la base común para que sean independientes.
 - Bundle de WebIAI para los servicios, cuando el registro vuelva.
 - `feature/superLogin` se nombró con mayúscula; las ramas nuevas deben ir en minúsculas.

@@ -40,7 +40,7 @@ const OnboardingPage = observer(function OnboardingPage() {
         ? false
         : null;
 
-  const { index, finished, holding } = useWelcomeSequence({
+  const { index, finished, holding, canSkip, skip } = useWelcomeSequence({
     reducedMotion,
     profileCompleted,
     onProfileCompleted: () => navigate(AFTER_ONBOARDING_PATH, { replace: true }),
@@ -63,6 +63,11 @@ const OnboardingPage = observer(function OnboardingPage() {
       </div>
       <footer className="ob-footer">
         <StoryProgress index={finished ? SEQUENCE.length : index} />
+        {canSkip ? (
+          <button type="button" className="ob-skip" onClick={skip}>
+            Saltar intro <span aria-hidden="true">→</span>
+          </button>
+        ) : null}
       </footer>
       <p className="ob-sr-only" role="status" aria-live="polite">
         {announcement}

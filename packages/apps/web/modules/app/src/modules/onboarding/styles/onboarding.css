@@ -1,6 +1,6 @@
 /*
  * Estilos del módulo onboarding (prefijo `ob-`).
- * Lanzamiento continuo 2D plano NECTO IA — cero círculos/grillas de relleno, DM Sans 300/400/700.
+ * Lanzamiento continuo 2D plano NECTO IA — geometría de marca (aros, cápsulas, disco y satélite), DM Sans 300/400/700.
  */
 .ob {
   --ob-bg: #f5efe3;
@@ -14,6 +14,7 @@
   --ob-ghost: rgba(25, 0, 136, 0.05);
   --ob-button: #190088;
   --ob-finale: #100548;
+  --ob-geo-line: rgba(25, 0, 136, 0.07);
   position: relative;
   isolation: isolate;
   min-height: 100svh;
@@ -36,6 +37,7 @@
   --ob-ghost: rgba(255, 255, 255, 0.06);
   --ob-button: #6250e8;
   --ob-finale: #07021f;
+  --ob-geo-line: rgba(217, 208, 255, 0.08);
 }
 
 .ob[hidden],
@@ -78,29 +80,6 @@
   fill: #ffffff;
 }
 
-.ob-edition {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: var(--ob-ink);
-  transition: color 280ms ease 200ms;
-}
-
-.ob-edition > span:first-child {
-  width: 7px;
-  height: 7px;
-  background: var(--ob-accent);
-  border-radius: 50%;
-  transition: background-color 280ms ease 200ms;
-}
-
-.ob-edition-short {
-  display: none;
-}
-
 .ob-actions {
   display: flex;
   align-items: center;
@@ -137,13 +116,8 @@
   fill: #ffffff;
 }
 
-.ob[data-scene="share"] .ob-edition,
 .ob[data-scene="share"] .ob-footer {
   color: #100548;
-}
-
-.ob[data-scene="share"] .ob-edition > span:first-child {
-  background: #100548;
 }
 
 .ob[data-scene="share"] .ob-icon-button {
@@ -168,13 +142,8 @@
   fill: #ff3f1a;
 }
 
-.ob[data-scene="grow"] .ob-edition,
 .ob[data-scene="grow"] .ob-footer {
   color: #dfd9ff;
-}
-
-.ob[data-scene="grow"] .ob-edition > span:first-child {
-  background: #ff3f1a;
 }
 
 .ob[data-scene="grow"] .ob-icon-button {
@@ -233,6 +202,385 @@
 
 .ob-wipe-navy {
   background: var(--ob-finale);
+}
+
+/*
+ * Geometría de marca a pantalla completa (ver `BrandGeometry.tsx`): primitivas planas de trazo grueso cortadas por
+ * los bordes. Todas pintan con `currentColor`; la línea de tiempo cambia el fondo animando `color`.
+ */
+.ob-geo {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--ob-geo-line);
+  --ob-geo-stroke: 3.2vmin;
+}
+
+.ob-geo > * {
+  position: absolute;
+  display: block;
+}
+
+.ob-geo-ring-a,
+.ob-geo-ring-b,
+.ob-geo-capsule,
+.ob-geo-square,
+.ob-geo-arc {
+  border: var(--ob-geo-stroke) solid currentColor;
+  border-radius: 50%;
+}
+
+.ob-geo-ring-a {
+  width: 74vmin;
+  height: 74vmin;
+  left: -26vmin;
+  top: -34vmin;
+}
+
+.ob-geo-ring-b {
+  width: 40vmin;
+  height: 40vmin;
+  right: -14vmin;
+  bottom: -20vmin;
+}
+
+.ob-geo-capsule {
+  width: 42vmin;
+  height: 17vmin;
+  left: 26vmin;
+  bottom: -6vmin;
+  border-radius: 9vmin;
+  rotate: -25deg;
+}
+
+/* Un módulo: entra sobre el naranja, en el lugar de la cápsula. */
+.ob-geo-square {
+  width: 19vmin;
+  height: 19vmin;
+  left: 32vmin;
+  bottom: 3vmin;
+  border-radius: 28%;
+  color: rgba(255, 255, 255, 0.22);
+  rotate: -25deg;
+  opacity: 0;
+}
+
+/* Cuarto de círculo macizo anclado a la esquina superior derecha. */
+.ob-geo-quarter {
+  width: 34vmin;
+  height: 34vmin;
+  right: 0;
+  top: 0;
+  border-radius: 0 0 0 100%;
+  background: currentColor;
+  color: rgba(255, 255, 255, 0.2);
+  transform-origin: 100% 0;
+  scale: 0;
+}
+
+.ob-geo-arc {
+  width: 46vmin;
+  height: 46vmin;
+  right: 4vmin;
+  top: 6vmin;
+  border-color: transparent;
+  border-top-color: currentColor;
+  border-right-color: currentColor;
+  color: rgba(151, 214, 223, 0.7);
+  rotate: -25deg;
+  opacity: 0;
+}
+
+/* Onda de voz (acto de los mensajes). */
+.ob-geo-wave {
+  width: 22vmin;
+  left: 47%;
+  top: 11vmin;
+  overflow: visible;
+  color: rgba(25, 0, 136, 0.12);
+  opacity: 0;
+}
+
+.dark .ob-geo-wave {
+  color: rgba(217, 208, 255, 0.14);
+}
+
+.ob-geo-wave path {
+  stroke: currentColor;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+}
+
+/* Los tres puntos de "escribiendo". */
+.ob-geo-dots {
+  display: flex !important;
+  gap: 1.6vmin;
+  right: 22vmin;
+  bottom: 9vmin;
+  color: rgba(25, 0, 136, 0.14);
+  opacity: 0;
+}
+
+.dark .ob-geo-dots {
+  color: rgba(217, 208, 255, 0.16);
+}
+
+.ob-geo-dots b,
+.ob-geo-plus b,
+.ob-geo-slashes b {
+  display: block;
+  background: currentColor;
+  border-radius: 999px;
+}
+
+.ob-geo-dots b {
+  width: 2.6vmin;
+  height: 2.6vmin;
+}
+
+/* Signo + de trazo grueso (la IA suma contexto). */
+.ob-geo-plus {
+  width: 8vmin;
+  height: 8vmin;
+  left: 49%;
+  bottom: 14vmin;
+  color: rgba(25, 0, 136, 0.12);
+  opacity: 0;
+}
+
+.dark .ob-geo-plus {
+  color: rgba(217, 208, 255, 0.14);
+}
+
+.ob-geo-plus b {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 2.4vmin;
+  height: 100%;
+}
+
+.ob-geo-plus b + b {
+  width: 100%;
+  height: 2.4vmin;
+}
+
+/* Barras con el ángulo de la diagonal de la N (cierre). */
+.ob-geo-slashes {
+  display: flex !important;
+  align-items: flex-end;
+  gap: 2.2vmin;
+  left: 7vmin;
+  bottom: 9vmin;
+  color: rgba(255, 255, 255, 0.12);
+  transform: skewX(20deg);
+  opacity: 0;
+}
+
+.ob-geo-slashes b {
+  width: 2.4vmin;
+  height: 13vmin;
+  border-radius: 1.2vmin;
+  transform-origin: 50% 100%;
+}
+
+.ob-geo-slashes b:nth-child(2) {
+  height: 9vmin;
+}
+
+.ob-geo-slashes b:nth-child(3) {
+  height: 5vmin;
+}
+
+.ob-geo-disc {
+  width: 7vmin;
+  height: 7vmin;
+  left: 60vmin;
+  bottom: 6vmin;
+  border-radius: 50%;
+  background: currentColor;
+  color: #97d6df;
+}
+
+.ob-geo-dot {
+  width: 1.8vmin;
+  height: 1.8vmin;
+  left: 50%;
+  top: 22vmin;
+  border-radius: 50%;
+  background: currentColor;
+  color: #ff3f1a;
+}
+
+/*
+ * Ready · juego de formas (`GeometryPlayground`): flotan bajo el texto y se pueden disparar con un clic. La escena y
+ * el marco dejan pasar el puntero; solo lo interactivo (formas, botón, cabecera) lo recoge.
+ */
+.ob[data-scene="ready"] .ob-stage,
+.ob[data-scene="ready"] .ob-footer,
+.ob[data-scene="ready"] .ob-header,
+.ob-scene-ready {
+  pointer-events: none;
+}
+
+.ob[data-scene="ready"] .ob-header > *,
+.ob-scene-ready .ob-continue {
+  pointer-events: auto;
+}
+
+.ob-play {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ob-play-piece {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
+}
+
+.ob-play-spark {
+  position: absolute;
+  width: 1.8vmin;
+  height: 1.8vmin;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.ob-shape {
+  --w: calc(var(--size) * 1vmin);
+  position: relative;
+  width: var(--w);
+  height: var(--w);
+}
+
+.ob-shape.tone-indigo {
+  color: rgba(25, 0, 136, 0.24);
+}
+
+.dark .ob-shape.tone-indigo {
+  color: rgba(217, 208, 255, 0.3);
+}
+
+.ob-shape.tone-orange {
+  color: #ff3f1a;
+}
+
+.ob-shape.tone-cyan {
+  color: #97d6df;
+}
+
+.ob-shape.is-ring {
+  border: calc(var(--w) * 0.16) solid currentColor;
+  border-radius: 50%;
+}
+
+.ob-shape.is-capsule {
+  height: calc(var(--w) * 0.42);
+  border: calc(var(--w) * 0.1) solid currentColor;
+  border-radius: 999px;
+}
+
+.ob-shape.is-square {
+  border: calc(var(--w) * 0.17) solid currentColor;
+  border-radius: 28%;
+}
+
+.ob-shape.is-quarter {
+  background: currentColor;
+  border-radius: 100% 0 0 0;
+}
+
+.ob-shape.is-arc {
+  border: calc(var(--w) * 0.15) solid transparent;
+  border-top-color: currentColor;
+  border-right-color: currentColor;
+  border-radius: 50%;
+}
+
+.ob-shape.is-wave {
+  height: calc(var(--w) * 0.3);
+}
+
+.ob-shape.is-wave svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ob-shape.is-wave path {
+  stroke: currentColor;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.ob-shape.is-dots {
+  height: calc(var(--w) * 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ob-shape.is-dots b {
+  width: calc(var(--w) * 0.28);
+  height: calc(var(--w) * 0.28);
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ob-shape.is-plus b {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: calc(var(--w) * 0.3);
+  height: 100%;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.ob-shape.is-plus b + b {
+  width: 100%;
+  height: calc(var(--w) * 0.3);
+}
+
+.ob-shape.is-slashes {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(var(--w) * 0.12);
+  transform: skewX(20deg);
+}
+
+.ob-shape.is-slashes b {
+  width: calc(var(--w) * 0.22);
+  height: 100%;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.ob-shape.is-slashes b:nth-child(2) {
+  height: 70%;
+}
+
+.ob-shape.is-slashes b:nth-child(3) {
+  height: 40%;
+}
+
+.ob-shape.is-disc {
+  border-radius: 50%;
+  background: currentColor;
 }
 
 /* ── Columna tipográfica ─────────────────────────────────────────────────── */
@@ -526,6 +874,37 @@
   opacity: 0;
 }
 
+/* Chispa en la punta del conector mientras se dibuja. */
+.ob-spark {
+  stroke: #ffffff;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 0.04 2;
+  stroke-dashoffset: 0.05;
+  opacity: 0;
+}
+
+.ob-hub-ripple {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 3;
+  opacity: 0;
+}
+
+.ob-port {
+  fill: #ffffff;
+  stroke: #100548;
+  stroke-width: 3;
+  scale: 0;
+}
+
+.ob-port-ripple {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2;
+  opacity: 0;
+}
+
 .ob-card-shadow {
   fill: #100548;
   opacity: 0.2;
@@ -592,7 +971,7 @@
   fill: #ff3f1a;
 }
 
-/* ── Pantalla final Ready (strict 2D flat sin círculos de relleno) ───────── */
+/* ── Pantalla final Ready (2D plano) ───────── */
 .ob-scene-ready {
   display: flex;
   flex-direction: column;
@@ -631,17 +1010,24 @@
   z-index: 2;
 }
 
-.ob-ready-badge {
-  width: 96px;
-  height: 96px;
-  background: var(--ob-paper);
-  border: 2px solid var(--ob-line);
-  border-radius: 24px;
-  display: grid;
-  place-items: center;
+.ob-ready-emblem {
+  display: block;
+  overflow: visible;
 }
 
-.dark .ob-ready-badge path[fill="#190088"] {
+/* Cada letra se encoge sobre sí misma mientras viaja hacia la N. */
+.ob-ready-word path {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ob-ready-tile {
+  fill: var(--ob-paper);
+  stroke: var(--ob-line);
+  stroke-width: 2;
+}
+
+.dark .ob-ready-emblem path[fill="#190088"] {
   fill: #ffffff;
 }
 
@@ -725,6 +1111,37 @@
   transition: color 280ms ease 200ms;
 }
 
+/* Saltar la intro: discreto, hereda el color del pie en cada acto. */
+.ob-skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0.72;
+  transition: opacity 160ms ease;
+}
+
+.ob-skip:hover {
+  opacity: 1;
+}
+
+.ob-skip span {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ob-skip:hover span {
+  transform: translateX(3px);
+}
+
 .ob-story-progress {
   display: flex;
   gap: 6px;
@@ -800,6 +1217,15 @@
     max-width: 440px;
     justify-self: center;
   }
+
+  /* En columna el texto ocupa la parte alta: el arco pasa abajo, detrás del gráfico. */
+  .ob-geo-arc {
+    width: 70vmin;
+    height: 70vmin;
+    top: auto;
+    right: -12vmin;
+    bottom: 18vh;
+  }
 }
 
 @media (max-width: 600px) {
@@ -811,19 +1237,6 @@
   .ob-header-brand svg {
     width: 124px;
     height: auto;
-  }
-
-  .ob-edition-long {
-    display: none;
-  }
-
-  .ob-edition-short {
-    display: inline;
-  }
-
-  .ob-edition {
-    font-size: 12px;
-    letter-spacing: 0.1em;
   }
 
   .ob-stage {
@@ -861,6 +1274,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Sin animación no hay contracción: Ready muestra directamente la N en su recuadro. */
+  .ob-ready-word,
+  .ob-ready-tagline {
+    display: none;
+  }
+
   .ob *,
   .ob *::before,
   .ob *::after {

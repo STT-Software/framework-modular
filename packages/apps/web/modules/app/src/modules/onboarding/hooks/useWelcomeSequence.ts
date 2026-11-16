@@ -52,5 +52,14 @@ export function useWelcomeSequence({ reducedMotion, profileCompleted, onProfileC
   /** La primera escena terminó y aún se espera el perfil: la animación debe quedarse quieta. */
   const holding = !finished && index === 0 && introElapsed;
 
-  return { index, finished, holding };
+  /**
+   * Salta a la pantalla final. Solo cuando ya se sabe que el perfil no está completo (si lo estuviera, la persona
+   * va al workspace y no debe ver la pantalla final).
+   */
+  const canSkip = !finished && profileCompleted === false;
+  const skip = () => {
+    if (canSkip) setIndex(SEQUENCE.length);
+  };
+
+  return { index, finished, holding, canSkip, skip };
 }

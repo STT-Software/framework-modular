@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { LOGO_PATHS, MARK_PATH_COUNT, TAGLINE_PATH_COUNT } from "@/brand/logoPaths";
 import { SEQUENCE } from "../sequence";
 import { releaseOnFinish } from "../hooks/useSceneMotion";
+import { BrandGeometry, animateGeometry } from "./BrandGeometry";
 
 /* ── Geometría del lienzo (viewBox 0 0 640 560) ─────────────────────────────── */
 
@@ -36,6 +37,14 @@ const MODULES = [
   { label: "Turnos", meta: "En fila: 8", x: 528, y: 280, tone: "paper", icon: "M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4V7Z M10 7v10" },
   { label: "Referidos", meta: "+21 nuevos", x: 528, y: 456, tone: "cyan", icon: "M7 17 17 7 M9 7h8v8" },
 ] as const;
+
+/** Orden de conexión: alterna izquierda y derecha, de arriba abajo. */
+const CONNECT_ORDER = [0, 3, 1, 4, 2, 5];
+
+/** Puerto de la tarjeta: el borde que mira al núcleo, donde termina el conector. */
+function portX(m: (typeof MODULES)[number]): number {
+  return m.x + (m.x < HUB.x ? CARD.w / 2 : -CARD.w / 2);
+}
 
 function connectorPath(m: (typeof MODULES)[number]): string {
   const left = m.x < HUB.x;
@@ -76,6 +85,7 @@ const EASE_OUT = "cubic-bezier(0.16, 1, 0.3, 1)";
 const EASE_IN_OUT = "cubic-bezier(0.83, 0, 0.17, 1)";
 const EASE_IN = "cubic-bezier(0.7, 0, 0.84, 0)";
 const SPRING = "cubic-bezier(0.34, 1.45, 0.64, 1)";
+const BOUNCE = "cubic-bezier(0.34, 1.9, 0.5, 1)";
 
 /** Inicio de cada acto en ms, derivado de `SEQUENCE` para que texto, barra y gráfico vayan juntos. */
 const ACT = SEQUENCE.reduce<number[]>((starts, item, i) => [...starts, i === 0 ? 0 : starts[i - 1] + SEQUENCE[i - 1].duration], []);
@@ -128,6 +138,8 @@ function buildTimeline(root: HTMLElement, tl: Timeline): void {
   const { at } = tl;
   const [, a1, a2, a3] = ACT;
   const end = ACT[3] + SEQUENCE[3].duration;
+
+  animateGeometry(root, at, ACT);
 
   /* Acto 0 · mensajes que llegan */
   at($(".ob-chat"), [{ translate: "0 0" }, { translate: "0 -18px" }], 0, a1 + 2200, { easing: "linear" });
@@ -183,21 +195,36 @@ function buildTimeline(root: HTMLElement, tl: Timeline): void {
   /* Acto 2 · el núcleo despliega los seis módulos */
   at($(".ob-wipe-orange"), [{ transform: WIPE_FROM }, { transform: WIPE_TO }], a2, 900, { easing: EASE_IN_OUT });
   at($(".ob-constellation"), [{ scale: "1" }, { scale: "1.04" }], a2, a3 - a2 + 400, { easing: "linear" });
-  $$(".ob-link").forEach((link, i) => {
-    at(link, [{ opacity: 0 }, { opacity: 1 }], a2 + 380 + i * 60, 120, { easing: "linear" });
-    at(link, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], a2 + 380 + i * 60, 640, { easing: EASE_OUT });
-  });
-  $$(".ob-card").forEach((card, i) => {
+  /*
+   * Conexión módulo a módulo, alternando izquierda y derecha: el núcleo toma impulso y emite ondas, la energía
+   * recorre el conector (chispa en la punta del trazo) y, al llegar, la tarjeta se acopla con rebote y su puerto se
+   * enciende con una onda. Cuando están los seis, los datos fluyen por los conectores.
+   */
+  at($(".ob-hub"), [{ scale: "1" }, { scale: "0.9", offset: 0.35 }, { scale: "1.08", offset: 0.7 }, { scale: "1" }], a2 + 180, 620, { easing: "ease-in-out" });
+  const hubRipples = $$(".ob-hub-ripple");
+  const links = $$(".ob-link");
+  const sparks = $$(".ob-spark");
+  const cards = $$(".ob-card");
+  CONNECT_ORDER.forEach((i, k) => {
     const m = MODULES[i];
-    const start = a2 + 450 + i * 70;
-    at(card, [{ opacity: 0 }, { opacity: 1 }], start, 200, { easing: "linear" });
-    at(card, [{ translate: `${HUB.x - m.x}px ${HUB.y - m.y}px`, scale: "0.3" }, { translate: "0 0", scale: "1" }], start, 820, { easing: SPRING });
+    const s = a2 + 520 + k * 160;
+    if (k % 2 === 0) at(hubRipples[k / 2], [{ opacity: 0.7, scale: "1" }, { opacity: 0, scale: "1.5" }], s, 760, { easing: EASE_OUT });
+    at(links[i], [{ opacity: 0 }, { opacity: 1 }], s, 80, { easing: "linear" });
+    at(links[i], [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], s, 480, { easing: EASE_OUT });
+    at(sparks[i], [{ opacity: 1, strokeDashoffset: 0.05 }, { opacity: 1, strokeDashoffset: -0.95, offset: 0.92 }, { opacity: 0, strokeDashoffset: -1 }], s, 480, { easing: EASE_OUT });
+    const card = cards[i];
+    const pull = 0.2;
+    at(card, [{ opacity: 0 }, { opacity: 1 }], s + 300, 160, { easing: "linear" });
+    at(card, [{ translate: `${(HUB.x - m.x) * pull}px ${(HUB.y - m.y) * pull}px`, scale: "0.55" }, { translate: "0 0", scale: "1" }], s + 300, 760, { easing: SPRING });
+    at(card.querySelector(".ob-port"), [{ scale: "0" }, { scale: "1" }], s + 430, 560, { easing: BOUNCE });
+    at(card.querySelector(".ob-port-ripple"), [{ opacity: 0.9, scale: "1" }, { opacity: 0, scale: "3.4" }], s + 430, 720, { easing: EASE_OUT });
   });
+  const flowing = a2 + 520 + CONNECT_ORDER.length * 160 + 500;
   $$(".ob-pulse").forEach((pulse, i) => {
-    at(pulse, [{ opacity: 0 }, { opacity: 1 }], a2 + 1200, 200, { easing: "linear" });
-    at(pulse, [{ strokeDashoffset: 1 }, { strokeDashoffset: -0.2 }], a2 + 1200 + i * 160, 1100, { iterations: Infinity, easing: "cubic-bezier(0.45, 0, 0.55, 1)" });
+    at(pulse, [{ opacity: 0 }, { opacity: 1 }], flowing, 200, { easing: "linear" });
+    at(pulse, [{ strokeDashoffset: 1 }, { strokeDashoffset: -0.2 }], flowing + i * 140, 1100, { iterations: Infinity, easing: "cubic-bezier(0.45, 0, 0.55, 1)" });
   });
-  at($(".ob-hub"), [{ scale: "1" }, { scale: "1.06" }, { scale: "1" }], a2 + 1250, 1100, { iterations: 2, easing: "ease-in-out" });
+  at($(".ob-hub"), [{ scale: "1" }, { scale: "1.05" }, { scale: "1" }], flowing, 1000, { iterations: 2, easing: "ease-in-out" });
 
   /* Acto 3 · todo vuelve a la N, que se convierte en el logotipo */
   at($(".ob-wipe-navy"), [{ transform: WIPE_FROM }, { transform: WIPE_TO }], a3, 900, { easing: EASE_IN_OUT });
@@ -278,6 +305,7 @@ export function LaunchSequence({ sceneIndex, holding }: LaunchSequenceProps) {
     <section ref={ref} className="ob-launch" data-beat={sceneIndex} aria-label="Presentación de Necto IA">
       <div className="ob-wipe ob-wipe-orange" aria-hidden="true" />
       <div className="ob-wipe ob-wipe-navy" aria-hidden="true" />
+      <BrandGeometry />
 
       <div className="ob-copy-stack">
         {COPY.map((beat, i) => (
@@ -396,6 +424,7 @@ export function LaunchSequence({ sceneIndex, holding }: LaunchSequenceProps) {
               <g key={m.label}>
                 <path pathLength={1} d={connectorPath(m)} className="ob-link" />
                 <path pathLength={1} d={connectorPath(m)} className="ob-pulse" />
+                <path pathLength={1} d={connectorPath(m)} className="ob-spark" />
               </g>
             ))}
             {MODULES.map((m) => (
@@ -412,6 +441,8 @@ export function LaunchSequence({ sceneIndex, holding }: LaunchSequenceProps) {
                 <text x={m.x - CARD.w / 2 + 70} y={m.y + 19} className="ob-card-meta">
                   {m.meta}
                 </text>
+                <circle cx={portX(m)} cy={m.y} r="7" className="ob-port-ripple" style={{ transformOrigin: `${portX(m)}px ${m.y}px` }} />
+                <circle cx={portX(m)} cy={m.y} r="7" className="ob-port" style={{ transformOrigin: `${portX(m)}px ${m.y}px` }} />
               </g>
             ))}
           </g>
@@ -419,6 +450,18 @@ export function LaunchSequence({ sceneIndex, holding }: LaunchSequenceProps) {
           {/* Núcleo N: aparece en el acto 1, despliega el 2 y se convierte en la marca del logotipo en el 3 */}
           <g className="ob-hub" style={{ transformOrigin: `${HUB.x}px ${HUB.y}px` }}>
             <rect className="ob-hub-glow" x={HUB.x - 84} y={HUB.y - 84} width="168" height="168" rx="44" style={{ transformOrigin: `${HUB.x}px ${HUB.y}px` }} />
+            {[0, 1, 2].map((i) => (
+              <rect
+                key={i}
+                className="ob-hub-ripple"
+                x={HUB.x - 66}
+                y={HUB.y - 66}
+                width="132"
+                height="132"
+                rx="34"
+                style={{ transformOrigin: `${HUB.x}px ${HUB.y}px` }}
+              />
+            ))}
             <rect className="ob-hub-tile" x={HUB.x - 66} y={HUB.y - 66} width="132" height="132" rx="34" style={{ transformOrigin: `${HUB.x}px ${HUB.y}px` }} />
             <g className="ob-hub-mark" style={{ transformOrigin: `${HUB.x}px ${HUB.y}px` }}>
               <g transform={`translate(${HUB.x} ${HUB.y}) scale(${LOCKUP_SCALE}) translate(${-MARK_CENTER.x} ${-MARK_CENTER.y})`}>

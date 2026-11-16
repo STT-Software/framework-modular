@@ -3,9 +3,10 @@ import { prefersReducedMotion } from "../hooks/useReducedMotion";
 
 /*
  * Pantalla final como un pequeño juego motion graphic: las formas de la geometría de marca flotan por la pantalla y
- * rebotan contra los bordes; al hacerles clic (o tocarlas) salen disparadas girando, con una ráfaga de chispas. Si
- * dos formas chocan, la que golpea (la más rápida) sigue y solo estalla la golpeada, que poco a poco vuelve a entrar
- * desde algún borde de la pantalla (recién entrada tiene un momento de gracia en el que solo rebota).
+ * rebotan contra los bordes y entre ellas; al hacerles clic (o tocarlas) salen disparadas girando, con una ráfaga de
+ * chispas. Solo la forma disparada elimina: si golpea a otra, la golpeada estalla y la disparada rebota y se desvía.
+ * La golpeada vuelve a entrar, escalonada, desde algún borde (recién entrada tiene un momento de gracia en el que
+ * solo rebota). Dos formas a la deriva que se tocan solo rebotan.
  *
  * Física propia y mínima en `requestAnimationFrame` (sin librerías): cada forma es un círculo de colisión con masa
  * proporcional a su área. Solo se escribe `transform` (lo compone la GPU). Con movimiento reducido quedan quietas.
@@ -92,6 +93,8 @@ interface Body {
   entering: boolean;
   /** Momento (ms) desde el que puede explotar al chocar; antes solo rebota. */
   armedAt: number;
+  /** Disparada con un clic y aún rápida: es la única que puede eliminar a otras. */
+  shot: boolean;
   pop?: Animation;
 }
 
@@ -137,6 +140,7 @@ export function GeometryPlayground() {
         alive: true,
         entering: false,
         armedAt: performance.now() + 500 + i * 90 + 750 + GRACE,
+        shot: false,
       };
     });
 
@@ -222,11 +226,13 @@ export function GeometryPlayground() {
       b.alive = true;
       b.entering = true;
       b.armedAt = performance.now() + GRACE;
+      b.shot = false;
       b.el.style.pointerEvents = "";
       place(b);
     };
     const explode = (b: Body) => {
       b.alive = false;
+      b.shot = false;
       b.el.style.pointerEvents = "none";
       burst(b.x, b.y, b.tone);
       b.pop = (b.el.firstElementChild as HTMLElement).animate(
@@ -263,6 +269,7 @@ export function GeometryPlayground() {
       b.vx = dx * kick;
       b.vy = dy * kick;
       b.spin = (Math.random() < 0.5 ? -1 : 1) * (540 + Math.random() * 540);
+      b.shot = true;
       (b.el.firstElementChild as HTMLElement).animate([{ scale: "1" }, { scale: "1.35" }, { scale: "1" }], {
         duration: 380,
         easing: "cubic-bezier(0.34, 1.45, 0.64, 1)",
@@ -280,6 +287,8 @@ export function GeometryPlayground() {
         if (!b.alive) continue;
         // Roce: tras un disparo la velocidad decae hasta la deriva; si queda muy lenta, recupera la deriva.
         const speed = Math.hypot(b.vx, b.vy);
+        // Al frenar deja de ser un proyectil: ya no elimina, solo rebota.
+        if (b.shot && speed < b.cruise * 3) b.shot = false;
         if (speed > b.cruise) {
           const f = Math.max(b.cruise / speed, Math.exp(-1.5 * dt));
           b.vx *= f;
@@ -328,8 +337,9 @@ export function GeometryPlayground() {
         }
       }
 
-      // Choques: la forma que golpea (la más rápida) sigue su camino y solo estalla la golpeada, si ya está armada;
-      // si la golpeada acaba de aparecer, rebotan (choque elástico, masa proporcional al área).
+      // Choques: siempre rebotan (choque elástico, masa proporcional al área), así que la forma que golpea se desvía.
+      // Solo una forma disparada con un clic elimina: la golpeada estalla si ya está armada (si acaba de aparecer,
+      // solo rebota). Dos formas a la deriva que se tocan solo rebotan.
       for (let i = 0; i < bodies.length; i++) {
         for (let j = i + 1; j < bodies.length; j++) {
           const a = bodies[i];
@@ -340,11 +350,6 @@ export function GeometryPlayground() {
           const min = (a.r + c.r) * 0.82;
           const dist = Math.hypot(dx, dy);
           if (dist >= min || dist === 0) continue;
-          const victim = Math.hypot(a.vx, a.vy) >= Math.hypot(c.vx, c.vy) ? c : a;
-          if (now >= victim.armedAt) {
-            explode(victim);
-            continue;
-          }
           const nx = dx / dist;
           const ny = dy / dist;
           const ma = a.r * a.r;
@@ -356,6 +361,26 @@ export function GeometryPlayground() {
           c.y += ny * overlap * (ma / (ma + mc));
           const rel = (c.vx - a.vx) * nx + (c.vy - a.vy) * ny;
           if (rel > 0) continue;
+
+          // Golpe: una forma disparada contra otra que no lo está y ya está armada. La golpeada estalla y la
+          // disparada rebota contra ella como contra una pared (se refleja sobre la normal del choque), así que
+          // siempre se desvía, aunque la golpeada sea pequeña.
+          const striker = a.shot && !c.shot ? a : c.shot && !a.shot ? c : null;
+          const victim = striker === a ? c : a;
+          if (striker && now >= victim.armedAt) {
+            const sx = striker === a ? nx : -nx;
+            const sy = striker === a ? ny : -ny;
+            const into = striker.vx * sx + striker.vy * sy;
+            if (into > 0) {
+              striker.vx -= 1.75 * into * sx;
+              striker.vy -= 1.75 * into * sy;
+            }
+            striker.spin = -striker.spin * 1.2;
+            explode(victim);
+            continue;
+          }
+
+          // Si no, choque elástico (masa proporcional al área): dos formas a la deriva, o dos disparadas, rebotan.
           const impulse = (-(1 + 0.9) * rel) / (1 / ma + 1 / mc);
           a.vx -= (impulse / ma) * nx;
           a.vy -= (impulse / ma) * ny;

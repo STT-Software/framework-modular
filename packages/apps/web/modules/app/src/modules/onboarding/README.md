@@ -32,7 +32,7 @@ un arco que barre como un radar y un + (la IA lee), un cuadrado redondeado que r
 círculo en la esquina (módulos, sobre naranja en blanco rebajado), y en el cierre el cuadrado se vuelve círculo, el aro
 pequeño toma el naranja y entran barras con el ángulo de la diagonal de la N. En Ready las formas se vuelven un juego
 (`GeometryPlayground`): flotan por la pantalla y rebotan en los bordes; al hacerles clic salen disparadas girando
-con una ráfaga de chispas, y cuando una golpea a otra, solo estalla la golpeada, que vuelve a entrar, escalonada, desde algún borde (física propia en `requestAnimationFrame`, solo
+con una ráfaga de chispas, y solo la forma disparada elimina: si golpea a otra, la golpeada estalla (y vuelve a entrar, escalonada, desde algún borde) y la disparada rebota y se desvía; a la deriva solo rebotan (física propia en `requestAnimationFrame`, solo
 `transform`; quietas con movimiento reducido). Cada pieza se mueve con su propio peso; todas pintan con `currentColor` y solo
 se animan transform, opacidad y color.
 

@@ -28,6 +28,8 @@ interface MenuItemProps {
   openMenuName?: string | null;
   /** Callback when this menu is toggled (for accordion behavior) */
   onMenuToggle?: (name: string | null) => void;
+  /** Optional numeric badge count shown at the right edge in expanded mode */
+  cuenta?: number | null;
 }
 
 /**
@@ -43,6 +45,7 @@ export const MenuItem: React.FC<MenuItemProps> = observer(({
   isActive = () => false,
   openMenuName,
   onMenuToggle,
+  cuenta,
 }) => {
   // Use controlled state if accordion props are provided, otherwise local state
   const isControlled = openMenuName !== undefined && onMenuToggle !== undefined;
@@ -124,6 +127,14 @@ export const MenuItem: React.FC<MenuItemProps> = observer(({
         <Link to={path} className={itemClasses} onClick={handleLinkClick}>
           <span className={iconClasses}>{icon}</span>
           {showExpanded && <span className="menu-item-text">{name}</span>}
+          {showExpanded && cuenta !== null && cuenta !== undefined && (
+            <span
+              className="ml-auto rounded-md border border-gray-200/80 bg-white px-1.5 py-0.5 text-theme-xs font-medium tabular-nums text-gray-600 dark:border-white/10 dark:bg-white/10 dark:text-gray-300"
+              aria-label={`${cuenta} elementos`}
+            >
+              {cuenta}
+            </span>
+          )}
         </Link>
       </li>
     );

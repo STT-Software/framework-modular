@@ -25,10 +25,10 @@ Flujo completo: `/super/login` → `/welcome` → *Comenzar* → `/welcome/phone
 
 ## Qué se ve
 
-- **Lateral** (solo en pantallas anchas): logotipo, nombre del espacio ("Mi workspace"), navegación (*Negocios* con su contador y
-  *Mi perfil*) y un remate decorativo.
-- **Barra superior:** ubicación ("Mi workspace / Negocios"), el rol (*Superadministrador*), cambio de tema, **cerrar sesión** y el
-  avatar con las iniciales del usuario (`admin.root` → `AR`).
+- **Lateral flotante colapsable (`BaseAppSidebar`):**
+  - Expandida: tarjeta flotante de `274 px` con logotipo, tarjeta de identidad ("Mi workspace"), secciones colapsables con `MenuSectionHeader` / `MenuItem` (*Negocios* con contador, *Crear negocio* y *Mi perfil*) y pie fijo con *Cerrar sesión*. En móviles actúa como cajón deslizante con `Backdrop`.
+  - Contraída (modo riel): píldora flotante centrada verticalmente (`54 px`) con isotipo compacto, íconos circulares clickeables (con resaltado activo, punto de aviso y tooltips instantáneos al pasar el cursor) y acceso directo a *Cerrar sesión*.
+- **Barra superior flotante (`BaseAppHeader`):** botón bento para alternar la barra lateral (`ToggleAppSidebar`, fijo en la esquina superior izquierda cuando el lateral está contraído), píldora de contexto ("Mi workspace"), ruta de navegación con `Breadcrumb` de Elements, indicador de rol (*Superadministrador*), selector de tema animado (`ThemeToggleButton`) y menú de cuenta (`ShellDropdown`) con iniciales y cierre de sesión.
 - **Directorio:** título, *Exportar CSV* (apagado hasta que haya negocios; descarga los de la vista filtrada), *Crear negocio*,
   buscador y filtros por industria y estado (apagados mientras no haya negocios), tarjetas con paginación y, si no hay ninguno,
   el estado vacío con la **tienda animada**. *Ver ficha completa* abre la ficha (Resumen, Módulos y Equipo).
@@ -78,7 +78,6 @@ workspace/
 - **Otros módulos**, solo por su puerta pública: `super-admin-auth` (`superAdminSessionStore`, para el nombre, el avatar y cerrar
   sesión) y `businesses` (store, tarjetas, ficha y asistente). `businesses` **no** importa al workspace: no hay ciclo. No depende del onboarding, y a la inversa tampoco: el onboarding solo conoce la ruta `/workspace`; la app es quien
   consulta su perfil antes de abrir el workspace.
-- **Elements:** `Button`, `Input` y `Select`, con el acabado de la referencia por `className`; no se tocó `src/elements/`. El
-  directorio, el lateral y la barra superior son composición propia (como la referencia).
-- **Base común:** `brand/NectoLogo` (logotipo), `ThemeIconButton` (de `@/shell`), `uiStore` (tema), `PageMeta` y `cn`.
+- **Elements:** `Button`, `Input`, `Select` y `Breadcrumb`, con el acabado del diseño por `className` o composición; no se tocó `src/elements/`.
+- **Base común (`@/shell` y `@/brand`):** `BaseAppShell`, `BaseAppSidebar`, `BaseAppHeader`, `ToggleAppSidebar`, `ThemeToggleButton`, `ShellDropdown`, `MenuSectionHeader`, `MenuItem`, `PanelToggleIcon`, `NectoLogo`, `uiStore`, `PageMeta` y `cn`.
 - **Fuente:** DM Sans 400/500/600 (`@fontsource/dm-sans`), cargada solo con este módulo.

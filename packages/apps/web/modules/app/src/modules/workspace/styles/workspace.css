@@ -4,62 +4,30 @@
  * `--ws-*` para claro y oscuro (clase `.dark` en <html>).
  */
 .ws {
-  --ws-bg:#f9fafb;--ws-surface:#fff;--ws-ink:#101828;--ws-muted:#667085;--ws-soft-text:#98a2b3;
+  --ws-bg:#ececec;--ws-surface:#fff;--ws-ink:#101828;--ws-muted:#667085;--ws-soft-text:#98a2b3;
   --ws-border:#e4e7ec;--ws-control:#f9fafb;--ws-active:#fff2ed;--ws-active-ink:#a72a12;
   --ws-accent:#ff3f1a;--ws-primary-ink:#212121;--ws-hero-paper:#fff8f3;--ws-blue:#190088;
-  display:grid;grid-template-columns:224px minmax(0,1fr);min-height:100svh;
-  background:var(--ws-bg);color:var(--ws-ink);font-family:"DM Sans",Arial,sans-serif;
+  font-family:"DM Sans",Arial,sans-serif;
 }
 .dark .ws {
-  --ws-bg:#0c111d;--ws-surface:#101828;--ws-ink:#f2f4f7;--ws-muted:#98a2b3;--ws-soft-text:#98a2b3;
-  --ws-border:#1d2939;--ws-control:#ffffff03;--ws-active:#ff805e12;--ws-active-ink:#ff987c;
+  --ws-bg:#0c111d;--ws-surface:#141e30;--ws-ink:#f2f4f7;--ws-muted:#98a2b3;--ws-soft-text:#98a2b3;
+  --ws-border:rgba(255,255,255,0.1);--ws-control:rgba(255,255,255,0.03);--ws-active:rgba(255,128,94,0.12);--ws-active-ink:#ff987c;
   --ws-hero-paper:#192334;--ws-blue:#b7adff;
 }
 .ws[hidden],.ws [hidden] {display:none!important;}
 .ws * {box-sizing:border-box;}
 .ws button,.ws input,.ws select {font-family:inherit;}
-.ws-sidebar {display:flex;flex-direction:column;padding:32px 18px 24px;background:var(--ws-surface);border-right:1px solid var(--ws-border);}
-.ws-brand {display:block;width:164px;margin:1px 10px 35px;}
-.ws-brand svg,.ws-mobile-brand svg {width:100%;height:auto;display:block;}
-.dark .ws-brand path[fill="#190088"],.dark .ws-mobile-brand path[fill="#190088"] {fill:#f2f4f7;}
-.ws-space-label {display:flex;align-items:center;gap:10px;padding:12px 8px 24px;border-bottom:1px solid var(--ws-border);}
-.ws-space-label>div {min-width:0;}
-.ws-space-label strong {display:block;font-size:13px;font-weight:600;}
-.ws-space-label>div>span {display:block;font-size:10px;color:var(--ws-muted);margin-top:3px;}
-.ws-space-icon {width:34px;height:34px;flex-shrink:0;display:grid;place-items:center;background:var(--ws-hero-paper);border:1px solid var(--ws-border);border-radius:10px;}
-.ws-space-icon svg {width:22px;height:22px;}
-.ws-nav {padding-top:24px;}
-.ws-nav p {font-size:9px;font-weight:500;letter-spacing:.12em;color:var(--ws-muted);padding:0 12px;margin:0 0 12px;}
-.ws-nav a {display:flex;align-items:center;gap:10px;min-height:44px;border-radius:8px;padding:10px 12px;font-size:13px;color:var(--ws-muted);}
-.ws-nav a svg {width:19px;height:19px;flex-shrink:0;}
-.ws-nav a b {margin-left:auto;display:grid;place-items:center;border-radius:5px;font-size:10px;font-weight:500;width:20px;height:20px;background:var(--ws-surface);}
-.ws-nav a:hover {background:var(--ws-control);color:var(--ws-ink);}
-.ws-nav a.is-active {background:var(--ws-active);color:var(--ws-active-ink);font-weight:500;}
-.ws-nav p.ws-nav-account-label {margin-top:30px;}
-.ws-sidebar-bottom {margin-top:auto;padding:48px 12px 0;}
-.ws-sidebar-bottom p {font-size:13px;line-height:1.6;color:var(--ws-ink);margin:18px 0 12px;}
-.ws-sidebar-bottom>span {font-size:9px;color:var(--ws-muted);}
-.ws-sidebar-motif {position:relative;width:100px;height:50px;}
-.ws-sidebar-motif span {display:block;width:72px;height:38px;border:9px solid var(--ws-border);border-radius:30px;transform:rotate(-25deg);}
-.ws-sidebar-motif i {position:absolute;width:25px;height:25px;background:#97d6df;border-radius:50%;left:56px;top:21px;}
-.ws-sidebar-motif b {position:absolute;width:8px;height:8px;background:var(--ws-accent);border-radius:50%;right:0;top:2px;}
-.ws-body {min-width:0;display:flex;flex-direction:column;}
-.ws-topbar {display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:76px;padding:14px 32px;border-bottom:1px solid var(--ws-border);background:var(--ws-surface);}
-.ws-breadcrumb {display:flex;align-items:center;gap:14px;font-size:12px;color:var(--ws-muted);}
-.ws-breadcrumb>span:nth-child(2) {opacity:.5;}
-.ws-breadcrumb strong {font-weight:500;color:var(--ws-ink);}
-.ws-topbar-actions {display:flex;align-items:center;gap:12px;}
-.ws-role {display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ws-muted);padding-right:12px;margin-right:2px;border-right:1px solid var(--ws-border);}
-.ws-icon-button {width:38px;height:38px;display:grid;place-items:center;flex-shrink:0;color:var(--ws-muted);border:1px solid var(--ws-border);border-radius:50%;background:var(--ws-surface);}
-.ws-icon-button:hover {color:var(--ws-ink);background:var(--ws-control);}
-.ws-avatar {display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#efe6d3;color:#51452b;border:3px solid var(--ws-surface);outline:1px solid var(--ws-border);font-size:10px;font-weight:600;flex-shrink:0;}
-.ws-mobile-brand {display:none;}
-.ws-content {width:100%;max-width:1440px;margin:0 auto;padding:32px 32px 0;flex:1;}
-.ws-heading {display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:28px;}
-.ws-eyebrow {display:block;font-size:9px;font-weight:500;letter-spacing:.14em;color:var(--ws-muted);margin-bottom:8px;}
-.ws-heading h1 {font-size:28px;font-weight:600;letter-spacing:-.035em;line-height:1.2;margin:0;}
+.ws-brand {display:inline-flex;align-items:center;text-decoration:none;}
+.ws-brand svg {display:block;}
+.dark .ws-brand path[fill="#190088"] {fill:#ffffff;}
+.ws-shell-inner {width:100%;max-width:1440px;margin:0 auto;}
+.ws .bs-content {padding:0;}
+.ws-heading {display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:24px;}
+.ws-eyebrow {display:block;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ws-muted);margin-bottom:6px;}
+.ws-heading h1 {font-size:26px;font-weight:700;letter-spacing:-.03em;line-height:1.2;color:#190088;margin:0;}
+.dark .ws-heading h1 {color:#f2f4f7;}
 .ws-heading h1:focus {outline:none;}
-.ws-heading p {font-size:13px;line-height:1.6;color:var(--ws-muted);margin:10px 0 0;}
+.ws-heading p {font-size:13px;line-height:1.6;color:var(--ws-muted);margin:8px 0 0;}
 .ws-heading-actions {display:flex;align-items:center;gap:10px;flex-shrink:0;}
 .ws-primary {display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 16px;border-radius:8px;background:var(--ws-accent);color:var(--ws-primary-ink);font-size:12px;font-weight:600;box-shadow:0 1px 2px #1018280a;white-space:nowrap;transition:background 160ms ease,transform 160ms ease;}
 .ws-primary>span {font-size:19px;line-height:1;font-weight:400;}
@@ -114,7 +82,7 @@
 .ws-empty-footnote {display:block;font-size:10px;color:var(--ws-muted);margin-top:14px;}
 .ws-directory-footer {display:flex;align-items:center;justify-content:space-between;gap:20px;border-top:1px solid var(--ws-border);padding:15px 24px;font-size:10px;line-height:1.5;color:var(--ws-muted);}
 .ws-directory-footer b {font-weight:500;color:var(--ws-ink);}
-.ws-page-footer {display:flex;justify-content:space-between;gap:20px;padding:24px 2px;font-size:10px;color:var(--ws-muted);}
+.ws-page-footer {display:flex;justify-content:space-between;gap:20px;padding:20px 2px 0;font-size:10px;color:var(--ws-muted);}
 .ws-sr-only {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
 .ws-create-requested .ws-shop-building {filter:drop-shadow(0 0 9px #ff805e55);}
 .ws-enter .ws-heading {animation:ws-appear .4s ease-out both;}
@@ -140,29 +108,15 @@
 @keyframes ws-orbit-spin {to {transform:rotate(360deg);}}
 /* El logotipo flota con el disco que tiene detrás: ese vive en el SVG (unidades del dibujo) y este en píxeles de pantalla. */
 @keyframes ws-float-token {0%,100% {transform:translateY(0);} 50% {transform:translateY(-4px);}}
-@media(min-width:1600px) {.ws-content {padding-top:44px;}.ws-empty {min-height:430px;}.ws-empty-inner {max-width:800px;gap:44px;}.ws-shop-motion {flex-basis:340px;width:340px;}}
+@media(min-width:1600px) {.ws-empty {min-height:430px;}.ws-empty-inner {max-width:800px;gap:44px;}.ws-shop-motion {flex-basis:340px;width:340px;}}
 @media(max-width:1199px) {.ws-heading {align-items:flex-start;}.ws-heading-actions {flex-direction:column-reverse;align-items:stretch;gap:8px;}.ws-heading h1 {font-size:26px;}.ws-empty-inner {gap:18px;}.ws-empty-copy h3 {font-size:22px;}.ws-directory-note {display:none;}}
 @media(max-width:959px) {
-  .ws {grid-template-columns:1fr;}
-  .ws-sidebar {display:none;}
-  .ws-mobile-brand {display:block;width:160px;flex-shrink:0;}
-  .ws-breadcrumb {display:none;}
-  .ws-topbar {min-height:76px;padding:16px 24px;}
-  .ws-topbar-actions {gap:10px;}
-  .ws-role {font-size:9px;border:0;margin:0;padding:0;}
-  .ws-content {padding:26px 24px 0;}
   .ws-heading-actions {flex-direction:row;align-items:center;}
   .ws-heading {align-items:center;}
 }
 @media(max-width:639px) {
-  .ws-topbar {padding:14px 20px;min-height:72px;}
-  .ws-mobile-brand {width:144px;}
-  .ws-role {display:none;}
-  .ws-icon-button {width:40px;height:40px;}
-  .ws-avatar {width:32px;height:32px;font-size:9px;}
-  .ws-content {padding:26px 18px 0;}
-  .ws-heading {display:block;margin-bottom:22px;}
-  .ws-heading h1 {font-size:26px;}
+  .ws-heading {display:block;margin-bottom:20px;}
+  .ws-heading h1 {font-size:24px;}
   .ws-heading p {font-size:13px;max-width:320px;}
   .ws-heading-actions {display:flex;margin-top:18px;flex-wrap:wrap;}
   .ws-primary,.ws-secondary {min-height:44px;}
@@ -200,7 +154,7 @@
 /* ── Ajustes para usar los Elements (Button, Input, Select) dentro del diseño de la referencia ── */
 .ws button { cursor: pointer; }
 .ws button:disabled, .ws select:disabled, .ws input:disabled { cursor: not-allowed; }
-.ws a:focus-visible, .ws button:focus-visible { outline: 3px solid #9786ef; outline-offset: 4px; border-radius: 8px; }
+.ws a:focus-visible, .ws button:focus-visible { outline: 2px solid #9786ef; outline-offset: 2px; }
 
 .ws .ws-primary { height: auto; font-weight: 600; }
 .ws .ws-primary:hover { background: #ff6648; }
@@ -227,6 +181,4 @@
 .ws .ws-filter-select select:disabled { opacity: 1; background: var(--ws-control); }
 .ws .ws-filter-select svg { right: 8px; color: var(--ws-soft-text); }
 
-/* La barra de navegación del lateral usa enlaces de React Router */
-.ws .ws-nav a { text-decoration: none; }
-.ws .ws-mobile-brand, .ws .ws-brand { text-decoration: none; }
+.ws-brand { text-decoration: none; }

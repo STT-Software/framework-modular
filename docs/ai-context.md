@@ -4,10 +4,7 @@
 > (Kiro, Claude, Copilot, Codex u otra). Está pensado para retomar el trabajo en una
 > sesión nueva, sin el historial de la anterior. Léelo completo antes de tocar nada.
 >
-> **Es una foto, no la verdad absoluta.** Se actualizó el **2026-11-13**, con `integration`
-> en `fb5a075` más la rama `feature/workspace` (workspace de negocios, la pantalla a la que se llega al terminar el onboarding). Si algo de aquí contradice el código, manda el código: verifica con
-> `git log`, `git status` y leyendo los archivos. Y **actualízalo** cuando cambie el
-> estado del proyecto (ver la última sección).
+> **Es una foto, no la verdad absoluta.** Actualizado el **2026-11-16**, con `integration` en `cafd78e` más la actualización visual del shell del workspace (`feature/workspace-updates`). Si algo de aquí contradice el código, manda el código: verifica con `git log`, `git status` y leyendo los archivos. Y **actualízalo** cuando cambie el estado del proyecto (ver la última sección).
 
 ## Índice
 
@@ -106,7 +103,7 @@ independientes). **Hoy está construido el acceso del SuperAdmin, su bienvenida 
 | Cerrar sesión | `src/app/SignOutButton.tsx` | Funciona (borra la sesión del navegador) |
 | Módulo `onboarding` del backend | `packages/services/necto-api/src/modules/onboarding` | Funciona, probado con MongoDB real: guarda teléfono (único entre usuarios) y dónde nos conoció, por id de usuario, en la colección `onboarding_profiles` |
 | Onboarding (bienvenida + perfil) | `src/modules/onboarding` (README propio) | Funciona: `/welcome` (animación, sin Omitir ni Pausar) → *Comenzar* → `/welcome/phone` → `/welcome/source` → `/workspace`. Con el perfil ya completo, solo se ve la primera escena y entra a `/workspace`; no vuelve a ver los pasos |
-| Workspace de negocios | `src/modules/workspace` (solo frontend, README propio) | Funciona: `/workspace` con sidebar, barra superior y el directorio de negocios **vacío** (0 negocios, filtros apagados) con la tienda animada **en movimiento continuo**; `/workspace/profile` ("Mi perfil") muestra solo el nombre del usuario. Solo se entra con sesión **y** perfil completo |
+| Workspace de negocios | `src/modules/workspace` y `src/shell` (solo frontend, README propio) | Funciona: `/workspace` construido sobre `BaseAppShell` / `BaseAppSidebar` / `BaseAppHeader` con barra lateral flotante colapsable a riel vertical de íconos clickeables, barra superior flotante con `ToggleAppSidebar`, `Breadcrumb` de Elements, `ThemeToggleButton` y menú de usuario, y el directorio de negocios real con tienda animada y vista `/workspace/profile`. Solo se entra con sesión **y** perfil completo |
 | Puertas de acceso | `src/app/RequireSuperAdmin.tsx` y `RequireOnboardingCompleted.tsx` | Sin sesión, `/` y URLs desconocidas llevan a `/super/login`; con sesión, a `/workspace`. Los módulos con `requiresSuperAdmin: true` quedan detrás de la primera; los que además llevan `requiresOnboardingCompleted: true` (el workspace) detrás de la segunda: sin perfil completo, `/welcome` |
 | Registro de módulos + aislamiento de fallos | `src/app/modules.ts`, `ModuleRoutes.tsx`, `ModuleBoundary.tsx` | Funciona |
 | **Negocios + acceso del jefe (end to end)** | Backend: `src/modules/businesses` y `src/modules/business-access` de `necto-api`. Frontend: `src/modules/businesses` (store, asistente de 3 pasos, tarjetas y ficha), `src/modules/business-access` (pantalla pública `/business/access`) y el workspace con datos reales. Rama `feature/businesses` (apilada sobre `feature/workspace`, sin PR ni push) | Verificado con MongoDB real, un servidor SMTP de pruebas local y el navegador: crear (el doble clic no duplica), editar, reemplazar jefe (el anterior pierde la sesión), pausar/reanudar, filtros, CSV, invitación por correo con OTP y acceso del jefe. 115 pruebas automáticas del backend en verde; el frontend no tiene pruebas automáticas |

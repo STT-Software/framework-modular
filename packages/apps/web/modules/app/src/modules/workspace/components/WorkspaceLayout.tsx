@@ -5,6 +5,7 @@ import "../styles/workspace.css";
 import { observer } from "mobx-react-lite";
 import { useEffect, type ReactNode } from "react";
 import { businessesStore } from "@/modules/businesses";
+import { BaseAppShell } from "@/shell";
 import { cn } from "@/utils";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
 import { WorkspaceTopbar } from "./WorkspaceTopbar";
@@ -19,30 +20,32 @@ interface WorkspaceLayoutProps {
   children: ReactNode;
 }
 
-/** The frame of every workspace screen: sidebar, top bar and page footer around the screen's own content. */
+/** The frame of every workspace screen: built on BaseAppShell (floating sidebar, floating header and floating panel). */
 export const WorkspaceLayout = observer(({ section, className, announcement = "", children }: WorkspaceLayoutProps) => {
   useEffect(() => {
     void businessesStore.ensureCount();
   }, []);
+
   return (
-    <div className={cn("ws", className)}>
-      <WorkspaceSidebar businessCount={businessesStore.count} />
-
-      <div className="ws-body">
-        <WorkspaceTopbar section={section} />
-
-        <main className="ws-content">
-          {children}
-          <footer className="ws-page-footer">
-            <span>© 2026 Necto</span>
-            <span>Conecta. Comparte. Crece.</span>
-          </footer>
-        </main>
+    <BaseAppShell
+      className={cn("ws", className)}
+      sidebar={<WorkspaceSidebar businessCount={businessesStore.count} />}
+      header={<WorkspaceTopbar section={section} />}
+    >
+      <div className="ws-shell-inner flex-1 flex flex-col">
+        {children}
       </div>
+
+      <footer className="ws-page-footer mt-auto">
+        <span>© 2026 Necto</span>
+        <span>Conecta. Comparte. Crece.</span>
+      </footer>
 
       <p className="ws-sr-only" role="status" aria-live="polite">
         {announcement}
       </p>
-    </div>
+    </BaseAppShell>
   );
 });
+
+export default WorkspaceLayout;

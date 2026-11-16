@@ -90,6 +90,7 @@ export default function LoginPage() {
           error={errors.identifier}
           autoComplete="username"
           maxLength={254}
+          required
         />
         <PasswordField
           id="login-password"
@@ -100,6 +101,7 @@ export default function LoginPage() {
           onChange={setPassword}
           error={errors.password}
           autoComplete="current-password"
+          required
         />
         <SubmitButton loading={loading}>Iniciar sesión</SubmitButton>
       </form>

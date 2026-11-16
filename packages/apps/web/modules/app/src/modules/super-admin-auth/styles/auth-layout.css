@@ -127,79 +127,6 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
 }
 .dark .sa-brand-description { color: #c3c0e8; }
 
-.sa-brand-topline {
-  color: #212121;
-  letter-spacing: 0.17em;
-  align-items: center;
-  gap: 10px;
-  font-size: 10px;
-  display: flex;
-  position: absolute;
-  top: 48px;
-  left: 48px;
-}
-.dark .sa-brand-topline { color: #cbc7e8; }
-.sa-brand-topline span {
-  background: #97d6df;
-  border-radius: 50%;
-  width: 7px;
-  height: 7px;
-  box-shadow: 0 0 0 5px #97d6df12;
-}
-
-.sa-brand-bottom {
-  color: #212121;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  font-size: 12px;
-  display: flex;
-  position: absolute;
-  bottom: 38px;
-  left: 48px;
-  right: 48px;
-}
-.dark .sa-brand-bottom { color: #bcb6df; }
-.sa-brand-bottom-dots { gap: 6px; display: flex; }
-.sa-brand-bottom-dots i { background: #21212166; border-radius: 50%; width: 5px; height: 5px; }
-.sa-brand-bottom-dots i:first-child { background: #190088; border-radius: 8px; width: 18px; }
-.dark .sa-brand-bottom-dots i { background: #8b80bd; }
-.dark .sa-brand-bottom-dots i:first-child { background: #ff3f1a; }
-
-/* ── Órbitas animadas (motion graphic) ──────────────────────────────────── */
-@keyframes sa-revolve { to { transform: rotate(360deg); } }
-
-.sa-orbits {
-  aspect-ratio: 1;
-  width: min(630px, 105%);
-  position: absolute;
-  top: 47%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-.sa-orbit { border: 1px solid #21212112; border-radius: 50%; position: absolute; }
-.dark .sa-orbit { border-color: #ffffff0c; }
-.sa-orbit span { border-radius: 50%; position: absolute; }
-.sa-orbit-outer { animation: 80s linear infinite sa-revolve; inset: 0; }
-.sa-orbit-inner { animation: 65s linear infinite reverse sa-revolve; inset: 12%; }
-.sa-orbit-outer span {
-  background: #190088;
-  width: 12px;
-  height: 12px;
-  top: 10%;
-  left: 17%;
-  box-shadow: 0 0 24px #19008833;
-}
-.dark .sa-orbit-outer span { background: #ff3f1a; box-shadow: 0 0 24px #ff3f1a55; }
-.sa-orbit-inner span {
-  background: #97d6df;
-  width: 7px;
-  height: 7px;
-  bottom: 17%;
-  right: 10%;
-  box-shadow: 0 0 20px #97d6df55;
-}
-
 /* ── Geometría de marca interactiva en el fondo del panel ─────────────────── */
 .sa-geo-canvas {
   position: absolute;
@@ -405,12 +332,10 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
   .sa-footer { padding: 16px 32px 28px; }
   .sa-brand-side { min-height: 320px; }
   .sa-brand-content { padding: 50px 24px; }
-  .sa-brand-topline, .sa-brand-bottom { display: none; }
   .sa-brand-logo-large { width: 210px; }
   .sa-brand-divider { margin: 22px auto 18px; }
   .sa-brand-headline { font-size: 24px; }
   .sa-brand-description { margin-top: 16px; font-size: 14px; }
-  .sa-orbits { width: 360px; }
 }
 
 @media (max-width: 480px) {

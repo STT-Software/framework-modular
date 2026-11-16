@@ -49,5 +49,8 @@ export function useWelcomeSequence({ reducedMotion, profileCompleted, onProfileC
     else setIndex(1);
   }, [reducedMotion, index, introElapsed, profileCompleted]);
 
-  return { index, finished };
+  /** La primera escena terminó y aún se espera el perfil: la animación debe quedarse quieta. */
+  const holding = !finished && index === 0 && introElapsed;
+
+  return { index, finished, holding };
 }

@@ -19,10 +19,10 @@ una historia concreta del producto, con continuidad entre actos (lo que sale de 
    seis conectados, los datos fluyen por los conectores.
 4. **`grow` (3.6 s) · Inteligencia en marcha.** Cortinilla índigo; los módulos vuelven al núcleo y la N se desplaza
    para formar el **logotipo completo** (letras en cascada, lema, subrayado y un brillo recortado a las letras).
-5. **Ready (`ReadyScene`)**: la cortinilla índigo se retira en diagonal; aparece el logotipo completo
-   («necto grow together»), las letras y el lema se recogen hacia la N, la N viaja al centro y su recuadro la envuelve;
-   después entra el texto y **Comenzar →** hacia `/welcome/phone` y `/welcome/source`. Con movimiento reducido se
-   muestra directamente la N en su recuadro.
+5. **Ready (`ReadyScene`)**: la cortinilla índigo se retira en diagonal; aparece la N en su recuadro,
+   el recuadro se abre y de la N brotan las letras y el lema hasta quedar el logotipo completo («necto grow
+   together»); después entra el texto y **Comenzar →** hacia `/welcome/phone` y `/welcome/source`. Con movimiento
+   reducido se muestra directamente el logotipo completo.
 
 **Geometría de marca (`BrandGeometry`).** El lenguaje de los aros del login (`DecorativeCircles`) y del motivo de la
 barra lateral del workspace, no del logotipo: primitivas planas de trazo grueso, cortadas por los bordes, asimétricas
@@ -31,8 +31,8 @@ recompone; cada acto suma formas de su parte de la historia: onda de voz y tres 
 un arco que barre como un radar y un + (la IA lee), un cuadrado redondeado que releva a la cápsula y un cuarto de
 círculo en la esquina (módulos, sobre naranja en blanco rebajado), y en el cierre el cuadrado se vuelve círculo, el aro
 pequeño toma el naranja y entran barras con el ángulo de la diagonal de la N. En Ready las formas se vuelven un juego
-(`GeometryPlayground`): flotan por la pantalla, chocan entre ellas y con los bordes, y al hacerles clic salen
-disparadas girando con una ráfaga de chispas hasta volver a su deriva (física propia en `requestAnimationFrame`, solo
+(`GeometryPlayground`): flotan por la pantalla y rebotan en los bordes; al hacerles clic salen disparadas girando
+con una ráfaga de chispas, y cuando una golpea a otra, solo estalla la golpeada, que vuelve a entrar, escalonada, desde algún borde (física propia en `requestAnimationFrame`, solo
 `transform`; quietas con movimiento reducido). Cada pieza se mueve con su propio peso; todas pintan con `currentColor` y solo
 se animan transform, opacidad y color.
 

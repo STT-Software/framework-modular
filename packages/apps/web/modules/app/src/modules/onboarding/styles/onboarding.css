@@ -1052,15 +1052,6 @@
   color: var(--ob-accent);
 }
 
-.ob-scene-ready > p {
-  margin: 0;
-  max-width: 440px;
-  color: var(--ob-muted);
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 1.6;
-}
-
 .ob-continue {
   min-height: 52px;
   min-width: 220px;
@@ -1274,10 +1265,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* Sin animación no hay contracción: Ready muestra directamente la N en su recuadro. */
-  .ob-ready-word,
-  .ob-ready-tagline {
+  /* Sin animación no hay expansión: Ready muestra directamente el logotipo completo. */
+  .ob-ready-tile {
     display: none;
+  }
+
+  .ob-ready-mark {
+    translate: var(--mark-x) 0;
+    scale: var(--mark-scale);
   }
 
   .ob *,

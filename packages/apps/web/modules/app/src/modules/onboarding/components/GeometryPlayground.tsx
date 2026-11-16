@@ -2,9 +2,10 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { prefersReducedMotion } from "../hooks/useReducedMotion";
 
 /*
- * Pantalla final como un pequeño juego motion graphic: las formas de la geometría de marca flotan por la pantalla,
- * rebotan entre ellas y contra los bordes, y al hacerles clic (o tocarlas) salen disparadas girando, con una ráfaga
- * de chispas, hasta que el roce las devuelve a su deriva.
+ * Pantalla final como un pequeño juego motion graphic: las formas de la geometría de marca flotan por la pantalla y
+ * rebotan contra los bordes; al hacerles clic (o tocarlas) salen disparadas girando, con una ráfaga de chispas. Si
+ * dos formas chocan, la que golpea (la más rápida) sigue y solo estalla la golpeada, que poco a poco vuelve a entrar
+ * desde algún borde de la pantalla (recién entrada tiene un momento de gracia en el que solo rebota).
  *
  * Física propia y mínima en `requestAnimationFrame` (sin librerías): cada forma es un círculo de colisión con masa
  * proporcional a su área. Solo se escribe `transform` (lo compone la GPU). Con movimiento reducido quedan quietas.
@@ -85,7 +86,21 @@ interface Body {
   /** Deriva de crucero (px/s y °/s) a la que vuelve tras un disparo. */
   cruise: number;
   baseSpin: number;
+  /** Destruida en un choque, a la espera de volver a entrar. */
+  alive: boolean;
+  /** Entrando desde fuera de la pantalla: los bordes aún no la contienen. */
+  entering: boolean;
+  /** Momento (ms) desde el que puede explotar al chocar; antes solo rebota. */
+  armedAt: number;
+  pop?: Animation;
 }
+
+/** Tras explotar, cada forma vuelve a entrar por un borde al cabo de este tiempo, escalonadas entre sí. */
+const RESPAWN_MIN = 900;
+const RESPAWN_SPREAD = 1600;
+const RESPAWN_GAP = 650;
+/** Tiempo de gracia tras aparecer: no explota (solo rebota) para no destruirse nada más entrar. */
+const GRACE = 1400;
 
 export function GeometryPlayground() {
   const ref = useRef<HTMLDivElement>(null);
@@ -119,6 +134,9 @@ export function GeometryPlayground() {
         spin: baseSpin,
         cruise,
         baseSpin,
+        alive: true,
+        entering: false,
+        armedAt: performance.now() + 500 + i * 90 + 750 + GRACE,
       };
     });
 
@@ -186,10 +204,49 @@ export function GeometryPlayground() {
       }
     };
 
+    // Explosión: la forma estalla en chispas y desaparece; vuelve a entrar más tarde por un borde.
+    const timers: number[] = [];
+    let nextSlot = 0;
+    const respawn = (b: Body) => {
+      const edge = Math.floor(Math.random() * 4);
+      const along = 0.15 + Math.random() * 0.7;
+      const speed = b.cruise * (5 + Math.random() * 3);
+      const tilt = (Math.random() - 0.5) * 0.8;
+      if (edge === 0) [b.x, b.y, b.vx, b.vy] = [along * W, -b.r, tilt * speed, speed];
+      else if (edge === 1) [b.x, b.y, b.vx, b.vy] = [W + b.r, along * H, -speed, tilt * speed];
+      else if (edge === 2) [b.x, b.y, b.vx, b.vy] = [along * W, H + b.r, tilt * speed, -speed];
+      else [b.x, b.y, b.vx, b.vy] = [-b.r, along * H, speed, tilt * speed];
+      b.spin = b.baseSpin * 6;
+      b.pop?.cancel();
+      b.pop = undefined;
+      b.alive = true;
+      b.entering = true;
+      b.armedAt = performance.now() + GRACE;
+      b.el.style.pointerEvents = "";
+      place(b);
+    };
+    const explode = (b: Body) => {
+      b.alive = false;
+      b.el.style.pointerEvents = "none";
+      burst(b.x, b.y, b.tone);
+      b.pop = (b.el.firstElementChild as HTMLElement).animate(
+        [
+          { scale: "1", opacity: 1 },
+          { scale: "1.45", opacity: 0.9, offset: 0.35 },
+          { scale: "0", opacity: 0 },
+        ],
+        { duration: 340, easing: "ease-in", fill: "forwards" },
+      );
+      const now = performance.now();
+      const at = Math.max(now + RESPAWN_MIN + Math.random() * RESPAWN_SPREAD, nextSlot);
+      nextSlot = at + RESPAWN_GAP;
+      timers.push(window.setTimeout(() => respawn(b), at - now));
+    };
+
     const onPointerDown = (event: PointerEvent) => {
       const el = (event.target as Element).closest(".ob-play-piece");
       const b = bodies.find((body) => body.el === el);
-      if (!b) return;
+      if (!b || !b.alive) return;
       event.preventDefault();
       let dx = b.x - event.clientX;
       let dy = b.y - event.clientY;
@@ -220,6 +277,7 @@ export function GeometryPlayground() {
       last = now;
 
       for (const b of bodies) {
+        if (!b.alive) continue;
         // Roce: tras un disparo la velocidad decae hasta la deriva; si queda muy lenta, recupera la deriva.
         const speed = Math.hypot(b.vx, b.vy);
         if (speed > b.cruise) {
@@ -249,6 +307,11 @@ export function GeometryPlayground() {
         b.y += b.vy * dt;
         b.angle += b.spin * dt;
 
+        // Mientras entra desde fuera, los bordes no la contienen hasta que está dentro del todo.
+        if (b.entering) {
+          if (b.x >= b.r && b.x <= W - b.r && b.y >= b.r && b.y <= H - b.r) b.entering = false;
+          continue;
+        }
         if (b.x < b.r) {
           b.x = b.r;
           b.vx = Math.abs(b.vx) * 0.9;
@@ -265,16 +328,23 @@ export function GeometryPlayground() {
         }
       }
 
-      // Choques elásticos entre formas (masa proporcional al área).
+      // Choques: la forma que golpea (la más rápida) sigue su camino y solo estalla la golpeada, si ya está armada;
+      // si la golpeada acaba de aparecer, rebotan (choque elástico, masa proporcional al área).
       for (let i = 0; i < bodies.length; i++) {
         for (let j = i + 1; j < bodies.length; j++) {
           const a = bodies[i];
           const c = bodies[j];
+          if (!a.alive || !c.alive) continue;
           const dx = c.x - a.x;
           const dy = c.y - a.y;
           const min = (a.r + c.r) * 0.82;
           const dist = Math.hypot(dx, dy);
           if (dist >= min || dist === 0) continue;
+          const victim = Math.hypot(a.vx, a.vy) >= Math.hypot(c.vx, c.vy) ? c : a;
+          if (now >= victim.armedAt) {
+            explode(victim);
+            continue;
+          }
           const nx = dx / dist;
           const ny = dy / dist;
           const ma = a.r * a.r;
@@ -301,6 +371,7 @@ export function GeometryPlayground() {
     return () => {
       cancelAnimationFrame(frame);
       window.clearTimeout(settle);
+      timers.forEach((timer) => window.clearTimeout(timer));
       window.removeEventListener("resize", onResize);
       root.removeEventListener("pointerdown", onPointerDown);
       entrances.forEach((a) => a.cancel());

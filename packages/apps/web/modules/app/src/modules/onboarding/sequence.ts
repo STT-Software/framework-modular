@@ -16,4 +16,4 @@ export const SEQUENCE: readonly SequenceItem[] = [
   { id: "grow", duration: 3600, announce: "Necto IA. Inteligencia en marcha. Conecta clientes, módulos y decisiones." },
 ];
 
-export const READY_ANNOUNCEMENT = "Qué bueno que estés aquí. Tu plataforma modular con Necto IA te espera.";
+export const READY_ANNOUNCEMENT = "Qué bueno que estés aquí.";

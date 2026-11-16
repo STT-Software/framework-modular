@@ -85,7 +85,6 @@
 .ob-setup-actions .ob-setup-back {margin:0;min-width:84px;min-height:50px;}
 .ob-setup-actions .ob-setup-primary {flex:1;width:auto;margin:0;}
 .ob-setup-footer {padding:14px 24px 24px;text-align:center;color:var(--ob-setup-muted);font-size:11px;}
-.ob-setup-sr-only {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
 @media(max-width:600px) {
   .ob-setup-header {padding:22px 24px;}
   .ob-setup-logo {width:161px;}

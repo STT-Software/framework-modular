@@ -209,7 +209,7 @@ export function GeometryPlayground() {
     };
 
     // Explosión: la forma estalla en chispas y desaparece; vuelve a entrar más tarde por un borde.
-    const timers: number[] = [];
+    const timers = new Set<number>();
     let nextSlot = 0;
     const respawn = (b: Body) => {
       const edge = Math.floor(Math.random() * 4);
@@ -246,7 +246,11 @@ export function GeometryPlayground() {
       const now = performance.now();
       const at = Math.max(now + RESPAWN_MIN + Math.random() * RESPAWN_SPREAD, nextSlot);
       nextSlot = at + RESPAWN_GAP;
-      timers.push(window.setTimeout(() => respawn(b), at - now));
+      const timer = window.setTimeout(() => {
+        timers.delete(timer);
+        respawn(b);
+      }, at - now);
+      timers.add(timer);
     };
 
     const onPointerDown = (event: PointerEvent) => {

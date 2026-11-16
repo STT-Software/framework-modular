@@ -269,21 +269,34 @@ const WorkspaceSidebarContent = observer(({ businessCount }: WorkspaceSidebarPro
         </div>
       </div>
 
-      {/* Footer pinned at bottom */}
-      <div className="mt-auto border-t border-gray-200/70 dark:border-white/5 pt-3 pb-5">
-        <button
-          type="button"
-          onClick={() => superAdminSessionStore.signOut()}
-          className="menu-item group text-error-700 hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-500/10 cursor-pointer"
-        >
-          <span className="menu-item-icon-size text-error-700 dark:text-error-400">
-            <SignOutIcon />
-          </span>
-          <span>Cerrar sesión</span>
-        </button>
-        <p className="px-3 pt-3 text-[11px] text-gray-400 dark:text-gray-500">
-          Necto · Grow together
-        </p>
+      {/* Brand identity motif & sign-out pinned at bottom */}
+      <div className="mt-auto pt-6 pb-5">
+        <div className="ws-sidebar-bottom">
+          <div className="ws-sidebar-motif" aria-hidden="true">
+            <span />
+            <i />
+            <b />
+          </div>
+          <p>
+            Todo empieza con
+            <br />
+            una buena conexión.
+          </p>
+          <span>Necto · Grow together</span>
+        </div>
+
+        <div className="mt-4 border-t border-gray-200/70 dark:border-white/5 pt-3">
+          <button
+            type="button"
+            onClick={() => superAdminSessionStore.signOut()}
+            className="menu-item group text-error-700 hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-500/10 cursor-pointer"
+          >
+            <span className="menu-item-icon-size text-error-700 dark:text-error-400">
+              <SignOutIcon />
+            </span>
+            <span>Cerrar sesión</span>
+          </button>
+        </div>
       </div>
     </nav>
   );

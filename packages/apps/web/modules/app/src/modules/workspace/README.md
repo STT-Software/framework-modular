@@ -26,7 +26,7 @@ Flujo completo: `/super/login` → `/welcome` → *Comenzar* → `/welcome/phone
 ## Qué se ve
 
 - **Lateral flotante colapsable (`BaseAppSidebar`):**
-  - Expandida: tarjeta flotante de `274 px` con logotipo, tarjeta de identidad ("Mi workspace"), secciones colapsables con `MenuSectionHeader` / `MenuItem` (*Negocios* con contador, *Crear negocio* y *Mi perfil*) y pie fijo con *Cerrar sesión*. En móviles actúa como cajón deslizante con `Backdrop`.
+  - Expandida: tarjeta flotante de `274 px` con logotipo, tarjeta de identidad ("Mi workspace"), secciones colapsables con `MenuSectionHeader` / `MenuItem` (*Negocios* con contador, *Crear negocio* y *Mi perfil*), el remate decorativo de marca ("Todo empieza con una buena conexión.") y pie fijo con *Cerrar sesión*. En móviles actúa como cajón deslizante con `Backdrop`.
   - Contraída (modo riel): píldora flotante centrada verticalmente (`54 px`) con isotipo compacto, íconos circulares clickeables (con resaltado activo, punto de aviso y tooltips instantáneos al pasar el cursor) y acceso directo a *Cerrar sesión*.
 - **Barra superior flotante (`BaseAppHeader`):** botón bento para alternar la barra lateral (`ToggleAppSidebar`, fijo en la esquina superior izquierda cuando el lateral está contraído), píldora de contexto ("Mi workspace"), ruta de navegación con `Breadcrumb` de Elements, indicador de rol (*Superadministrador*), selector de tema animado (`ThemeToggleButton`) y menú de cuenta (`ShellDropdown`) con iniciales y cierre de sesión.
 - **Directorio:** título, *Exportar CSV* (apagado hasta que haya negocios; descarga los de la vista filtrada), *Crear negocio*,

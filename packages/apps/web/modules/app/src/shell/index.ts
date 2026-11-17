@@ -7,7 +7,14 @@ export type { ShellConfig } from "./ShellContext";
 export { BaseAppSidebar, Backdrop, SidebarProvider, useSidebarContext } from "./sidebar";
 
 // Header
-export { BaseAppHeader, ToggleAppSidebar, ThemeToggleButton, ThemeIconButton } from "./header";
+export {
+  BaseAppHeader,
+  ToggleAppSidebar,
+  ThemeToggleButton,
+  ThemeIconButton,
+  ShellDropdown,
+  ShellDropdownItem,
+} from "./header";
 
 // Meta
 export { PageMeta, AppMetaProvider } from "./meta";

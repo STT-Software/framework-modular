@@ -21,6 +21,24 @@
     scrollbar-gutter: stable;
   }
   body {
-    @apply relative font-normal font-outfit z-1 bg-gray-50;
+    @apply relative font-normal font-outfit z-1 bg-gray-100 dark:bg-gray-950;
+  }
+}
+
+/* ── Barra lateral: el contenido nuevo espera a que haya espacio ─────────────
+   Al expandir o contraer, el menú se reemplaza con un fundido que arranca a los
+   120 ms, cuando la barra ya ganó buena parte del ancho. */
+.barra-lateral__entrada {
+  animation: aparecer 180ms ease-out 120ms backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-aparecer,
+  .animate-entrada-menu,
+  .animate-flyout-lateral {
+    animation: none;
+  }
+  .barra-lateral__entrada {
+    animation: aparecer 120ms ease-out backwards;
   }
 }

@@ -6,21 +6,25 @@ interface BaseAppHeaderProps {
   leftContent?: ReactNode;
   mobileLogo?: ReactNode;
   children?: ReactNode;
+  className?: string;
 }
 
 /**
- * @kgId 3257c012ce03
+ * Floating rounded navbar matching StockFlow's BaseAppHeader design.
  */
 export const BaseAppHeader: React.FC<BaseAppHeaderProps> = observer(({
   leftContent,
   mobileLogo,
   children,
+  className = "",
 }) => {
   return (
-    <header className="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 xl:border-b">
-      <div className="flex flex-col items-center justify-between grow xl:flex-row xl:px-6">
+    <header
+      className={`relative z-30 flex w-full rounded-2xl border border-gray-200/80 bg-white dark:border-white/10 dark:bg-gray-900 shadow-theme-xs ${className}`.trim()}
+    >
+      <div className="flex flex-col items-center justify-between grow xl:flex-row xl:px-5">
         {/* Top row */}
-        <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 xl:justify-normal xl:border-b-0 xl:px-0 lg:py-4">
+        <div className="flex items-center justify-between w-full min-h-[62px] md:min-h-[68px] gap-2 px-3 py-2.5 sm:gap-4 xl:justify-normal xl:px-0 xl:py-3">
           {leftContent}
 
           {/* Mobile logo - center */}
@@ -32,12 +36,15 @@ export const BaseAppHeader: React.FC<BaseAppHeaderProps> = observer(({
 
           {/* Mobile menu toggle - 3 dots */}
           <button
+            type="button"
             onClick={() => uiStore.toggleHeaderMenu()}
-            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg z-99999 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 xl:hidden"
+            className="flex items-center justify-center w-10 h-10 text-gray-600 rounded-xl transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.06] xl:hidden"
+            aria-label="Abrir menú de cabecera"
+            aria-expanded={uiStore.headerMenuOpen}
           >
             <svg
-              width="24"
-              height="24"
+              width="22"
+              height="22"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -55,8 +62,10 @@ export const BaseAppHeader: React.FC<BaseAppHeaderProps> = observer(({
         {/* Actions row - hidden on mobile until menu opened */}
         <div
           className={`${
-            uiStore.headerMenuOpen ? "flex" : "hidden"
-          } items-center justify-between w-full gap-4 px-5 py-4 xl:flex shadow-theme-md xl:justify-end xl:px-0 xl:shadow-none`}
+            uiStore.headerMenuOpen
+              ? "flex border-t border-gray-200/70 dark:border-white/5"
+              : "hidden"
+          } items-center justify-end w-full gap-3 px-4 py-3 xl:flex xl:border-t-0 xl:px-0 xl:py-0`}
         >
           {children}
         </div>

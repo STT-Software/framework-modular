@@ -58,8 +58,10 @@ import { ReactComponent as BoxMoving } from "@/icons/box-moving.svg?react";
 import { ReactComponent as AiIcon } from "@/icons/ai-icon.svg?react";
 import { ReactComponent as CartIcon } from "@/icons/cart-icon.svg?react";
 import { ReactComponent as CallIcon } from "@/icons/call-icon.svg?react";
+import { PanelToggleIcon } from "@/icons/PanelToggleIcon";
 
 export {
+  PanelToggleIcon,
   CallIcon,
   CartIcon,
   AiIcon,

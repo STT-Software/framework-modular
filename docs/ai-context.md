@@ -4,10 +4,7 @@
 > (Kiro, Claude, Copilot, Codex u otra). Está pensado para retomar el trabajo en una
 > sesión nueva, sin el historial de la anterior. Léelo completo antes de tocar nada.
 >
-> **Es una foto, no la verdad absoluta.** Se actualizó el **2026-11-13**, con `integration`
-> en `fb5a075` más la rama `feature/workspace` (workspace de negocios, la pantalla a la que se llega al terminar el onboarding). Si algo de aquí contradice el código, manda el código: verifica con
-> `git log`, `git status` y leyendo los archivos. Y **actualízalo** cuando cambie el
-> estado del proyecto (ver la última sección).
+> **Es una foto, no la verdad absoluta.** Actualizado el **2026-11-16**, con `integration` en `cafd78e` más la actualización visual del shell del workspace (`feature/workspace-updates`). Si algo de aquí contradice el código, manda el código: verifica con `git log`, `git status` y leyendo los archivos. Y **actualízalo** cuando cambie el estado del proyecto (ver la última sección).
 
 ## Índice
 

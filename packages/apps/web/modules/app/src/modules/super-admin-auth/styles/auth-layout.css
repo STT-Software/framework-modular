@@ -127,78 +127,191 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
 }
 .dark .sa-brand-description { color: #c3c0e8; }
 
-.sa-brand-topline {
-  color: #212121;
-  letter-spacing: 0.17em;
-  align-items: center;
-  gap: 10px;
-  font-size: 10px;
-  display: flex;
+/* ── Geometría de marca interactiva en el fondo del panel ─────────────────── */
+.sa-geo-canvas {
   position: absolute;
-  top: 48px;
-  left: 48px;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
 }
-.dark .sa-brand-topline { color: #cbc7e8; }
-.sa-brand-topline span {
-  background: #97d6df;
+
+.sa-geo-piece {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+  will-change: transform, filter, opacity;
+}
+
+.sa-geo-float {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.35s ease,
+              color 0.35s ease;
+}
+
+.sa-geo-piece:hover {
+  z-index: 10;
+}
+
+/* Al pasar el mouse, TODOS los objetos se iluminan en blanco puro */
+.sa-geo-piece:hover .sa-geo-float {
+  transform: scale(1.22);
+  color: #ffffff !important;
+  opacity: 1 !important;
+  filter: brightness(1.6) drop-shadow(0 0 18px rgba(255, 255, 255, 0.9)) !important;
+}
+
+/* Tonalidades en reposo (tema claro) */
+.sa-geo-piece.tone-white {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.sa-geo-piece.tone-cyan {
+  color: rgba(151, 214, 223, 0.52);
+}
+
+.sa-geo-piece.tone-accent {
+  color: rgba(25, 0, 136, 0.42);
+}
+
+/* Tonalidades en reposo (tema oscuro) */
+.dark .sa-geo-piece.tone-white {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.dark .sa-geo-piece.tone-cyan {
+  color: rgba(151, 214, 223, 0.44);
+}
+
+.dark .sa-geo-piece.tone-accent {
+  color: rgba(255, 63, 26, 0.58);
+}
+
+/* Formas geométricas */
+.sa-shape {
+  width: var(--geo-size);
+  height: var(--geo-size);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sa-shape.is-ring {
+  border: calc(var(--geo-size) * 0.16) solid currentColor;
   border-radius: 50%;
-  width: 7px;
-  height: 7px;
-  box-shadow: 0 0 0 5px #97d6df12;
 }
 
-.sa-brand-bottom {
-  color: #212121;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  font-size: 12px;
+.sa-shape.is-capsule {
+  height: calc(var(--geo-size) * 0.42);
+  border: calc(var(--geo-size) * 0.1) solid currentColor;
+  border-radius: 999px;
+}
+
+.sa-shape.is-square {
+  border: calc(var(--geo-size) * 0.16) solid currentColor;
+  border-radius: 28%;
+}
+
+.sa-shape.is-quarter {
+  background: currentColor;
+  border-radius: 100% 0 0 0;
+}
+
+.sa-shape.is-arc {
+  border: calc(var(--geo-size) * 0.15) solid transparent;
+  border-top-color: currentColor;
+  border-right-color: currentColor;
+  border-radius: 50%;
+}
+
+.sa-shape.is-wave {
+  height: calc(var(--geo-size) * 0.32);
+}
+.sa-shape.is-wave svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.sa-shape.is-wave path {
+  stroke: currentColor;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.sa-shape.is-dots {
+  height: calc(var(--geo-size) * 0.28);
   display: flex;
-  position: absolute;
-  bottom: 38px;
-  left: 48px;
-  right: 48px;
+  align-items: center;
+  justify-content: space-between;
 }
-.dark .sa-brand-bottom { color: #bcb6df; }
-.sa-brand-bottom-dots { gap: 6px; display: flex; }
-.sa-brand-bottom-dots i { background: #21212166; border-radius: 50%; width: 5px; height: 5px; }
-.sa-brand-bottom-dots i:first-child { background: #190088; border-radius: 8px; width: 18px; }
-.dark .sa-brand-bottom-dots i { background: #8b80bd; }
-.dark .sa-brand-bottom-dots i:first-child { background: #ff3f1a; }
+.sa-shape.is-dots b {
+  width: calc(var(--geo-size) * 0.26);
+  height: calc(var(--geo-size) * 0.26);
+  border-radius: 50%;
+  background: currentColor;
+}
 
-/* ── Órbitas animadas (motion graphic) ──────────────────────────────────── */
-@keyframes sa-revolve { to { transform: rotate(360deg); } }
-
-.sa-orbits {
-  aspect-ratio: 1;
-  width: min(630px, 105%);
+.sa-shape.is-plus b {
   position: absolute;
-  top: 47%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  margin: auto;
+  width: calc(var(--geo-size) * 0.26);
+  height: 100%;
+  background: currentColor;
+  border-radius: 2px;
 }
-.sa-orbit { border: 1px solid #21212112; border-radius: 50%; position: absolute; }
-.dark .sa-orbit { border-color: #ffffff0c; }
-.sa-orbit span { border-radius: 50%; position: absolute; }
-.sa-orbit-outer { animation: 80s linear infinite sa-revolve; inset: 0; }
-.sa-orbit-inner { animation: 65s linear infinite reverse sa-revolve; inset: 12%; }
-.sa-orbit-outer span {
-  background: #190088;
-  width: 12px;
-  height: 12px;
-  top: 10%;
-  left: 17%;
-  box-shadow: 0 0 24px #19008833;
+.sa-shape.is-plus b + b {
+  width: 100%;
+  height: calc(var(--geo-size) * 0.26);
 }
-.dark .sa-orbit-outer span { background: #ff3f1a; box-shadow: 0 0 24px #ff3f1a55; }
-.sa-orbit-inner span {
-  background: #97d6df;
-  width: 7px;
-  height: 7px;
-  bottom: 17%;
-  right: 10%;
-  box-shadow: 0 0 20px #97d6df55;
+
+.sa-shape.is-slashes {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(var(--geo-size) * 0.12);
+  transform: skewX(20deg);
 }
+.sa-shape.is-slashes b {
+  width: calc(var(--geo-size) * 0.22);
+  height: 100%;
+  border-radius: 999px;
+  background: currentColor;
+}
+.sa-shape.is-slashes b:nth-child(2) {
+  height: 70%;
+}
+.sa-shape.is-slashes b:nth-child(3) {
+  height: 40%;
+}
+
+.sa-shape.is-disc {
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Flotación sutil ambiental */
+@keyframes sa-float-slow {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes sa-float-rev {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(8px) rotate(-2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.sa-float-1 { animation: sa-float-slow 7s ease-in-out infinite; }
+.sa-float-2 { animation: sa-float-rev 8.5s ease-in-out infinite; }
+.sa-float-3 { animation: sa-float-slow 6s ease-in-out infinite 1s; }
+.sa-float-4 { animation: sa-float-rev 9s ease-in-out infinite 0.5s; }
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (min-width: 1024px) {
@@ -219,12 +332,10 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
   .sa-footer { padding: 16px 32px 28px; }
   .sa-brand-side { min-height: 320px; }
   .sa-brand-content { padding: 50px 24px; }
-  .sa-brand-topline, .sa-brand-bottom { display: none; }
   .sa-brand-logo-large { width: 210px; }
   .sa-brand-divider { margin: 22px auto 18px; }
   .sa-brand-headline { font-size: 24px; }
   .sa-brand-description { margin-top: 16px; font-size: 14px; }
-  .sa-orbits { width: 360px; }
 }
 
 @media (max-width: 480px) {

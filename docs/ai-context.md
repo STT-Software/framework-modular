@@ -369,7 +369,7 @@ Mismo README: [`packages/services/necto-api/README.md`](../packages/services/nec
 ## 10. Frontend: patrones y diseño
 
 **Diseño de referencia:** `referencias html/necto-superlogin.html` (sección 11) y diseño NECTO en StockFlow. Dos columnas:
-formulario a la izquierda y panel de marca a la derecha con fondo interactivo de puntos (`InteractiveDotGrid`),
+formulario a la izquierda y panel de marca a la derecha con fondo interactivo de geometría de marca (`BrandGeometryBackground`),
 aros decorativos (`DecorativeCircles`) y mensajes rotativos con transición escalonada (`RotatingBrandMessages`).
 Tema **claro** (panel naranja `#ff3f1a`) y **oscuro** (panel azul profundo `#190088`). Fuente **DM Sans** (300, 400, 700).
 

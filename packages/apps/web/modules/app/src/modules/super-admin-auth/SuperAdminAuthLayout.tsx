@@ -4,8 +4,8 @@ import "@fontsource/dm-sans/700.css";
 import "./styles/auth-layout.css";
 import { Link, Outlet } from "react-router";
 import { AuthThemeToggle } from "./components/AuthThemeToggle";
+import { BrandGeometryBackground } from "./components/BrandGeometryBackground";
 import { DecorativeCircles } from "./components/DecorativeCircles";
-import InteractiveDotGrid from "./components/InteractiveDotGrid";
 import { NectoLogo } from "./components/NectoLogo";
 import {
   BrandMessageDisplay,
@@ -63,12 +63,7 @@ export default function SuperAdminAuthLayout() {
         className="sa-brand-side relative flex items-center justify-center overflow-hidden"
         aria-label="Necto, conecta, comparte y crece"
       >
-        <InteractiveDotGrid
-          dotGap={24}
-          baseRadius={1.5}
-          activeRadius={3.0}
-          glowDistance={160}
-        />
+        <BrandGeometryBackground />
         <div className="dark:hidden">
           <DecorativeCircles variant="brand" />
         </div>

@@ -23,7 +23,8 @@ const MIN_NATIONAL_DIGITS = 7;
 /** E.164: el número completo (indicativo + número) no pasa de 15 dígitos. */
 const MAX_TOTAL_DIGITS = 15;
 
-export const PHONE_FORMAT_ERROR = "Ingresa un número válido, sin el indicativo del país.";
+/** También se muestra cuando el servicio rechaza el número: solo acepta celulares válidos del país elegido. */
+export const PHONE_FORMAT_ERROR = "Ingresa un número de celular válido para el país elegido, sin el indicativo.";
 
 export interface PhoneCheck {
   /** Teléfono en E.164 listo para enviar, o null si no es válido. */

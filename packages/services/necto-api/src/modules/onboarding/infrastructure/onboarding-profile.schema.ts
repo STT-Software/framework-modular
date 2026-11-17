@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { PROFILE_SOURCES, type ProfileSource } from '../domain/profile-sources';
+import { PROFILE_SOURCES, SOURCE_OTHER_MAX_LENGTH, type ProfileSource } from '../domain/profile-sources';
 
 /**
  * MongoDB record of an onboarding profile (collection `onboarding_profiles`, owned by the onboarding
@@ -13,12 +13,16 @@ export class OnboardingProfileRecord {
   @Prop({ required: true, unique: true })
   userId: string;
 
-  /** Phone in E.164 format (+573001234567). Unique: two users cannot share a number. */
+  /** Canonical E.164 of a mobile number (+573001234567). Unique: two users cannot share a number. */
   @Prop({ required: true, unique: true })
   phone: string;
 
   @Prop({ type: [String], enum: PROFILE_SOURCES, default: [] })
   sources: ProfileSource[];
+
+  /** Free text for the "other" source. Documents saved before this field existed do not have it (read as null). */
+  @Prop({ type: String, default: null, maxlength: SOURCE_OTHER_MAX_LENGTH })
+  sourceOther: string | null;
 
   @Prop({ type: Date, default: null })
   completedAt: Date | null;

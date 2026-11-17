@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { LOGO_PATHS, MARK_PATH_COUNT, TAGLINE_PATH_COUNT } from "@/brand/logoPaths";
 import { SEQUENCE } from "../sequence";
 import { releaseOnFinish } from "../hooks/useSceneMotion";
+import { isLowPowerDevice } from "../hooks/motionBudget";
+import { createTimeline, type Timeline } from "../hooks/timeline";
 import { BrandGeometry, animateGeometry } from "./BrandGeometry";
 
 /* ── Geometría del lienzo (viewBox 0 0 640 560) ─────────────────────────────── */
@@ -19,11 +21,16 @@ const MARK_PATHS = LOGO_PATHS.slice(TAGLINE_PATH_COUNT, TAGLINE_PATH_COUNT + MAR
 const TAGLINE_PATHS = LOGO_PATHS.slice(0, TAGLINE_PATH_COUNT);
 const WORD_PATHS = LOGO_PATHS.slice(TAGLINE_PATH_COUNT + MARK_PATH_COUNT);
 
-/** Las tres conversaciones de entrada y la intención que la IA detecta en cada una. */
+/**
+ * Las intenciones que la IA detecta en las tres conversaciones de entrada. `bubble` es el mensaje al que pertenece
+ * cada una: el tercero pide dos cosas (mesa y pastel) y recibe dos etiquetas casi a la vez, que es la separación de
+ * intenciones de Necto IA (un mismo mensaje va a dos módulos).
+ */
 const TAGS = [
-  { label: "Pedido", x: 330, y: 22, w: 112, tone: "orange" },
-  { label: "Agendamiento", x: 392, y: 172, w: 172, tone: "cyan" },
-  { label: "Reserva", x: 262, y: 300, w: 118, tone: "indigo" },
+  { label: "Pedido", x: 330, y: 22, w: 112, tone: "orange", bubble: 0 },
+  { label: "Agendamiento", x: 392, y: 172, w: 172, tone: "cyan", bubble: 1 },
+  { label: "Reserva", x: 262, y: 300, w: 118, tone: "indigo", bubble: 2 },
+  { label: "Pedido", x: 388, y: 300, w: 112, tone: "orange", bubble: 2 },
 ] as const;
 
 const WAVE = [10, 18, 26, 14, 32, 22, 12, 28, 36, 20, 14, 26, 30, 16, 10, 22, 34, 24, 12, 18, 28, 16, 10, 20];
@@ -66,7 +73,7 @@ const COPY: { kicker?: string; lines: Line[]; lead: string }[] = [
   {
     kicker: "Necto IA contextual",
     lines: [{ text: "La IA lee" }, { text: "y enruta cada" }, { text: "intención.", accent: true }],
-    lead: "Separa pedidos, citas, reservas y dudas al instante.",
+    lead: "Si un mensaje pide dos cosas, cada una llega a su módulo al instante.",
   },
   {
     kicker: "Ecosistema modular",
@@ -74,7 +81,8 @@ const COPY: { kicker?: string; lines: Line[]; lead: string }[] = [
     lead: "Pedidos, agenda, reservas, inventario, turnos y referidos, conectados.",
   },
   {
-    lines: [{ text: "Necto IA." }, { text: "Inteligencia", accent: true }, { text: "en marcha.", accent: true }],
+    // Lema de la marca (manual de naming): "Nos cruzamos, nos unimos, crecemos." junto a "grow together".
+    lines: [{ text: "Nos cruzamos." }, { text: "Nos unimos." }, { text: "Crecemos.", accent: true }],
     lead: "Clientes, módulos y decisiones en una sola verdad.",
   },
 ];
@@ -92,76 +100,60 @@ const ACT = SEQUENCE.reduce<number[]>((starts, item, i) => [...starts, i === 0 ?
 
 /*
  * Cortinillas: se mueven con `transform` (lo compone la GPU) y no con `clip-path`, que repinta toda la pantalla
- * en cada fotograma. La capa mide 200vw, está inclinada 20° y entra de izquierda a derecha.
+ * en cada fotograma. La capa mide lo justo para cubrir la pantalla inclinada 20° (100vw + 40vh, ver el CSS) y entra
+ * de izquierda a derecha.
  */
-const WIPE_FROM = "translateX(calc(-150vw - 40vh)) skewX(20deg)";
+const WIPE_FROM = "translateX(calc(-100vw - 40vh)) skewX(20deg)";
 const WIPE_TO = "translateX(0) skewX(20deg)";
 
-interface Timeline {
-  animations: Animation[];
-  at: (
-    target: Element | null | undefined,
-    frames: Keyframe[],
-    start: number,
-    duration: number,
-    options?: KeyframeAnimationOptions,
-  ) => Animation | undefined;
-}
-
-/**
- * Una sola línea de tiempo con la Web Animations API: cada paso se programa con su retraso absoluto.
- * El primer paso que toca una propiedad de un elemento rellena hacia atrás (define el estado inicial);
- * los siguientes solo hacia adelante, para no pisar al anterior mientras esperan.
+/*
+ * Rendimiento. Todo lo que se anima dentro del SVG (formas, trazos, texto) no lo puede componer la GPU: cada
+ * fotograma con algo en marcha vuelve a pintar el gráfico entero en el hilo principal. Por eso:
+ * - ningún bucle es infinito: cada uno termina cuando su pieza ya no se ve (`loopUntil`);
+ * - los movimientos lentos de todo el gráfico (acercamientos) se aplican a la capa HTML que lo envuelve, que sí
+ *   compone la GPU sin repintar;
+ * - en equipos modestos (`lite`) se quitan los adornos en bucle y el brillo final.
  */
-function createTimeline(): Timeline {
-  const animations: Animation[] = [];
-  const touched = new WeakMap<Element, Set<string>>();
-  return {
-    animations,
-    at(target, frames, start, duration, options = {}) {
-      if (!target) return undefined;
-      const props = new Set(frames.flatMap((frame) => Object.keys(frame).filter((k) => k !== "offset" && k !== "easing")));
-      const seen = touched.get(target) ?? new Set<string>();
-      const fresh = [...props].every((p) => !seen.has(p));
-      props.forEach((p) => seen.add(p));
-      touched.set(target, seen);
-      const animation = target.animate(frames, { delay: start, duration, easing: EASE_OUT, fill: fresh ? "both" : "forwards", ...options });
-      animations.push(animation);
-      return animation;
-    },
-  };
+
+/** Opciones de un bucle que se repite desde `start` hasta `end` (ms de la línea de tiempo) y ahí se detiene. */
+function loopUntil(start: number, duration: number, end: number, options: KeyframeAnimationOptions = {}): KeyframeAnimationOptions {
+  return { ...options, iterations: Math.max(1, (end - start) / duration) };
 }
 
-function buildTimeline(root: HTMLElement, tl: Timeline): void {
+function buildTimeline(root: HTMLElement, tl: Timeline, lite: boolean): void {
   const $ = (selector: string) => root.querySelector(selector);
   const $$ = (selector: string) => Array.from(root.querySelectorAll(selector));
   const { at } = tl;
   const [, a1, a2, a3] = ACT;
   const end = ACT[3] + SEQUENCE[3].duration;
 
-  animateGeometry(root, at, ACT);
+  animateGeometry(root, at, ACT, lite);
 
   /* Acto 0 · mensajes que llegan */
-  at($(".ob-chat"), [{ translate: "0 0" }, { translate: "0 -18px" }], 0, a1 + 2200, { easing: "linear" });
   $$(".ob-bubble").forEach((bubble, i) => {
     const start = 250 + i * 560;
     at(bubble, [{ opacity: 0 }, { opacity: 1 }], start, 220, { easing: "linear" });
     at(bubble, [{ scale: "0.55", translate: "-12px 28px" }, { scale: "1", translate: "0 0" }], start, 820, { easing: SPRING });
   });
-  $$(".ob-wave rect").forEach((bar, i) => {
-    at(bar, [{ scale: "1 1" }, { scale: `1 ${0.25 + ((i * 37) % 60) / 100}` }], 900 + (i % 5) * 70, 380 + ((i * 53) % 260), {
-      iterations: Infinity,
-      direction: "alternate",
-      easing: "ease-in-out",
+  // La onda de la nota de voz late hasta que su burbuja se disuelve (acto 1); en equipos modestos queda quieta.
+  if (!lite) {
+    $$(".ob-wave rect").forEach((bar, i) => {
+      const start = 900 + (i % 5) * 70;
+      const duration = 380 + ((i * 53) % 260);
+      at(bar, [{ scale: "1 1" }, { scale: `1 ${0.25 + ((i * 37) % 60) / 100}` }], start, duration, loopUntil(start, duration, a1 + 2600, {
+        direction: "alternate",
+        easing: "ease-in-out",
+      }));
     });
-  });
+  }
   at($(".ob-typing"), [{ opacity: 0, scale: "0.6" }, { opacity: 1, scale: "1" }], 2050, 520, { easing: SPRING });
-  $$(".ob-typing rect").forEach((dash, i) => {
-    at(dash, [{ translate: "0 0" }, { translate: "0 -5px" }, { translate: "0 0" }], 2300 + i * 140, 700, {
-      iterations: Infinity,
-      easing: "ease-in-out",
+  // Los puntos de "escribiendo" saltan hasta que el indicador se va, al final del acto 0.
+  if (!lite) {
+    $$(".ob-typing rect").forEach((dash, i) => {
+      const start = 2300 + i * 140;
+      at(dash, [{ translate: "0 0" }, { translate: "0 -5px" }, { translate: "0 0" }], start, 700, loopUntil(start, 700, a1 + 100, { easing: "ease-in-out" }));
     });
-  });
+  }
   at($(".ob-typing"), [{ opacity: 1 }, { opacity: 0 }], a1 - 150, 250, { easing: "linear" });
 
   /* Acto 1 · la IA escanea y etiqueta */
@@ -170,7 +162,9 @@ function buildTimeline(root: HTMLElement, tl: Timeline): void {
     at(frame, [{ strokeOpacity: 0 }, { strokeOpacity: 1, offset: 0.3 }, { strokeOpacity: 0.55 }], a1 + 420 + i * 380, 700, { easing: "ease-out" });
   });
   $$(".ob-tag").forEach((tag, i) => {
-    const start = a1 + 520 + i * 380;
+    // Cada etiqueta sale cuando el barrido lee su mensaje; la segunda del mismo mensaje, justo después.
+    const sibling = TAGS.slice(0, i).filter((t) => t.bubble === TAGS[i].bubble).length;
+    const start = a1 + 520 + TAGS[i].bubble * 380 + sibling * 200;
     at(tag, [{ opacity: 0 }, { opacity: 1 }], start, 160, { easing: "linear" });
     at(tag, [{ scale: "0.3", rotate: "-8deg" }, { scale: "1", rotate: "0deg" }], start, 620, { easing: SPRING });
   });
@@ -183,7 +177,7 @@ function buildTimeline(root: HTMLElement, tl: Timeline): void {
   $$(".ob-tag").forEach((tag, i) => {
     const t = TAGS[i];
     const dx = HUB.x - (t.x + t.w / 2);
-    const dy = HUB.y - (t.y + 17) + 18; // +18 compensa la deriva de la conversación
+    const dy = HUB.y - (t.y + 17);
     const start = a1 + 2550 + i * 110;
     at(tag, [{ translate: "0 0" }, { translate: `${dx}px ${dy}px` }], start, 680, { easing: EASE_IN_OUT });
     at(tag, [{ scale: "1" }, { scale: "0.35" }], start, 680, { easing: EASE_IN });
@@ -194,7 +188,6 @@ function buildTimeline(root: HTMLElement, tl: Timeline): void {
 
   /* Acto 2 · el núcleo despliega los seis módulos */
   at($(".ob-wipe-orange"), [{ transform: WIPE_FROM }, { transform: WIPE_TO }], a2, 900, { easing: EASE_IN_OUT });
-  at($(".ob-constellation"), [{ scale: "1" }, { scale: "1.04" }], a2, a3 - a2 + 400, { easing: "linear" });
   /*
    * Conexión módulo a módulo, alternando izquierda y derecha: el núcleo toma impulso y emite ondas, la energía
    * recorre el conector (chispa en la punta del trazo) y, al llegar, la tarjeta se acopla con rebote y su puerto se
@@ -222,12 +215,17 @@ function buildTimeline(root: HTMLElement, tl: Timeline): void {
   const flowing = a2 + 520 + CONNECT_ORDER.length * 160 + 500;
   $$(".ob-pulse").forEach((pulse, i) => {
     at(pulse, [{ opacity: 0 }, { opacity: 1 }], flowing, 200, { easing: "linear" });
-    at(pulse, [{ strokeDashoffset: 1 }, { strokeDashoffset: -0.2 }], flowing + i * 140, 1100, { iterations: Infinity, easing: "cubic-bezier(0.45, 0, 0.55, 1)" });
+    // Los datos fluyen hasta que entra la cortinilla del cierre (en equipos modestos, una sola pasada).
+    const start = flowing + i * 140;
+    const flow = { easing: "cubic-bezier(0.45, 0, 0.55, 1)" };
+    at(pulse, [{ strokeDashoffset: 1 }, { strokeDashoffset: -0.2 }], start, 1100, lite ? flow : loopUntil(start, 1100, a3 + 200, flow));
   });
   at($(".ob-hub"), [{ scale: "1" }, { scale: "1.05" }, { scale: "1" }], flowing, 1000, { iterations: 2, easing: "ease-in-out" });
 
   /* Acto 3 · todo vuelve a la N, que se convierte en el logotipo */
   at($(".ob-wipe-navy"), [{ transform: WIPE_FROM }, { transform: WIPE_TO }], a3, 900, { easing: EASE_IN_OUT });
+  // Con el marino ya cubriendo, la cortinilla naranja queda debajo sin verse: se oculta para que la GPU no la dibuje.
+  at($(".ob-wipe-orange"), [{ visibility: "visible" }, { visibility: "hidden" }], a3 + 900, 1, { easing: "linear" });
   $$(".ob-pulse").forEach((pulse) => at(pulse, [{ opacity: 1 }, { opacity: 0 }], a3, 200, { easing: "linear" }));
   $$(".ob-link").forEach((link) => {
     at(link, [{ strokeDashoffset: 0 }, { strokeDashoffset: -1 }], a3 + 80, 520, { easing: EASE_IN });
@@ -251,8 +249,39 @@ function buildTimeline(root: HTMLElement, tl: Timeline): void {
   });
   at($(".ob-lockup-tagline"), [{ opacity: 0, translate: "-4px 0" }, { opacity: 1, translate: "0 0" }], a3 + 1950, 700, { easing: EASE_OUT });
   at($(".ob-lockup-rule"), [{ scale: "0 1" }, { scale: "1 1" }], a3 + 2050, 800, { easing: EASE_IN_OUT });
-  at($(".ob-shine"), [{ translate: "-260px 0", opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 1, offset: 0.8 }, { translate: "760px 0", opacity: 0 }], a3 + 2250, 1100, { easing: EASE_IN_OUT });
-  at($(".ob-finale"), [{ scale: "1" }, { scale: "1.035" }], a3 + 900, end - a3, { easing: "linear" });
+  // El brillo va recortado por las letras del logotipo: es lo más caro de pintar, así que se omite en equipos modestos.
+  if (!lite) {
+    at($(".ob-shine"), [{ translate: "-260px 0", opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 1, offset: 0.8 }, { translate: "760px 0", opacity: 0 }], a3 + 2250, 1100, { easing: EASE_IN_OUT });
+  }
+
+  // Cada grupo se oculta del todo cuando ya terminó su salida: invisible (opacidad 0) aún cuesta estilo y pintura.
+  const hideAt = (target: Element | null, time: number) =>
+    at(target, [{ visibility: "visible" }, { visibility: "hidden" }], time, 1, { easing: "linear" });
+  hideAt($(".ob-scan"), a1 + 1700);
+  hideAt($(".ob-chat"), a1 + 3600);
+  hideAt($(".ob-constellation"), a3 + 900);
+
+  /*
+   * Acercamiento lento de todo el gráfico: los módulos se acercan durante el acto 2, vuelven mientras regresan a la
+   * N y el logotipo se acerca hasta el final. Va en la capa HTML que envuelve el SVG (su centro es el del núcleo),
+   * que la GPU escala sin repintar el gráfico.
+   */
+  if (!lite) {
+    const span = end - a2;
+    const offset = (t: number) => (t - a2) / span;
+    at(
+      $(".ob-launch-visual"),
+      [
+        { scale: "1", offset: 0, easing: "linear" },
+        { scale: "1.03", offset: offset(a3 + 300), easing: EASE_IN_OUT },
+        { scale: "1", offset: offset(a3 + 900), easing: "linear" },
+        { scale: "1.035", offset: 1 },
+      ],
+      a2,
+      span,
+      { easing: "linear" },
+    );
+  }
 }
 
 /* ── Componente ───────────────────────────────────────────────────────────── */
@@ -260,8 +289,6 @@ function buildTimeline(root: HTMLElement, tl: Timeline): void {
 interface LaunchSequenceProps {
   /** Acto activo de `SEQUENCE` (0..3): solo mueve el texto; el gráfico sigue su propia línea de tiempo. */
   sceneIndex: number;
-  /** True mientras se espera saber si el perfil ya está completo: la línea de tiempo se congela. */
-  holding: boolean;
 }
 
 /**
@@ -269,9 +296,8 @@ interface LaunchSequenceProps {
  * Mensajes de WhatsApp → la IA los etiqueta → las intenciones entran al núcleo N → el núcleo despliega los
  * seis módulos → todo vuelve a la N, que se convierte en el logotipo de Necto.
  */
-export function LaunchSequence({ sceneIndex, holding }: LaunchSequenceProps) {
+export function LaunchSequence({ sceneIndex }: LaunchSequenceProps) {
   const ref = useRef<HTMLElement>(null);
-  const timeline = useRef<Animation[]>([]);
   // El primer acto también entra animado: se activa un fotograma después de montar.
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -284,22 +310,9 @@ export function LaunchSequence({ sceneIndex, holding }: LaunchSequenceProps) {
     const root = ref.current;
     if (!root || typeof root.animate !== "function") return;
     const tl = createTimeline();
-    buildTimeline(root, tl);
-    timeline.current = tl.animations;
+    buildTimeline(root, tl, isLowPowerDevice());
     return () => tl.animations.forEach((animation) => animation.cancel());
   }, []);
-
-  // Congela solo lo que está en marcha y reanuda solo eso: `play()` sobre una animación ya terminada la repetiría.
-  const paused = useRef<Animation[]>([]);
-  useEffect(() => {
-    if (holding) {
-      paused.current = timeline.current.filter((animation) => animation.playState === "running");
-      paused.current.forEach((animation) => animation.pause());
-    } else {
-      paused.current.forEach((animation) => animation.play());
-      paused.current = [];
-    }
-  }, [holding]);
 
   return (
     <section ref={ref} className="ob-launch" data-beat={sceneIndex} aria-label="Presentación de Necto IA">
@@ -392,7 +405,7 @@ export function LaunchSequence({ sceneIndex, holding }: LaunchSequenceProps) {
                 <path d="M54 452 L180 404 L356 452 Z" className="ob-photo-ground" />
                 <rect x="300" y="336" width="34" height="34" rx="8" className="ob-photo-sun" />
               </g>
-              <text className="ob-bubble-text" x="62" y="490">¿Mesa para 4 el sábado?</text>
+              <text className="ob-bubble-text" x="62" y="490">¿Mesa para 4 y un pastel?</text>
             </g>
 
             <g className="ob-typing" style={{ transformOrigin: "420px 520px" }}>
@@ -403,7 +416,7 @@ export function LaunchSequence({ sceneIndex, holding }: LaunchSequenceProps) {
             </g>
 
             {TAGS.map((t) => (
-              <g key={t.label} className={`ob-tag is-${t.tone}`} style={{ transformOrigin: `${t.x + t.w / 2}px ${t.y + 17}px` }}>
+              <g key={`${t.label}-${t.bubble}`} className={`ob-tag is-${t.tone}`} style={{ transformOrigin: `${t.x + t.w / 2}px ${t.y + 17}px` }}>
                 <rect x={t.x} y={t.y} width={t.w} height="34" rx="10" />
                 <path d={`M${t.x + 14} ${t.y + 17} l5 5 l9 -10`} className="ob-tag-check" />
                 <text x={t.x + 34} y={t.y + 22.5}>

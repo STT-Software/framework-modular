@@ -8,12 +8,18 @@ import type { AppModule } from "@/app/module";
  * sesión de superadmin y de tener el perfil de onboarding completo (`requiresSuperAdmin` y
  * `requiresOnboardingCompleted`).
  */
+/**
+ * Descarga la página principal del workspace sin abrirla. La pantalla de carga del onboarding la llama mientras se
+ * anima, así al entrar el workspace ya está listo. Es la misma importación que usa la ruta (el mismo archivo).
+ */
+export const preloadWorkspacePage = () => import("./pages/WorkspacePage");
+
 export const workspaceModule: AppModule = {
   id: "workspace",
   requiresSuperAdmin: true,
   requiresOnboardingCompleted: true,
   routes: [
-    { path: "/workspace", component: lazy(() => import("./pages/WorkspacePage")) },
+    { path: "/workspace", component: lazy(preloadWorkspacePage) },
     { path: "/workspace/businesses/new", component: lazy(() => import("./pages/BusinessSetupPage")) },
     { path: "/workspace/businesses/:id/edit", component: lazy(() => import("./pages/BusinessSetupPage")) },
     { path: "/workspace/profile", component: lazy(() => import("./pages/ProfilePage")) },

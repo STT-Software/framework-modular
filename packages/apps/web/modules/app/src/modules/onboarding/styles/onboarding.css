@@ -186,13 +186,18 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  /* Capa propia en la GPU; fuera de pantalla hasta que la línea de tiempo la mueve. */
-  left: -50vw;
+  /*
+   * Inclinada 20° desde la esquina superior izquierda, el borde izquierdo avanza tan(20°) ≈ 0.364 × alto hacia la
+   * derecha al bajar. Con left −38vh y 100vw + 40vh de ancho cubre la pantalla entera en cualquier orientación
+   * (también la esquina inferior izquierda en vertical) sin la capa de 200vw de antes, que en un teléfono 3x costaba
+   * decenas de MB de memoria gráfica. Sin `will-change`: la GPU la toma solo mientras se anima.
+   * Fuera de pantalla hasta que la línea de tiempo la mueve.
+   */
+  left: -38vh;
   right: auto;
-  width: 200vw;
+  width: calc(100vw + 40vh);
   transform-origin: 0 0;
-  transform: translateX(calc(-150vw - 40vh)) skewX(20deg);
-  will-change: transform;
+  transform: translateX(calc(-100vw - 40vh)) skewX(20deg);
   backface-visibility: hidden;
 }
 
@@ -990,14 +995,13 @@
   z-index: 0;
   background: var(--ob-finale);
   pointer-events: none;
-  /* Estado final (oculto): la animación de entrada barre la cortina en diagonal hasta aquí. */
-  left: -50vw;
+  /* Mismas medidas que `.ob-wipe` (ver allí por qué). */
+  left: -38vh;
   right: auto;
-  width: 200vw;
+  width: calc(100vw + 40vh);
   transform-origin: 0 0;
   /* Estado final (fuera de pantalla a la derecha): la animación de entrada barre la cortina hasta aquí. */
-  transform: translateX(calc(150vw + 5vh)) skewX(20deg);
-  will-change: transform;
+  transform: translateX(calc(100vw + 40vh)) skewX(20deg);
   backface-visibility: hidden;
 }
 
@@ -1100,37 +1104,6 @@
   position: relative;
   z-index: 5;
   transition: color 280ms ease 200ms;
-}
-
-/* Saltar la intro: discreto, hereda el color del pie en cada acto. */
-.ob-skip {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 36px;
-  padding: 0 16px;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  opacity: 0.72;
-  transition: opacity 160ms ease;
-}
-
-.ob-skip:hover {
-  opacity: 1;
-}
-
-.ob-skip span {
-  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.ob-skip:hover span {
-  transform: translateX(3px);
 }
 
 .ob-story-progress {
@@ -1281,4 +1254,217 @@
     transition: none !important;
     animation: none !important;
   }
+}
+
+/*
+ * ── Pantalla de carga hacia el workspace · «El cruce» (`WorkspaceLoader`) ──────────────────────────────────────
+ * Estados iniciales en CSS (la animación los toma de aquí); con `.is-static` (movimiento reducido) se ve el final
+ * quieto. Solo se animan transform y opacidad de elementos HTML.
+ */
+.ob-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  pointer-events: auto;
+  color: #fff8f0;
+  font-family: "DM Sans", Arial, sans-serif;
+  --ob-loader-exit: #ececec;
+  --ob-loader-stripe: clamp(14px, 3.6vmin, 30px);
+}
+
+.dark .ob-loader {
+  --ob-loader-exit: #0c111d;
+}
+
+/* Cortinillas con las medidas de `.ob-wipe` (cubren la pantalla inclinada 20° en cualquier orientación). */
+.ob-loader-curtain,
+.ob-loader-exit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -38vh;
+  width: calc(100vw + 40vh);
+  transform-origin: 0 0;
+  transform: translateX(calc(-100vw - 40vh)) skewX(20deg);
+  backface-visibility: hidden;
+}
+
+.ob-loader-curtain {
+  background: #100548;
+}
+
+.ob-loader-exit {
+  z-index: 2;
+  background: var(--ob-loader-exit);
+}
+
+.ob-loader-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+}
+
+/* El centro es la marca; el paso de cebra se centra en ella y el texto va debajo. */
+.ob-loader-center {
+  --mark: clamp(76px, 15vmin, 128px);
+  position: relative;
+  width: var(--mark);
+  height: var(--mark);
+  margin-bottom: 14vmin;
+}
+
+.ob-loader-cross {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  gap: calc(var(--ob-loader-stripe) * 1.6);
+  transform: translate(-50%, -50%) skewX(20deg);
+}
+
+.ob-loader-stripe {
+  display: block;
+  width: var(--ob-loader-stripe);
+  /* 7 anchos: la mitad (3.5) queda por encima del texto, que va a media marca + 5vmin del centro; así las franjas
+     crema nunca pasan por detrás de las palabras crema. */
+  height: calc(var(--ob-loader-stripe) * 7);
+  border-radius: 3px;
+  background: #f5efe3;
+  opacity: 0;
+}
+
+.ob-loader-stripe.is-accent {
+  background: #ff3f1a;
+}
+
+.ob-loader-mark {
+  position: absolute;
+  inset: 0;
+}
+
+.ob-loader-mark svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  opacity: 0;
+}
+
+.ob-loader-corner path {
+  fill: #ffffff;
+}
+
+/* La esquina gira sobre su propio centro (en la esquina superior derecha del cuadro de la N). */
+.ob-loader-corner {
+  transform-origin: 79% 14%;
+}
+
+/* Ondas del acople (los aros de la marca). */
+.ob-loader-echo {
+  position: absolute;
+  inset: -18%;
+  border: 2px solid rgba(151, 214, 223, 0.85);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.ob-loader-text {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 5vmin);
+  width: min(90vw, 560px);
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.ob-loader-words {
+  display: grid;
+  overflow: hidden;
+  padding: 0.06em 0 0.14em;
+}
+
+.ob-loader-word {
+  grid-area: 1 / 1;
+  font-size: clamp(30px, 6vmin, 56px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  translate: 0 110%;
+}
+
+.ob-loader-word.is-accent {
+  color: #ff3f1a;
+}
+
+.ob-loader-progress {
+  position: relative;
+  display: block;
+  width: clamp(140px, 22vmin, 220px);
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.14);
+  opacity: 0;
+}
+
+.ob-loader-fill,
+.ob-loader-glint {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.ob-loader-fill {
+  right: 0;
+  background: #ff3f1a;
+  transform-origin: 0 50%;
+  scale: 0 1;
+}
+
+.ob-loader-glint {
+  width: 25%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  translate: -100% 0;
+}
+
+.ob-loader-caption {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #97d6df;
+  opacity: 0;
+}
+
+/* Movimiento reducido: la marca y el lema quietos, sin paso de cebra. */
+.ob-loader.is-static .ob-loader-curtain {
+  transform: none;
+  left: 0;
+  width: 100%;
+}
+
+.ob-loader.is-static .ob-loader-mark svg,
+.ob-loader.is-static .ob-loader-progress,
+.ob-loader.is-static .ob-loader-caption {
+  opacity: 1;
+}
+
+.ob-loader.is-static .ob-loader-word {
+  translate: none;
+}
+
+.ob-loader.is-static .ob-loader-word:not(.is-accent) {
+  visibility: hidden;
+}
+
+.ob-loader.is-static .ob-loader-fill {
+  scale: 0.6 1;
 }

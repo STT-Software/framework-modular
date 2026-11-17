@@ -67,7 +67,7 @@ export function BrandGeometry() {
 }
 
 /** Programa la geometría en la línea de tiempo de la secuencia; `acts` son los inicios de cada acto en ms. */
-export function animateGeometry(root: HTMLElement, at: GeometryAt, acts: number[]): void {
+export function animateGeometry(root: HTMLElement, at: GeometryAt, acts: number[], lite = false): void {
   const $ = (selector: string) => root.querySelector(selector);
   const $$ = (selector: string) => Array.from(root.querySelectorAll(selector));
   const [, a1, a2, a3] = acts;
@@ -100,13 +100,17 @@ export function animateGeometry(root: HTMLElement, at: GeometryAt, acts: number[
   at(sat, [{ opacity: 0 }, { opacity: 1 }], 1400, 140, { easing: "linear" });
   at(sat, [{ translate: "0 -7vmin", scale: "0.4" }, { translate: "0 0", scale: "1" }], 1400, 820, { easing: BOUNCE });
   at(dots, [{ opacity: 0, translate: "0 3vmin" }, { opacity: 1, translate: "0 0" }], 1900, 700, { easing: EASE_OUT });
-  $$(".ob-geo-dots b").forEach((bead, i) => {
-    at(bead, [{ translate: "0 0" }, { translate: "0 -1.3vmin" }], 2200 + i * 160, 420, {
-      iterations: Infinity,
-      direction: "alternate",
-      easing: "ease-in-out",
+  // Los puntos "escriben" hasta que se van en el acto 1 (nada queda en bucle); en equipos modestos, quietos.
+  if (!lite) {
+    $$(".ob-geo-dots b").forEach((bead, i) => {
+      const start = 2200 + i * 160;
+      at(bead, [{ translate: "0 0" }, { translate: "0 -1.3vmin" }], start, 420, {
+        iterations: Math.max(1, (a1 + 500 - start) / 420),
+        direction: "alternate",
+        easing: "ease-in-out",
+      });
     });
-  });
+  }
 
   /* Acto 1 · la IA lee: la onda y los puntos se van (ya se leyeron), un arco barre como un radar y entra un +. */
   at(wavePath, [{ strokeDashoffset: 0 }, { strokeDashoffset: -1 }], a1 + 100, 800, { easing: EASE_IN });

@@ -105,3 +105,5 @@ BusinessSchema.index({ ownerId: 1, idempotencyKey: 1 }, { unique: true });
 // The owner's directory: newest first, optionally narrowed by status and category.
 BusinessSchema.index({ ownerId: 1, createdAt: -1 });
 BusinessSchema.index({ ownerId: 1, status: 1, category: 1 });
+// Which businesses can the person with this email administer? (business-access sign-in)
+BusinessSchema.index({ 'boss.email': 1, status: 1 });

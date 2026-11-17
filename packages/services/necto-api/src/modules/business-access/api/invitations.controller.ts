@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Controller, Get, Header, HttpCode, Param, Post } from '@nestjs/common';
 import type { AuthenticatedUser } from '../../../platform/security/authenticated-user';
 import { CurrentUser } from '../../../platform/security/current-user.decorator';
 import { SuperAdminOnly } from '../../../platform/security/super-admin-only.decorator';
@@ -27,6 +27,18 @@ export class InvitationsController {
   @Get()
   async status(@CurrentUser() user: AuthenticatedUser, @Param('businessId') businessId: string) {
     return toResponse(await this.invitations.status(user.userId, businessId));
+  }
+
+  /**
+   * A temporary sign-in code for the boss, to copy and hand over (it is not emailed). The only response that ever
+   * carries a code: it is shown once and is not kept anywhere in readable form.
+   */
+  @Post('temporary-code')
+  @HttpCode(201)
+  @Header('Cache-Control', 'no-store')
+  async temporaryCode(@CurrentUser() user: AuthenticatedUser, @Param('businessId') businessId: string) {
+    const issued = await this.invitations.issueTemporaryCode(user.userId, businessId);
+    return { code: issued.code, bossEmail: issued.bossEmail, expiresAt: issued.expiresAt.toISOString() };
   }
 
   /** Sends a new code to the current boss (for example after a failed send). Limited. */

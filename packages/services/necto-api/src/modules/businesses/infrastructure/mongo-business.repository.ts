@@ -100,6 +100,11 @@ export class MongoBusinessRepository extends BusinessRepository {
     return record ? toDomain(record) : null;
   }
 
+  async findActiveByBossEmail(email: string): Promise<Business[]> {
+    const records = await this.model.find({ 'boss.email': email, status: 'active' }).sort({ createdAt: 1, _id: 1 }).lean<Lean[]>();
+    return records.map(toDomain);
+  }
+
   async list(ownerId: string, query: ListQuery): Promise<{ items: Business[]; total: number }> {
     const filter: QueryFilter<BusinessRecord> = { ownerId };
     if (query.category) filter.category = query.category;

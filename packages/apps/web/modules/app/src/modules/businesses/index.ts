@@ -8,7 +8,7 @@ export { BusinessCard } from "./components/BusinessCard";
 export { BusinessDetailDialog } from "./components/BusinessDetailDialog";
 export { BusinessWizard } from "./components/BusinessWizard";
 export { businessesApi, BusinessesError } from "./api/businessesApi";
-export { CATEGORIES } from "./catalog";
+export { CATEGORIES, categoryLabel, moduleInfo } from "./catalog";
 export { downloadBlob } from "./download";
 export { businessErrorMessage } from "./errors";
 export { businessesStore, PAGE_SIZE } from "./stores/businesses.store";

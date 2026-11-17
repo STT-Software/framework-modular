@@ -1,9 +1,15 @@
 /**
  * Public door of the business-access module: the only file other code may import from it.
  *
- * Today it exposes just the module, so the application can register it. Nothing else needs it yet.
- * A module that serves a functionality to bosses (reservas, turnos...) will need to restrict a route to
- * the boss of an active business: when the first one exists, export a `BossOnly` decorator here
- * (the guard and the decorator live in `api/`), never the repositories or the code logic.
+ * - `BusinessAccessModule`: so the application can register it, and so a module that serves a functionality
+ *   (reservas, turnos...) can import it to use the decorators below.
+ * - `BusinessAdminOnly()`: restricts a route to a signed-in administrator of businesses (their session is checked
+ *   against the database on every request).
+ * - `RecentlyVerified()`: the same, and the person must have confirmed a code recently (sensitive actions).
+ * - `RequiresBusinessModule(id)`: for routes under `/:businessId/`: the person must be the current boss of that
+ *   active business AND it must have that functionality enabled. The server decides; hiding it in the UI is not enough.
+ *
+ * Never the repositories, the schemas or the code logic.
  */
 export { BusinessAccessModule } from './business-access.module';
+export { BusinessAdminOnly, RecentlyVerified, RequiresBusinessModule, type AdminRequest } from './api/business-admin.guards';

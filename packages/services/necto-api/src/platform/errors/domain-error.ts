@@ -10,6 +10,8 @@ export abstract class DomainError extends Error {
 
   /** For `rate-limited` errors: how many seconds until the caller may try again. */
   readonly retryAfterSeconds?: number;
+  /** A stable, machine-readable reason a client can act on (for example `reverification-required`). */
+  readonly code?: string;
 
   constructor(message: string) {
     super(message);

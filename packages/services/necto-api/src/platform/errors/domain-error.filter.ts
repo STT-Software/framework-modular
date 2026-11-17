@@ -19,6 +19,6 @@ export class DomainErrorFilter implements ExceptionFilter<DomainError> {
     if (error.kind === 'rate-limited' && error.retryAfterSeconds !== undefined) {
       response.setHeader('Retry-After', String(Math.max(1, Math.ceil(error.retryAfterSeconds))));
     }
-    response.status(status).json({ message: error.message, error: label, statusCode: status });
+    response.status(status).json({ message: error.message, error: label, statusCode: status, ...(error.code ? { code: error.code } : {}) });
   }
 }

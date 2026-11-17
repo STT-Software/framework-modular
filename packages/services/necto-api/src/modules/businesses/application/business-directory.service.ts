@@ -10,6 +10,8 @@ function toView(business: Business): BusinessAccessView {
     ownerId: business.ownerId,
     name: business.name,
     status: business.status,
+    category: business.category,
+    categoryOther: business.categoryOther,
     modules: business.modules,
     boss: { assignmentId: business.boss.assignmentId, name: business.boss.name, email: business.boss.email },
   };
@@ -30,6 +32,10 @@ export class BusinessDirectoryService extends BusinessDirectory {
   async find(businessId: string): Promise<BusinessAccessView | null> {
     const business = await this.businesses.findById(businessId);
     return business ? toView(business) : null;
+  }
+
+  async findActiveByBossEmail(email: string): Promise<BusinessAccessView[]> {
+    return (await this.businesses.findActiveByBossEmail(email)).map(toView);
   }
 }
 

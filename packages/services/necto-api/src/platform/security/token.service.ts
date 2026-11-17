@@ -16,22 +16,23 @@ export class TokenService {
   constructor(private readonly jwt: JwtService) {}
 
   /** Signs a token for an identity that a module has already validated (for example, after a login). */
-  issue(user: AuthenticatedUser): Promise<string> {
-    if (user.role === 'business-boss') {
-      return this.jwt.signAsync({ sub: user.userId, role: user.role, bid: user.businessId, aid: user.assignmentId });
+  issue(user: AuthenticatedUser, options: { expiresInSeconds?: number } = {}): Promise<string> {
+    const signOptions = options.expiresInSeconds ? { expiresIn: options.expiresInSeconds } : undefined;
+    if (user.role === 'business-admin') {
+      return this.jwt.signAsync({ sub: user.userId, role: user.role, sid: user.sessionId }, signOptions);
     }
-    return this.jwt.signAsync({ sub: user.userId, role: user.role });
+    return this.jwt.signAsync({ sub: user.userId, role: user.role }, signOptions);
   }
 
   /** The identity inside a valid, unexpired token; `null` for anything else (malformed, forged, expired, unknown role). */
   async verify(token: string): Promise<AuthenticatedUser | null> {
     try {
-      const claims = await this.jwt.verifyAsync<{ sub?: unknown; role?: unknown; bid?: unknown; aid?: unknown }>(token);
+      const claims = await this.jwt.verifyAsync<{ sub?: unknown; role?: unknown; sid?: unknown }>(token);
       if (!nonEmptyString(claims.sub)) return null;
       if (!USER_ROLES.includes(claims.role as UserRole)) return null;
-      if (claims.role === 'business-boss') {
-        if (!nonEmptyString(claims.bid) || !nonEmptyString(claims.aid)) return null;
-        return { userId: claims.sub, role: 'business-boss', businessId: claims.bid, assignmentId: claims.aid };
+      if (claims.role === 'business-admin') {
+        if (!nonEmptyString(claims.sid)) return null;
+        return { userId: claims.sub, role: 'business-admin', sessionId: claims.sid };
       }
       return { userId: claims.sub, role: 'superadmin' };
     } catch {

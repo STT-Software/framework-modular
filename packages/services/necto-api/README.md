@@ -81,9 +81,16 @@ Si falta una variable obligatoria o el secreto es débil, el servicio no arranca
 | `GET` | `/businesses/export.csv` | Exporta los negocios del superadmin (neutraliza fórmulas). |
 | `GET` | `/businesses/:businessId/invitation` | Estado de la invitación al jefe. |
 | `POST` | `/businesses/:businessId/invitation/resend` | Envía un código nuevo al jefe vigente. |
-| `POST` | `/business-access/otp/request` | Pide un código de acceso por correo. Responde `202` siempre igual. |
-| `POST` | `/business-access/otp/verify` | Canjea el código y devuelve la sesión del jefe. |
-| `GET` | `/business-access/me` | Negocio y jefe de la sesión (requiere token de jefe). |
+| `POST` | `/businesses/:businessId/invitation/temporary-code` | Genera un **código temporal** para copiar y entregar al jefe (no se envía por correo). Solo el dueño. |
+| `POST` | `/business-access/otp/request` | Pide un código por correo `{ email }`. `202` si el correo es jefe de un negocio activo; `404 email-not-assigned` si no (primero lo debe invitar el superadmin). |
+| `POST` | `/business-access/otp/verify` | Canjea el código `{ email, code, remember? }`: abre la sesión (cookie `HttpOnly`) y devuelve el token y los negocios autorizados. |
+| `GET` | `/business-access/session` | ¿Hay una sesión vigente en este navegador? (cookie). |
+| `POST` | `/business-access/session/refresh` | Continúa con esa sesión sin otro código: token nuevo y negocios autorizados ahora. |
+| `DELETE` | `/business-access/session` | Cierra la sesión y olvida el dispositivo (revoca en el servidor y borra la cookie). |
+| `POST` | `/business-access/session/reverify/request` y `/reverify` | Confirma el correo con un código nuevo estando dentro (acciones sensibles). |
+| `POST` | `/business-access/session/revoke-others` | "Cerrar las demás sesiones". Exige una verificación reciente. |
+| `GET` | `/business-access/businesses` y `/:businessId` | Solo los negocios que la persona administra ahora (token de administrador). |
+| `GET` | `/business-access/businesses/:businessId/modules/:moduleId` | ¿Puede abrir ese módulo? `403 module-not-enabled` si el negocio no lo tiene. |
 | `GET` | `/health` | Estado del servicio. |
 
 Los módulos y sus rutas: `auth` (`/auth/super/...`), `onboarding` (`/onboarding/...`), `businesses` (`/businesses/...`) y
@@ -228,7 +235,7 @@ los negocios de quien los creó** (un negocio ajeno responde `404`, igual que un
 - **Editar (`PUT /businesses/:id`).** Si cambia el correo del jefe (normalizado), se crea una asignación nueva, la anterior
   pasa al historial y se publica `BossAssigned`; si solo cambia el nombre, no se invita de nuevo. Guarda con control de
   concurrencia por `version` (dos escrituras simultáneas: la perdedora recibe `409`).
-- **Pausar / reanudar.** Un negocio pausado bloquea al jefe (sesión `403`, no recibe códigos).
+- **Pausar / reanudar.** Un negocio pausado deja de aparecer para su administrador y bloquea sus módulos (no recibe códigos de acceso).
 - **Ficha.** Resumen, módulos y equipo; `summary.hasActivity` es `false` (no se inventan métricas). Nunca expone códigos,
   hashes ni secretos.
 - **Puerta pública** (`public.ts`): `BusinessDirectory` (consulta de un negocio y su jefe vigente), el evento `BossAssigned`
@@ -239,27 +246,106 @@ Datos: colección `businesses`, índices `{ ownerId, idempotencyKey }` (único),
 
 ## Módulo business-access
 
-Acceso del jefe **sin contraseña**: un código de 6 dígitos por correo.
+Acceso de los **administradores de negocio** (el jefe asignado de cada negocio), **sin contraseña**: el correo asignado y un código
+de 6 dígitos enviado a ese correo. Una misma persona puede administrar varios negocios; entra una vez y elige.
 
-- **Invitación.** Al crear un negocio (o reemplazar al jefe), `businesses` publica `BossAssigned` y este módulo envía el
-  primer código. `business-access` depende de `businesses/public`, nunca al revés (sin ciclos).
-- **Código.** Aleatorio (`crypto.randomInt`), se guarda solo su HMAC-SHA256 atado a negocio, asignación, correo y propósito;
-  se compara en tiempo constante. Vence a los 10 min, admite 5 intentos y se canjea **una sola vez** (si llegan dos
-  verificaciones simultáneas, solo una gana). Pedir un código nuevo invalida el anterior.
-- **Respuestas que no filtran información.** `request` responde `202` igual exista o no el correo/negocio, esté pausado o no;
-  `verify` responde siempre el mismo `401 Invalid or expired code` (código errado, vencido, usado, de otro negocio o de un
-  jefe reemplazado). Las únicas respuestas visibles distintas son `429` con `Retry-After`.
-- **Límites** (en MongoDB, ventana fija; cada solicitud cuenta aunque sea rechazada): por persona+negocio y por IP, tanto
-  para intentos como para envíos. Pedir códigos nuevos no reinicia los intentos.
-- **Sesión del jefe.** Token con `role: business-boss`, `businessId` y `assignmentId`. `BusinessBossGuard` lo valida contra la
-  base **en cada petición**: jefe reemplazado `401`, negocio pausado `403`, token de superadmin en ruta de jefe `403`.
-- **Correo.** Se envía en segundo plano; si falla, el negocio ya está creado. Estados de entrega: `sending`, `accepted`
-  (el proveedor aceptó el mensaje) y `failed` (con `not-configured`, `rejected`, `timeout`, `connection` o `unknown`).
-  **No existe "entregado"**: `deliveryConfirmed` es siempre `false`, porque que un proveedor acepte un mensaje no prueba que
-  la persona lo recibió. El reenvío (`/invitation/resend`) respeta 60 s entre envíos y el tope por hora.
-- **Enlace del correo.** `<PUBLIC_APP_URL>/business/access?business=<id>`; el código nunca va en la URL.
+### Cómo funciona
 
-Datos: `access_challenges` (índices por negocio/correo/estado y expiración a 24 h) y `access_rate_limits` (TTL por `expiresAt`).
+1. `POST /business-access/otp/request { email }` → `202` (`expiresInMinutes`, `resendAfterSeconds`, `maxAttempts`) si el correo es el jefe
+   vigente de algún negocio **activo**: se pide el envío del código. Si no lo es (sin negocio, negocio pausado o jefe reemplazado),
+   responde `404` con `code: "email-not-assigned"` y **no se crea ningún código**: la pantalla no avanza y dice que primero el
+   superadministrador debe invitar a la persona. Pedir otro código antes de 60 s, o mientras espera un código temporal, responde `202` sin
+   emitir uno nuevo.
+   > **Decisión de producto:** esta respuesta revela si un correo está asignado a un negocio (antes el acceso respondía igual para
+   > todos). Cada solicitud, asignada o no, cuenta para los límites por correo y por IP (5/h y 20/h), que es lo que frena el sondeo
+   > masivo. Si algún día debe volver la respuesta genérica, el único cambio es dejar de lanzar `EmailNotAssignedError` en
+   > `AdminLoginService.requestCode`.
+2. `POST /business-access/otp/verify { email, code, remember? }` → `200`. El servidor gasta el código, comprueba que el correo siga siendo
+   jefe de al menos un negocio activo y abre una **sesión de servidor**. Responde con `accessToken` (corto), `expiresInSeconds`,
+   `admin { email, remember }` y `businesses[]` (solo los autorizados), y pone la cookie de sesión.
+3. Con una sola opción el cliente entra directo; con varias muestra el selector. Cada negocio se confirma con
+   `GET /business-access/businesses/:businessId` (el servidor vuelve a comprobar todo).
+
+**Conocer el correo nunca basta**: sin un código válido no se crea ninguna sesión, y `GET /session` sin la cookie responde `401`.
+
+### Códigos (OTP)
+
+- Seis dígitos con `crypto.randomInt`, vigencia de **10 minutos**, **un solo uso** (el gasto es atómico: si llegan dos verificaciones
+  simultáneas, solo una gana), **máximo 5 intentos por código** y **60 s** entre códigos del mismo correo.
+- Solo se guarda su **HMAC-SHA256** (clave `OTP_SECRET`) atado al código, al correo y al propósito, comparado en tiempo constante. El
+  código no aparece en respuestas ni en registros.
+- Un código pertenece a un **correo**, no a un negocio. Cuáles negocios abre se decide **al usarlo**, con las asignaciones vigentes en ese
+  momento. La invitación enviada al asignar un jefe es un código de acceso más (y además registra el estado de entrega del negocio).
+- Propósitos: `invitation`, `login` y `reverify`. Los de acceso (`invitation`/`login`) no sirven para reverificar y al revés. Pedir un
+  código nuevo invalida el anterior de su familia.
+- La **verificación** sigue sin filtrar información: código errado, vencido, usado, bloqueado o de un correo sin negocio dan todos
+  `401 Invalid or expired code`. Las otras respuestas visibles son `429` con `Retry-After` y, al **pedir** el código, `404 email-not-assigned`.
+- **Límites** (MongoDB, ventana fija; cada solicitud cuenta aunque se rechace): por correo y por IP, para intentos (10 y 30 por 15 min) y
+  para envíos (5 y 20 por hora). Pedir códigos nuevos no reinicia los intentos. Además, `@Throttle` por ruta.
+
+### Código temporal del superadmin (provisional)
+
+Mientras el envío real de correo no esté listo, el **dueño** del negocio puede generar un código para el jefe y entregárselo por otro medio:
+`POST /businesses/:businessId/invitation/temporary-code` → `201 { code, bossEmail, expiresAt }` con `Cache-Control: no-store`.
+
+- Es un código de acceso normal del correo del jefe (propósito `manual`): 10 minutos, un solo uso, 5 intentos. **No se envía por correo**
+  (su entrega queda `not-sent`). Es la **única** respuesta que contiene un código: se muestra una vez y en la base solo queda su HMAC.
+- Solo el dueño del negocio, con el negocio activo, y como máximo 5 por hora y negocio (los de `OTP_CONTEXT_SEND_LIMIT`). Cada uno
+  reemplaza al anterior y guarda `issuedBy` (quién lo generó).
+- Mientras el código temporal espera, si el jefe pide un código en la pantalla de acceso **no se emite otro** (no pisaría el que le
+  entregaron). Deja de servir al usarse, al vencer o si el jefe del negocio es reemplazado.
+- **Riesgo asumido:** quien tenga el código entra como el jefe. Es una puerta del superadmin hacia la sesión del jefe; por eso es
+  provisional y debe retirarse (o limitarse) cuando el correo real funcione.
+
+### Sesiones, "recordar dispositivo" y regreso rápido
+
+- La sesión vive en el **servidor** (`admin_sessions`). El navegador guarda un secreto aleatorio en la cookie `necto_admin_session`
+  (**`HttpOnly`**, **`SameSite=Strict`**, `Secure` si `PUBLIC_APP_URL` es https); la base guarda solo su **hash SHA-256**.
+- El `accessToken` (JWT, `role: business-admin`, solo lleva el id de la sesión) dura **10 minutos** y se pide de nuevo con
+  `POST /session/refresh` usando la cookie. El cliente lo guarda **solo en memoria**.
+- **Sesión normal:** cookie de navegador (muere al cerrarlo), 2 h de inactividad y 12 h en total.
+- **"Recordar este dispositivo"** (`remember: true`, **desactivado por defecto**): cookie de 30 días como máximo, 14 días de inactividad,
+  nunca más de **30 días desde el código** aunque se renueve (`ADMIN_REMEMBER_DAYS` no puede pasar de 30).
+- **Renovación:** `refresh` mueve la caducidad por inactividad, nunca más allá de la absoluta, y devuelve los negocios autorizados en ese
+  instante. Si ya no administra ninguno, la sesión se termina.
+- **Revocación:** `DELETE /session` (cerrar sesión u olvidar el dispositivo) y "cerrar las demás sesiones" terminan la sesión **al
+  instante**: el guard comprueba la sesión en la base en **cada** petición, así que ni un token que aún no venció sirve.
+  Abrir una sesión nueva en un navegador termina la anterior de ese navegador.
+- **Acciones sensibles:** `@RecentlyVerified()` exige que el último código confirmado tenga menos de 10 minutos
+  (`ADMIN_SENSITIVE_REVERIFY_MINUTES`); si no, `403` con `code: "reverification-required"`. El cliente pide un código con
+  `POST /session/reverify/request`, lo confirma con `POST /session/reverify { code }` y reintenta. Hoy la usa `revoke-others`.
+
+### Permisos
+
+- Roles separados: un token de superadmin en una ruta de administrador (y al revés) da `403`.
+- En cada petición se comprueba: sesión vigente y del mismo correo, y, por negocio, que el correo sea el **jefe vigente**, que el negocio
+  esté **activo** y, por módulo, que lo tenga **habilitado**. Pausar un negocio, reemplazar al jefe o quitar un módulo cierran la
+  puerta al instante. Un negocio desconocido, pausado o ajeno responde igual (`404`).
+- Para que un módulo funcional (reservas, turnos...) proteja sus rutas `/…/:businessId/…`, importa `BusinessAccessModule` y usa los
+  decoradores de `business-access/public.ts`: `@BusinessAdminOnly()`, `@RecentlyVerified()` y `@RequiresBusinessModule('reservas')`.
+
+### Correo
+
+Se envía en segundo plano; si falla, lo demás ya está hecho. Estados: `sending`, `accepted` (el proveedor aceptó el mensaje) y `failed`
+(`not-configured`, `rejected`, `timeout`, `connection` o `unknown`). **No existe "entregado"**: que un proveedor acepte un mensaje no
+prueba que la persona lo recibió (`deliveryConfirmed` es siempre `false`). El enlace del correo es `<PUBLIC_APP_URL>/business/access`
+y nunca lleva el código.
+
+Datos: `access_challenges`, `access_rate_limits` y `admin_sessions` (con índices TTL solo de limpieza: nada depende de ellos para
+decidir si algo es válido). `businesses` suma el índice `{ boss.email, status }`.
+
+### Variables de este módulo
+
+| Variable | Defecto | Descripción |
+|----------|---------|-------------|
+| `OTP_SECRET` | (obligatoria) | Clave del HMAC de los códigos; ≥32 caracteres y distinta de `JWT_SECRET`. |
+| `OTP_*` | ver `.env.example` | Vigencia, intentos y límites de los códigos. |
+| `ADMIN_ACCESS_TOKEN_MINUTES` | 10 | Vida del token corto. |
+| `ADMIN_SESSION_IDLE_MINUTES` / `ADMIN_SESSION_HOURS` | 120 / 12 | Sesión normal: inactividad y total. |
+| `ADMIN_REMEMBER_DAYS` / `ADMIN_REMEMBER_IDLE_DAYS` | 30 / 14 | Dispositivo recordado (nunca más de 30 días en total). |
+| `ADMIN_SENSITIVE_REVERIFY_MINUTES` | 10 | Antigüedad máxima del último código para una acción sensible. |
+| `PUBLIC_APP_URL` | `http://localhost:6020` | Dirección del frontend (enlace del correo; `https://` activa `Secure` en la cookie). |
+| `CORS_ORIGIN` | `http://localhost:6020` | Origen del frontend; el backend permite credenciales (cookies). |
 
 ### Configurar y probar el correo
 
@@ -304,7 +390,7 @@ src/
     │   ├── domain/              Perfil, orígenes permitidos, errores y el puerto del repositorio
     │   └── infrastructure/      Esquema de Mongo y repositorio de `onboarding_profiles`
     ├── businesses/              Negocios, jefe vigente y módulos habilitados (colección `businesses`)
-    └── business-access/         Invitación y acceso del jefe por código OTP (`access_challenges`, `access_rate_limits`)
+    └── business-access/         Acceso de administradores por OTP, sesiones y permisos (`access_challenges`, `access_rate_limits`, `admin_sessions`)
 ```
 
 Dentro de un módulo, las capas dependen en una sola dirección: `api` y `infrastructure` -> `application` y `domain`;
@@ -318,7 +404,7 @@ habla con un repositorio abstracto (`domain/*.repository.ts`) que implementa `in
 | `auth` | Registro y login del superadmin; emite la sesión | Colección `super_admins` | `/auth/super/*` |
 | `onboarding` | Teléfono (único entre usuarios) y dónde conoció Necto el usuario | Colección `onboarding_profiles` | `/onboarding/profile/*` |
 | `businesses` | Negocios, jefe vigente, catálogo y habilitación de módulos | Colección `businesses` | `/businesses/*` |
-| `business-access` | Invitación por correo y acceso del jefe con código OTP | `access_challenges`, `access_rate_limits` | `/business-access/*`, `/businesses/:id/invitation*` |
+| `business-access` | Invitación por correo, acceso de administradores con OTP, sesiones y permisos por negocio/módulo | `access_challenges`, `access_rate_limits`, `admin_sessions` | `/business-access/*`, `/businesses/:id/invitation*` |
 
 - **Puertas públicas.** `modules/<módulo>/public.ts` es lo único que otro código puede importar de un módulo. Hoy exporta
   el módulo de Nest (para que `app.module.ts` lo registre) y, si otro módulo lo necesita, contratos: `businesses` exporta
@@ -352,10 +438,11 @@ Son tres cosas distintas y viven en lugares distintos:
 
 - **Casos de uso** de `auth` y `onboarding` con repositorios en memoria (registro, duplicados, login, teléfono único entre
   usuarios, orden de los pasos, fecha de completado).
-- **Seguridad:** emisión y verificación de tokens (incluido el de jefe), `AuthenticationGuard` y `SuperAdminGuard`.
+- **Seguridad:** emisión y verificación de tokens (incluido el de administrador de negocio), `AuthenticationGuard` y `SuperAdminGuard`.
 - **`businesses`:** creación, idempotencia, validación del catálogo, edición, reemplazo del jefe, pausa y CSV.
-- **`business-access`:** códigos (un solo uso, vencimiento, intentos, límites, carrera de dos verificaciones), invitación y
-  reenvío, estados de entrega del correo (sin afirmar entrega), sesión del jefe y `BusinessBossGuard`.
+- **`business-access`:** códigos por correo (un solo uso, vencimiento, intentos, límites, carrera de dos verificaciones), invitación y
+  reenvío, estados de entrega del correo (sin afirmar entrega), inicio de sesión de varios negocios, sesiones (normal, recordada
+  hasta 30 días, caducidad, renovación y revocación), reverificación, y los guards de permisos por negocio y módulo.
 - **Arquitectura** (`src/architecture.spec.ts`): lee los imports reales y comprueba que `platform/` no depende de los
   módulos, que los módulos solo se alcanzan por `public.ts`, que las capas respetan su sentido, que Mongoose solo está en
   `infrastructure`, que `@nestjs/jwt` solo está en `platform/security` y `nodemailer` solo en `platform/mail`, y que no hay ciclos entre archivos ni entre módulos.

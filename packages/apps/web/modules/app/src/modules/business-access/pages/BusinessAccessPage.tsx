@@ -3,59 +3,85 @@ import "@fontsource/dm-sans/500.css";
 import "@fontsource/dm-sans/600.css";
 import "../styles/business-access.css";
 import { observer } from "mobx-react-lite";
-import { useSearchParams } from "react-router";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router";
 import { NectoLogo } from "@/brand/NectoLogo";
 import { PageMeta } from "@/shell/meta";
 import { ThemeIconButton } from "@/shell";
-import { BossHome } from "../components/BossHome";
-import { CodeLogin } from "../components/CodeLogin";
-import { bossSessionStore } from "../stores/bossSession.store";
+import { cn } from "@/utils";
+import { BrandPanel } from "../components/BrandPanel";
+import { BusinessPicker } from "../components/BusinessPicker";
+import { CodeStep } from "../components/CodeStep";
+import { EmailStep } from "../components/EmailStep";
+import { HelpDialog, type HelpKind } from "../components/HelpDialog";
+import { ReadyStep } from "../components/ReadyStep";
+import { ReturnStep } from "../components/ReturnStep";
+import { adminAccessStore, type AccessView } from "../stores/adminAccess.store";
 
-/** The id the service uses for a business: 24 hexadecimal characters. */
-const BUSINESS_ID = /^[a-f0-9]{24}$/;
+const TITLES: Record<Exclude<AccessView, "loading">, string> = {
+  acceso: "Necto · Accede a tu negocio",
+  codigo: "Necto · Verifica tu correo",
+  regreso: "Necto · Continúa con tu sesión",
+  negocios: "Necto · Elige tu negocio",
+  listo: "Necto · Acceso a tu negocio listo",
+};
 
 /**
- * Where the boss of a business signs in: the link of the invitation email opens it with `?business=<id>`.
- * No password: they ask for a code, receive it by email and use it.
+ * Where an administrator of a business signs in: email, a code sent to it, and either the business they administer
+ * or a choice among them. With a session already on this device they can continue without another code. Everything
+ * that decides access happens on the server; this page only shows the steps.
  */
 const BusinessAccessPage = observer(() => {
-  const [params] = useSearchParams();
-  const businessId = params.get("business") ?? "";
-  const validLink = BUSINESS_ID.test(businessId);
-  const session = bossSessionStore.session;
-  // A session of another business is not this page's: signing in again replaces it.
-  const ownSession = session && session.business.id === businessId ? session : null;
+  const store = adminAccessStore;
+  const [help, setHelp] = useState<HelpKind | null>(null);
+  const [motion, setMotion] = useState(true);
 
+  useEffect(() => {
+    void store.start();
+  }, [store]);
+
+  // Plays the side panel's animation again: the class has to be removed and put back for CSS to restart it.
+  const replay = useCallback(() => {
+    setMotion(false);
+    requestAnimationFrame(() => requestAnimationFrame(() => setMotion(true)));
+  }, []);
+  useEffect(() => {
+    replay();
+  }, [store.view, replay]);
+
+  const view = store.view;
   return (
-    <div className="ba">
-      <PageMeta title="Necto · Acceso del jefe de negocio" />
-      <header className="ba-topbar">
-        <NectoLogo width={161} height={23} />
-        <ThemeIconButton className="ba-icon-button" />
-      </header>
-      <main className="ba-main">
-        {!validLink ? (
-          <section className="ba-card" aria-labelledby="ba-title">
-            <span className="ba-eyebrow">ENLACE NO VÁLIDO</span>
-            <h1 id="ba-title" tabIndex={-1}>
-              No pudimos abrir este acceso
-            </h1>
-            <p className="ba-lead">
-              Este enlace no corresponde a ningún negocio. Abre el enlace del correo de invitación, o pídele a quien administra tu negocio que te lo envíe
-              de nuevo.
+    <section className={cn("na-root", motion && "na-motion")} aria-label="Acceso de administradores de negocio" data-view={view}>
+      <PageMeta title={TITLES[view === "loading" ? "acceso" : view]} />
+      <div className="na-auth">
+        <header className="na-header">
+          <Link to="/business/access" className="na-logo" aria-label="Necto, acceso a mi negocio">
+            <NectoLogo width={161} height={23} />
+          </Link>
+          <ThemeIconButton className="na-theme" />
+        </header>
+        <main className="na-main">
+          {view === "loading" && (
+            <p className="na-description" role="status">
+              Un momento…
             </p>
-          </section>
-        ) : ownSession ? (
-          <BossHome session={ownSession} />
-        ) : (
-          <CodeLogin businessId={businessId} />
-        )}
-      </main>
-      <footer className="ba-footer">
-        <span>© 2026 Necto</span>
-        <span>Conecta. Comparte. Crece.</span>
-      </footer>
-    </div>
+          )}
+          {view === "acceso" && <EmailStep onHelp={() => setHelp("access")} />}
+          {view === "codigo" && store.rules && <CodeStep onHelp={() => setHelp("code")} />}
+          {view === "regreso" && <ReturnStep />}
+          {view === "negocios" && <BusinessPicker />}
+          {view === "listo" && <ReadyStep />}
+        </main>
+        <footer className="na-auth-footer">
+          <span>© 2026 Necto</span>
+          <Link to="/super/login">
+            Soy superadministrador <span aria-hidden="true">↗</span>
+          </Link>
+        </footer>
+      </div>
+      <BrandPanel view={view} onReplay={replay} />
+      <HelpDialog kind={help} onClose={() => setHelp(null)} />
+    </section>
   );
 });
 

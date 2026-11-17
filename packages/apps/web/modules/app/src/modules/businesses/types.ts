@@ -58,6 +58,16 @@ export interface BusinessPage {
   pageSize: number;
 }
 
+/**
+ * A temporary sign-in code the owner generated for the boss, to copy and hand over (it is never emailed). It is shown once:
+ * the server does not keep it in readable form.
+ */
+export interface TemporaryCode {
+  code: string;
+  bossEmail: string;
+  expiresAt: string;
+}
+
 export type DeliveryStatus = "none" | "sending" | "accepted" | "failed";
 export type DeliveryFailureCode = "not-configured" | "rejected" | "timeout" | "connection" | "unknown";
 

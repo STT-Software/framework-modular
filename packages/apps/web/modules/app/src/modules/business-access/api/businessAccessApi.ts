@@ -1,15 +1,30 @@
 /**
  * Cliente HTTP de las rutas /business-access del backend (contrato en el README de packages/services/necto-api).
- * El jefe de un negocio entra sin contraseña: pide un código por correo y lo canjea por una sesión.
+ * El administrador de un negocio entra sin contraseña: pide un código por correo y lo canjea por una sesión.
  *
- * Por defecto llama a "/api/business-access", que el dev server de Vite redirige al backend.
- * En otros entornos se define VITE_BUSINESS_ACCESS_API_URL.
+ * La sesión vive en una cookie HttpOnly que pone el servidor (el navegador la envía solo: aquí nunca se lee). El
+ * `accessToken` que devuelve el servidor es corto y se guarda solo en memoria.
+ *
+ * Por defecto llama a "/api/business-access", que el dev server de Vite redirige al backend quitando ese prefijo;
+ * por eso cada ruta empieza por "/business-access" (el prefijo del controlador).
+ * En otros entornos se define VITE_BUSINESS_ACCESS_API_URL (y el backend debe permitir ese origen con credenciales).
  */
 const BASE_URL =
   (import.meta.env.VITE_BUSINESS_ACCESS_API_URL as string | undefined)?.replace(/\/$/, "") ?? "/api/business-access";
 const TIMEOUT_MS = 15_000;
 
-export type AccessErrorKind = "invalid-code" | "validation" | "unauthorized" | "forbidden" | "rate-limited" | "network" | "timeout" | "server";
+export type AccessErrorKind =
+  | "invalid-code"
+  | "session-expired"
+  | "reverification-required"
+  | "validation"
+  | "forbidden"
+  | "not-found"
+  | "email-not-assigned"
+  | "rate-limited"
+  | "network"
+  | "timeout"
+  | "server";
 
 export class AccessError extends Error {
   constructor(
@@ -23,33 +38,69 @@ export class AccessError extends Error {
   }
 }
 
-export interface BossSessionResult {
+/** Un negocio que la persona administra ahora mismo (el servidor solo devuelve los autorizados). */
+export interface AdministeredBusiness {
+  id: string;
+  name: string;
+  category: string;
+  /** El texto libre de la categoría, solo cuando es "other". */
+  categoryOther: string | null;
+  modules: string[];
+}
+
+/** Lo que recibe el navegador al abrir o renovar una sesión. */
+export interface SessionGrant {
   accessToken: string;
-  business: { id: string; name: string };
-  boss: { name: string; email: string };
+  expiresInSeconds: number;
+  admin: { email: string; remember: boolean };
+  businesses: AdministeredBusiness[];
 }
 
-export interface BossOverview {
-  business: { id: string; name: string; status: "active" | "paused"; modules: string[] };
-  boss: { name: string; email: string };
+/** Las reglas del código (vigencia, reenvío e intentos): son las mismas para cualquier correo. */
+export interface CodeRules {
+  expiresInMinutes: number;
+  resendAfterSeconds: number;
+  maxAttempts: number;
 }
 
-function kindFromStatus(status: number, path: string): AccessErrorKind {
+export interface SessionInfo {
+  email: string;
+  remember: boolean;
+  idleExpiresAt: string;
+  absoluteExpiresAt: string;
+}
+
+interface ErrorBody {
+  message?: string | string[];
+  code?: string;
+}
+
+function kindOf(status: number, path: string, code: string | undefined): AccessErrorKind {
   if (status === 400) return "validation";
-  if (status === 401) return path.includes("/otp/verify") ? "invalid-code" : "unauthorized";
-  if (status === 403) return "forbidden";
+  if (status === 401) {
+    if (code === "session-expired") return "session-expired";
+    return path === "/business-access/otp/verify" ? "invalid-code" : "session-expired";
+  }
+  if (status === 403) return code === "reverification-required" ? "reverification-required" : "forbidden";
+  if (status === 404) return code === "email-not-assigned" ? "email-not-assigned" : "not-found";
   if (status === 429) return "rate-limited";
   return "server";
 }
 
-async function request<T>(path: string, init: RequestInit = {}, token?: string): Promise<T | null> {
+async function request<T>(path: string, init: { method?: string; body?: unknown; token?: string } = {}): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   let response: Response;
   try {
     response = await fetch(`${BASE_URL}${path}`, {
-      ...init,
-      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init.headers },
+      method: init.method ?? "GET",
+      // Envía y recibe la cookie de sesión (HttpOnly: el código de la página nunca la ve).
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(init.token ? { Authorization: `Bearer ${init.token}` } : {}),
+      },
+      body: init.body === undefined ? undefined : JSON.stringify(init.body),
       signal: controller.signal,
     });
   } catch (error) {
@@ -58,25 +109,39 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string):
   } finally {
     clearTimeout(timer);
   }
+  if (response.status === 204) return undefined as T;
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    const raw = (body as { message?: string | string[] } | null)?.message;
-    const message = Array.isArray(raw) ? raw.join(", ") : (raw ?? response.statusText);
+    const { message, code } = (body as ErrorBody | null) ?? {};
+    const text = Array.isArray(message) ? message.join(", ") : (message ?? response.statusText);
     const retry = Number(response.headers.get("Retry-After"));
-    throw new AccessError(kindFromStatus(response.status, path), response.status, message, Number.isFinite(retry) && retry > 0 ? retry : null);
+    throw new AccessError(kindOf(response.status, path, code), response.status, text, Number.isFinite(retry) && retry > 0 ? retry : null);
   }
-  return body as T | null;
+  return body as T;
 }
 
 export const businessAccessApi = {
-  /** Always answers the same, whether or not the email belongs to the business: it reveals nothing. */
-  async requestCode(businessId: string, email: string): Promise<void> {
-    await request("/business-access/otp/request", { method: "POST", body: JSON.stringify({ businessId, email }) });
+  /** Pide el código. Si el correo no es jefe de ningún negocio activo, falla con `email-not-assigned`. */
+  requestCode(email: string): Promise<CodeRules> {
+    return request<CodeRules>("/business-access/otp/request", { method: "POST", body: { email } });
   },
-  async verifyCode(businessId: string, email: string, code: string): Promise<BossSessionResult> {
-    return (await request<BossSessionResult>("/business-access/otp/verify", { method: "POST", body: JSON.stringify({ businessId, email, code }) }))!;
+  /** `remember` es la decisión explícita de la persona de recordar este dispositivo (hasta 30 días). */
+  verifyCode(email: string, code: string, remember: boolean): Promise<SessionGrant> {
+    return request<SessionGrant>("/business-access/otp/verify", { method: "POST", body: { email, code, remember } });
   },
-  async me(token: string): Promise<BossOverview> {
-    return (await request<BossOverview>("/business-access/me", {}, token))!;
+  /** ¿Hay una sesión vigente en este navegador? 401 si no. */
+  currentSession(): Promise<SessionInfo> {
+    return request<SessionInfo>("/business-access/session");
+  },
+  /** Continúa con la sesión de este navegador: token nuevo y negocios autorizados en este momento. */
+  refresh(): Promise<SessionGrant> {
+    return request<SessionGrant>("/business-access/session/refresh", { method: "POST" });
+  },
+  /** Cierra la sesión en el servidor y borra la cookie. Sirve para cerrar sesión y para olvidar el dispositivo. */
+  signOut(): Promise<void> {
+    return request<void>("/business-access/session", { method: "DELETE" });
+  },
+  business(token: string, businessId: string): Promise<AdministeredBusiness> {
+    return request<AdministeredBusiness>(`/business-access/businesses/${encodeURIComponent(businessId)}`, { token });
   },
 };

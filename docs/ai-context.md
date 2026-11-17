@@ -106,7 +106,8 @@ independientes). **Hoy está construido el acceso del SuperAdmin, su bienvenida 
 | Workspace de negocios | `src/modules/workspace` (solo frontend, README propio) | Funciona: `/workspace` con sidebar, barra superior y el directorio de negocios **vacío** (0 negocios, filtros apagados) con la tienda animada **en movimiento continuo**; `/workspace/profile` ("Mi perfil") muestra solo el nombre del usuario. Solo se entra con sesión **y** perfil completo |
 | Puertas de acceso | `src/app/RequireSuperAdmin.tsx` y `RequireOnboardingCompleted.tsx` | Sin sesión, `/` y URLs desconocidas llevan a `/super/login`; con sesión, a `/workspace`. Los módulos con `requiresSuperAdmin: true` quedan detrás de la primera; los que además llevan `requiresOnboardingCompleted: true` (el workspace) detrás de la segunda: sin perfil completo, `/welcome` |
 | Registro de módulos + aislamiento de fallos | `src/app/modules.ts`, `ModuleRoutes.tsx`, `ModuleBoundary.tsx` | Funciona |
-| **Negocios + acceso del jefe (end to end)** | Backend: `src/modules/businesses` y `src/modules/business-access` de `necto-api`. Frontend: `src/modules/businesses` (store, asistente de 3 pasos, tarjetas y ficha), `src/modules/business-access` (pantalla pública `/business/access`) y el workspace con datos reales. Rama `feature/businesses` (apilada sobre `feature/workspace`, sin PR ni push) | Verificado con MongoDB real, un servidor SMTP de pruebas local y el navegador: crear (el doble clic no duplica), editar, reemplazar jefe (el anterior pierde la sesión), pausar/reanudar, filtros, CSV, invitación por correo con OTP y acceso del jefe. 115 pruebas automáticas del backend en verde; el frontend no tiene pruebas automáticas |
+| **Negocios (end to end)** | Backend `modules/businesses`; frontend `src/modules/businesses` (store, asistente de 3 pasos, tarjetas y ficha) y el workspace con datos reales | Mezclado en `integration` (PR #9). Verificado con MongoDB real y el navegador |
+| **Acceso de administradores de negocio (end to end)** | Backend `modules/business-access` (OTP por correo, sesiones, permisos por negocio y módulo, código temporal del superadmin); frontend `src/modules/business-access` (`/business/access`, de la referencia `necto-login-admin`) y enlace desde `/super/login` | Rama `feature/business-admin-access` (sin commit/PR). 178 pruebas del backend y recorrido real en el navegador: correo → código → selector/listo, regreso sin código, recordar/olvidar dispositivo, cierre de sesión |
 | CI de promoción de ramas | `.github/workflows/` | Existe; `production` aún no se ha promovido nunca |
 
 El registro pide: usuario, contraseña + confirmación, correo, tipo y número de documento
@@ -114,8 +115,9 @@ El registro pide: usuario, contraseña + confirmación, correo, tipo y número d
 
 ### Lo que NO existe (no lo des por hecho)
 
-- **Pantalla del jefe de la referencia**: `necto-negocio-completo` no trae pantalla de acceso del jefe (solo un código "de ejemplo" al asignarlo, que **no** se implementó porque no es real). `/business/access` se diseñó aquí con la estética del workspace; si hay diseño oficial, sustituirla. El inicio del jefe es mínimo (saludo, estado y módulos habilitados).
-- **Envío real de correo**: no hay credenciales SMTP ni dominio remitente. Solo se verificó contra un SMTP de pruebas local (Mailpit). Nunca afirmes que un correo "llegó": solo hay `accepted` por el proveedor, nunca recepción confirmada.
+- **Operación de los seis módulos** para el administrador: tras entrar, `/business/access` solo muestra el negocio y sus módulos habilitados. Existen los guards (`@BusinessAdminOnly`, `@RecentlyVerified`, `@RequiresBusinessModule`) para que cada módulo futuro proteja sus rutas, pero no hay ninguna ruta de módulo todavía.
+- **Envío real de correo (el OTP real)**: el código se genera, protege y valida de verdad, pero no hay credenciales SMTP ni dominio remitente, así que solo se verificó contra Mailpit (local). Para enviarlo a un buzón real hacen falta `MAIL_SMTP_HOST/PORT/USER/PASS`, `MAIL_FROM` con dominio verificado (SPF/DKIM) y un buzón de prueba. Nunca afirmes que un correo "llegó": solo hay `accepted` por el proveedor.
+- **Pruebas automáticas contra MongoDB y del frontend** del acceso de administradores (sí hay 164 del backend con repositorios en memoria; las sesiones y los índices reales se verificaron a mano).
 - Los seis **módulos funcionales** (reservas, turnos, agendamiento, referidos, inventario, pedidos) como sistemas: solo existen el catálogo y la habilitación por negocio.
 - Los módulos **Turnos, Agendamiento, Reservas y Referidos** no están portados a este repo.
 - La **vista de términos y condiciones** (el enlace del registro no navega: `TERMS_PATH` está vacío
@@ -420,13 +422,21 @@ Contrato completo en el README del servicio. Resumen:
 
 - Superadmin (solo ve **sus** negocios; ajeno = `404`): `GET /businesses/catalog`, `GET /businesses/export.csv`, `GET/POST /businesses`
   (`POST` exige `Idempotency-Key`, 8 a 64 caracteres), `GET/PUT /businesses/:id`, `POST /businesses/:id/pause|resume`,
-  `GET /businesses/:id/invitation`, `POST /businesses/:id/invitation/resend`.
-- Públicas: `POST /business-access/otp/request` (`202` siempre igual) y `POST /business-access/otp/verify` (`200` con token, o `401 Invalid or expired code` genérico).
-- Jefe: `GET /business-access/me` (token con `role: business-boss`, validado contra la base en cada petición: reemplazado `401`, pausado `403`).
-- Errores `400` con `fields` por campo. Módulos: `reservas, turnos, agendamiento, referidos, inventario, pedidos` (0 a 6).
-- Correo: sin `MAIL_SMTP_HOST` la invitación queda `failed: not-configured`; `deliveryConfirmed` siempre `false`.
-- Variables nuevas (en `.env.example`): `OTP_SECRET` (obligatoria, ≥32 caracteres y distinta de `JWT_SECRET`), `PUBLIC_APP_URL`, `OTP_*`, `MAIL_*`.
-- Probar el correo en local: contenedor `axllent/mailpit` (SMTP 1025, web 8025) y arrancar el backend con `MAIL_SMTP_HOST=127.0.0.1 MAIL_SMTP_PORT=1025 MAIL_SMTP_REQUIRE_TLS=false MAIL_FROM=...`. Eso prueba nuestro envío, **no** una entrega real.
+  `GET /businesses/:id/invitation`, `POST /businesses/:id/invitation/resend`, `POST /businesses/:id/invitation/temporary-code` (código temporal para copiar; ver abajo).
+- Administrador de negocio, públicas: `POST /business-access/otp/request {email}` (`202`; **`404 email-not-assigned`** si el correo no es jefe de ningún negocio activo, y la pantalla no avanza: "primero el superadministrador debe invitarte") y `POST /business-access/otp/verify {email, code, remember?}`
+  (`200` con `accessToken`, `businesses[]` y la cookie de sesión `HttpOnly`; o `401 Invalid or expired code` genérico).
+- Administrador, con la cookie: `GET /business-access/session`, `POST /business-access/session/refresh` (regreso sin otro código),
+  `DELETE /business-access/session` (cerrar sesión / olvidar dispositivo).
+- Administrador, con el token: `GET /business-access/businesses[/:id]` (solo los autorizados), `GET /businesses/:id/modules/:moduleId`,
+  `POST /session/reverify/request` y `/reverify`, `POST /session/revoke-others` (exige verificación reciente).
+- Códigos: 6 dígitos, 10 min, un solo uso, 5 intentos, 60 s entre reenvíos, HMAC en la base. **Pertenecen a un correo, no a un negocio**
+  (se decide al usarlos qué negocios abren). Sesiones de servidor (`admin_sessions`): normal 2 h inactiva / 12 h; "recordar dispositivo"
+  (desactivado por defecto) hasta 30 días como máximo. Token de 10 min que lleva solo el id de sesión; el guard consulta la base en cada petición.
+- **Código temporal del superadmin (provisional):** ficha → Equipo → "Generar código temporal". Propósito `manual`, 10 min, un solo uso, nunca se envía por correo (`not-sent`), solo lo ve el dueño una vez; el jefe lo escribe en `/business/access`. Mientras espera, pedir otro código no lo pisa. Quien lo tenga entra como el jefe: **retirarlo o limitarlo cuando el correo real funcione**.
+- Errores `400` con `fields`. Los `401/403` de sesión y permisos llevan `code` (`session-expired`, `reverification-required`, `module-not-enabled`).
+- Correo: sin `MAIL_SMTP_HOST` el envío queda `failed: not-configured`; `deliveryConfirmed` siempre `false`.
+- Variables (en `.env.example`): `OTP_SECRET` (obligatoria, ≥32 caracteres y distinta de `JWT_SECRET`), `PUBLIC_APP_URL`, `OTP_*`, `MAIL_*` y `ADMIN_*`.
+- Módulos: `reservas, turnos, agendamiento, referidos, inventario, pedidos` (0 a 6).
 
 ## 12. Herramientas del entorno y trampas conocidas
 
@@ -472,6 +482,9 @@ Contrato completo en el README del servicio. Resumen:
 - Las pruebas con `node --test` se corren **desde `packages/services/necto-api`** (no desde la raíz) y con el glob entre comillas; los scripts que importan paquetes del proyecto deben estar dentro del proyecto, no en `/tmp`.
 - El dev server de Vite redirige `/api/<módulo>` al backend; `businesses` y `business-access` tienen su prefijo en `vite.config.ts` (si añades otro módulo con API, añade el suyo).
 - **Correo local de desarrollo:** `npm run db:up` también levanta Mailpit (SMTP 1025, web `http://127.0.0.1:8025`, imagen fijada en `infra/docker-compose.yml`). El `.env` del backend apunta a él (`MAIL_SMTP_HOST=127.0.0.1`, `MAIL_SMTP_PORT=1025`, `MAIL_SMTP_REQUIRE_TLS=false`); tras cambiar el `.env`, reinicia el backend. Ahí se lee el código del jefe. **No es entrega real.**
+- **El proxy de Vite quita su prefijo**: el cliente llama a `/api/business-access` + `/business-access/otp/request`; si olvidas el segundo prefijo, el backend responde 404 y la pantalla muestra un error falso.
+- **Pruebas de límites en local**: los envíos están limitados por correo (5/hora) y por IP (20/hora); todas las peticiones locales llevan la misma IP. Si una prueba da `429`, vacía `access_rate_limits` (solo contadores).
+- **No ejecutes `nest build` mientras corre `npm run dev:api`**: borra `dist/` y el modo watch cae; reinicia el dev server.
 - Los esquemas de Mongoose declaran `@Prop({ type: ... })` explícito: las pruebas corren con `tsx`, que no emite metadatos de decoradores.
 - **El entorno Docker puede reiniciarse y perder el volumen de Mongo.** Los `.env` sobreviven. Tras
   un reinicio, `npm run db:up` recrea Mongo vacío y vuelve a crear los usuarios: hay que **registrar de
@@ -505,8 +518,11 @@ Contrato completo en el README del servicio. Resumen:
   la referencia. Se añadió un botón de **cerrar sesión** que la referencia no trae, porque el workspace no usa el `AppShell`.
 - El logotipo (`brand/NectoLogo`) y el botón de tema redondo (`ThemeIconButton` en `shell`) pasaron a la base común al aparecer el
   tercer uso. `super-admin-auth` conserva su propio `NectoLogo` (colores por clases), pendiente de unificar.
+- **Acceso de administradores (`feature/business-admin-access`):** se evolucionó el módulo `business-access` (no se creó otro) y se **reemplazó** el acceso por negocio (`/otp/request` con `businessId`, `business-boss`) por uno por **correo**: así una persona con varios negocios entra una vez y elige. Rol nuevo `business-admin` (token con solo el id de sesión). Sesión de servidor con cookie `HttpOnly`+`SameSite=Strict` (secreto hasheado en la base), token corto en memoria, renovación, revocación inmediata y reverificación para acciones sensibles. La cookie es `Path=/` porque el navegador ve `/api/business-access/...` (proxy de Vite) y no `/business-access/...`.
+- **Decisión del dueño del producto:** al pedir el código, un correo sin negocio recibe `404 email-not-assigned` (antes el acceso respondía igual para todos). Revela qué correos están asignados; lo frenan los límites por correo (5/h) y por IP (20/h). Para volver a la respuesta genérica basta con dejar de lanzar `EmailNotAssignedError` en `AdminLoginService.requestCode`. La verificación del código sigue sin decir por qué falla.
+- **Qué NO se implementó del acceso, a propósito:** rotación del secreto de la cookie en cada renovación (la sesión se puede revocar al instante, así que se priorizó no romper dos pestañas); lista de dispositivos; reconocimiento de IP.
 - **Frontend de negocios:** `businesses` no tiene rutas propias; el workspace (layout) las monta e importa de `businesses` por su `index.ts`, así no hay ciclo. La sesión del jefe es **otra** (`business-access:session`), separada de la del superadmin. No se muestra ningún código en la interfaz del superadmin: el prototipo enseñaba uno "de ejemplo" y se descartó por no ser real.
-- **Negocios y acceso del jefe** (`feature/businesses`): dos módulos del mismo backend. `business-access` depende de `businesses/public`, y `businesses` avisa con el evento `BossAssigned` por `platform/events` (sin ciclos). El jefe vive **dentro** del documento del negocio (Mongo standalone sin transacciones: una escritura atómica garantiza un jefe vigente). Creación idempotente con `Idempotency-Key`. OTP de 6 dígitos con HMAC, un solo uso, 5 intentos, 10 min, límites por persona+negocio e IP en Mongo y respuestas genéricas. La sesión del jefe se valida contra la base en cada petición. El correo se envía en segundo plano y nunca se declara "entregado" (solo `sending`/`accepted`/`failed`). La rama está apilada sobre `feature/workspace` (sin push): el PR de workspace va primero.
+- **Negocios y acceso del jefe** (PR #9, ya en `integration`): `business-access` depende de `businesses/public`, y `businesses` avisa con el evento `BossAssigned` por `platform/events` (sin ciclos). El jefe vive **dentro** del documento del negocio (Mongo standalone sin transacciones: una escritura atómica garantiza un jefe vigente). Creación idempotente con `Idempotency-Key`. El correo se envía en segundo plano y nunca se declara "entregado" (solo `sending`/`accepted`/`failed`). El acceso por negocio que traía ese PR se reemplazó después por el acceso por correo (ver la decisión de `feature/business-admin-access`).
 - La sesión vive en `platform/security` (emitir/verificar el token, autenticar, autorizar por rol) para que ningún módulo dependa de otro ni toque el secreto JWT.
 - El nombre de la aplicación (`necto-api`) es independiente del de la base de datos (`super_admin_auth`, histórico): renombrar el código no obligó a migrar datos.
 - Ramas end to end; flujo `integration → main → test → production`; revisión cruzada de PRs con

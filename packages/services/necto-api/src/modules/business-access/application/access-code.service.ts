@@ -2,18 +2,21 @@ import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { Clock } from '../../../platform/time/clock';
 import { AccessPolicy } from '../domain/access-policy';
-import type { AccessChallenge, ChallengePurpose, NewChallenge } from '../domain/challenge';
+import { purposeFamily, SIGN_IN_PURPOSES, type AccessChallenge, type ChallengePurpose, type NewChallenge } from '../domain/challenge';
 import { ChallengeRepository } from '../domain/challenge.repository';
 import { generateCode, hmacCode, sameHmac } from '../domain/code-hmac';
 import { InvalidAccessCodeError, TooManyRequestsError } from '../domain/errors';
 import { RateLimiter } from '../domain/rate-limiter';
 
 export interface IssueInput {
-  businessId: string;
-  assignmentId: string;
   /** Normalized. */
   email: string;
   purpose: ChallengePurpose;
+  /** Invitations and manual codes: what triggered the code. */
+  businessId?: string | null;
+  assignmentId?: string | null;
+  /** Manual codes only: the super admin who generated it. */
+  issuedBy?: string | null;
 }
 
 /** A freshly issued code. `code` exists only here, in memory, long enough to be emailed: it is never stored or logged. */
@@ -23,16 +26,16 @@ export interface IssuedCode {
 }
 
 export interface VerifyInput {
-  businessId: string;
-  assignmentId: string;
   email: string;
   code: string;
   ip: string;
+  /** Which codes may satisfy this check: sign-in codes to open a session, reverify codes to confirm one. */
+  purposes: readonly ChallengePurpose[];
 }
 
 /**
  * The one-time codes themselves: issuing, protecting, verifying and limiting them. It knows nothing about
- * businesses or emails beyond the identifiers a code is bound to.
+ * businesses: a code belongs to an email address and a purpose.
  */
 @Injectable()
 export class AccessCodeService {
@@ -43,19 +46,19 @@ export class AccessCodeService {
     private readonly clock: Clock,
   ) {}
 
-  /** Counts a request for a new code against the per-IP and per-person-and-business limits. */
-  async assertCanRequest(input: { businessId: string; email: string; ip: string }): Promise<void> {
+  /** Counts a request for a new code against the per-IP and per-email limits. */
+  async assertCanRequest(input: { email: string; ip: string }): Promise<void> {
     await this.enforce(
       [
         [`request:ip:${input.ip}`, this.policy.ipSendLimit],
-        [`request:ctx:${input.businessId}:${input.email}`, this.policy.contextSendLimit],
+        [`request:email:${input.email}`, this.policy.contextSendLimit],
       ],
       this.policy.sendWindowMs,
     );
   }
 
   /**
-   * Issues a new code and invalidates the previous ones of the same person and business.
+   * Issues a new code and invalidates the previous ones of the same person and purpose family.
    * The older codes are superseded AFTER the new one exists, so there is never a moment without a valid code,
    * and a locked newest code can never "reveal" an older pending one.
    */
@@ -65,24 +68,40 @@ export class AccessCodeService {
     const code = generateCode();
     const challenge: NewChallenge = {
       id,
-      businessId: input.businessId,
-      assignmentId: input.assignmentId,
       email: input.email,
       purpose: input.purpose,
-      codeHmac: hmacCode(this.policy.secret, { challengeId: id, ...input }, code),
+      businessId: input.businessId ?? null,
+      assignmentId: input.assignmentId ?? null,
+      issuedBy: input.issuedBy ?? null,
+      codeHmac: hmacCode(this.policy.secret, { challengeId: id, email: input.email, purpose: input.purpose }, code),
       expiresAt: new Date(now.getTime() + this.policy.ttlMs),
       maxAttempts: this.policy.maxAttempts,
       createdAt: now,
-      delivery: { status: 'sending', attemptedAt: now, acceptedAt: null, failedAt: null, failureCode: null },
+      // A manual code is handed over by the owner, never emailed: say so instead of pretending a send is in progress.
+      delivery: { status: input.purpose === 'manual' ? 'not-sent' : 'sending', attemptedAt: now, acceptedAt: null, failedAt: null, failureCode: null },
     };
     await this.challenges.create(challenge);
-    await this.challenges.supersedePending(input.businessId, input.email, id);
+    await this.challenges.supersedePending(input.email, purposeFamily(input.purpose), id);
     return { challenge, code };
   }
 
-  /** Cancels every pending code of the business that is not for the current boss (the boss was replaced). */
-  revokeAllExcept(businessId: string, currentAssignmentId: string): Promise<void> {
-    return this.challenges.revokePendingExcept(businessId, currentAssignmentId);
+  /** Cancels the pending invitations and manual codes of the business that are not for the current boss (the boss was replaced). */
+  revokeForBusinessExcept(businessId: string, currentAssignmentId: string): Promise<void> {
+    return this.challenges.revokePendingForBusiness(businessId, currentAssignmentId);
+  }
+
+  /**
+   * Is there a manual code waiting to be used for this email? While one is, a sign-in request must not replace it
+   * (a new code would cancel the one the owner handed over).
+   */
+  async hasPendingManualCode(email: string): Promise<boolean> {
+    const pending = await this.challenges.findLatestPending({ email, purposes: SIGN_IN_PURPOSES, now: this.clock.now() });
+    return pending?.purpose === 'manual';
+  }
+
+  /** When the newest code of this email in the family of `purpose` was issued (to enforce the time between codes). */
+  latestIssuedAt(email: string, purpose: ChallengePurpose): Promise<Date | null> {
+    return this.challenges.latestCreatedAt(email, purposeFamily(purpose));
   }
 
   /**
@@ -94,18 +113,13 @@ export class AccessCodeService {
     await this.enforce(
       [
         [`verify:ip:${input.ip}`, this.policy.ipAttemptLimit],
-        [`verify:ctx:${input.businessId}:${input.email}`, this.policy.contextAttemptLimit],
+        [`verify:email:${input.email}`, this.policy.contextAttemptLimit],
       ],
       this.policy.attemptWindowMs,
     );
 
     const now = this.clock.now();
-    const challenge = await this.challenges.reserveAttempt({
-      businessId: input.businessId,
-      email: input.email,
-      assignmentId: input.assignmentId,
-      now,
-    });
+    const challenge = await this.challenges.reserveAttempt({ email: input.email, purposes: input.purposes, now });
     if (!challenge) throw new InvalidAccessCodeError();
 
     const expected = hmacCode(this.policy.secret, this.bindingOf(challenge), input.code);
@@ -128,12 +142,6 @@ export class AccessCodeService {
   }
 
   private bindingOf(challenge: AccessChallenge) {
-    return {
-      challengeId: challenge.id,
-      businessId: challenge.businessId,
-      assignmentId: challenge.assignmentId,
-      email: challenge.email,
-      purpose: challenge.purpose,
-    };
+    return { challengeId: challenge.id, email: challenge.email, purpose: challenge.purpose };
   }
 }

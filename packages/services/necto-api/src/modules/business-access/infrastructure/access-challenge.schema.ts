@@ -3,7 +3,7 @@ import type { ChallengePurpose, ChallengeStatus, DeliveryFailureCode, DeliverySt
 
 @Schema({ _id: false })
 export class DeliveryRecord {
-  @Prop({ type: String, required: true, enum: ['sending', 'accepted', 'failed'] })
+  @Prop({ type: String, required: true, enum: ['sending', 'accepted', 'failed', 'not-sent'] })
   status: DeliveryStatus;
 
   @Prop({ type: Date, required: true })
@@ -31,16 +31,21 @@ export class AccessChallengeRecord {
   _id: string;
 
   @Prop({ type: String, required: true })
-  businessId: string;
-
-  @Prop({ type: String, required: true })
-  assignmentId: string;
-
-  @Prop({ type: String, required: true })
   email: string;
 
-  @Prop({ type: String, required: true, enum: ['invitation', 'login'] })
+  @Prop({ type: String, required: true, enum: ['invitation', 'login', 'manual', 'reverify'] })
   purpose: ChallengePurpose;
+
+  /** Invitations and manual codes: the business and assignment that triggered the code. */
+  @Prop({ type: String, default: null })
+  businessId: string | null;
+
+  @Prop({ type: String, default: null })
+  assignmentId: string | null;
+
+  /** Manual codes only: the super admin who generated it. */
+  @Prop({ type: String, default: null })
+  issuedBy: string | null;
 
   @Prop({ type: String, required: true })
   codeHmac: string;
@@ -69,8 +74,9 @@ export class AccessChallengeRecord {
 
 export const AccessChallengeSchema = SchemaFactory.createForClass(AccessChallengeRecord);
 
-// Finding the newest usable code of a person for a business (verification) and the latest of a business (status).
-AccessChallengeSchema.index({ businessId: 1, email: 1, status: 1, createdAt: -1 });
+// Finding the newest usable code of an email (verification) and the time of its latest code (cooldown).
+AccessChallengeSchema.index({ email: 1, status: 1, createdAt: -1 });
+// The latest invitation of a business (its state in the sheet) and the pending ones to revoke when the boss changes.
 AccessChallengeSchema.index({ businessId: 1, purpose: 1, createdAt: -1 });
 // Housekeeping only: one day after a code expires its record is deleted. Authorization never depends on this.
 AccessChallengeSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 86_400 });

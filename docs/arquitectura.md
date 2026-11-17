@@ -108,7 +108,7 @@ packages/services/necto-api/           ← el backend (el nombre es el de la apl
         │   └── infrastructure/        ← esquemas de Mongo y repositorios
         ├── onboarding/ ...            ← misma forma
         ├── businesses/ ...            ← negocios, jefe vigente y módulos habilitados
-        └── business-access/ ...       ← invitación y acceso del jefe por OTP (depende de businesses/public)
+        └── business-access/ ...       ← acceso de administradores por OTP, sesiones y permisos (depende de businesses/public)
 
 infra/                                 ← infraestructura de desarrollo compartida
 ├── docker-compose.yml                 ← MongoDB
@@ -279,4 +279,5 @@ export const superAdminAuthModule = {
 - **Pruebas de integración con MongoDB** (índices únicos y carreras de escritura): hoy se verifican a mano levantando el backend.
 - **Contratos públicos entre módulos:** el primer consumidor real es `business-access`, que usa `businesses/public`
   (`BusinessDirectory`, `BusinessModuleAccess` y el evento `BossAssigned`). El sentido es único: `businesses` no importa
-  a `business-access`; le avisa por el bus de eventos (`platform/events`) y así no hay ciclo.
+  a `business-access`; le avisa por el bus de eventos (`platform/events`) y así no hay ciclo. `business-access` exporta a su vez decoradores
+  (`@BusinessAdminOnly`, `@RecentlyVerified`, `@RequiresBusinessModule`) para que los módulos funcionales futuros protejan sus rutas.

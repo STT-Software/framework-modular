@@ -19,7 +19,8 @@ async function bootstrap() {
   );
 
   // Frontend origin (by default, the web app dev server).
-  app.enableCors({ origin: config.get<string>('CORS_ORIGIN', 'http://localhost:6020') });
+  // `credentials` lets the browser send the administrator's session cookie when the web app is on another origin.
+  app.enableCors({ origin: config.get<string>('CORS_ORIGIN', 'http://localhost:6020'), credentials: true });
 
   const port = config.get<number>('PORT', 8080);
   await app.listen(port);

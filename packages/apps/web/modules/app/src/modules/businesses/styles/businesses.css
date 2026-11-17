@@ -267,3 +267,10 @@ body:has(.bs-dialog[open]) {overflow:hidden;}
 .bs-business-grid-busy {opacity:.55;transition:opacity .15s;}
 .bs-leader-dialog form .bs-dialog-actions {margin-top:29px;}
 .ws-content>.bs-content {padding:0;}
+
+/* --- Código temporal (el superadmin lo copia y se lo entrega al jefe) --- */
+.bs-temp-code {display:flex;flex-direction:column;gap:10px;padding:16px;margin-top:12px;border:1px dashed var(--ws-border);border-radius:10px;background:var(--ws-surface);}
+.bs-temp-code output {display:block;font-family:ui-monospace,SFMono-Regular,monospace;font-size:30px;font-weight:500;letter-spacing:.2em;color:var(--ws-blue);padding-left:.2em;}
+.bs-temp-code p {font-size:11px;line-height:1.7;color:var(--ws-muted);margin:0;}
+.bs-temp-code .bs-temp-warning {color:var(--ws-active-ink);}
+.bs-temp-actions {display:flex;align-items:center;gap:12px;flex-wrap:wrap;}

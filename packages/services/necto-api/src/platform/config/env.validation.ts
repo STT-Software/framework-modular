@@ -48,11 +48,21 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
     'OTP_SEND_WINDOW_MINUTES',
     'OTP_CONTEXT_SEND_LIMIT',
     'OTP_IP_SEND_LIMIT',
+    'ADMIN_ACCESS_TOKEN_MINUTES',
+    'ADMIN_SESSION_IDLE_MINUTES',
+    'ADMIN_SESSION_HOURS',
+    'ADMIN_REMEMBER_DAYS',
+    'ADMIN_REMEMBER_IDLE_DAYS',
+    'ADMIN_SENSITIVE_REVERIFY_MINUTES',
   ]) {
     const raw = text(key);
     if (raw !== '' && !(Number.isInteger(Number(raw)) && Number(raw) > 0)) {
       throw new Error(`${key} must be a positive integer`);
     }
+  }
+  // A remembered device never lasts more than thirty days, whatever the configuration says.
+  if (text('ADMIN_REMEMBER_DAYS') !== '' && Number(text('ADMIN_REMEMBER_DAYS')) > 30) {
+    throw new Error('ADMIN_REMEMBER_DAYS must be at most 30');
   }
   return config;
 }

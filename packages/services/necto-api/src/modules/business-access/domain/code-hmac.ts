@@ -8,8 +8,6 @@ export function generateCode(): string {
 /** What a stored code is tied to: changing any of these makes the code useless. */
 export interface CodeBinding {
   challengeId: string;
-  businessId: string;
-  assignmentId: string;
   email: string;
   purpose: string;
 }
@@ -20,7 +18,7 @@ export interface CodeBinding {
  * database; without the server key, the stored value is useless.
  */
 export function hmacCode(secret: string, binding: CodeBinding, code: string): string {
-  const message = [binding.challengeId, binding.businessId, binding.assignmentId, binding.email, binding.purpose, code].join('|');
+  const message = [binding.challengeId, binding.email, binding.purpose, code].join('|');
   return createHmac('sha256', secret).update(message).digest('hex');
 }
 

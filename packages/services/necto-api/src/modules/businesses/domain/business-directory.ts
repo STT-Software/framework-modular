@@ -1,5 +1,5 @@
 import type { BusinessStatus } from './business';
-import type { BusinessModuleId } from './catalog';
+import type { BusinessCategoryId, BusinessModuleId } from './catalog';
 
 /** What other modules may know about a business. It is a view, not the persisted business. */
 export interface BusinessAccessView {
@@ -7,6 +7,9 @@ export interface BusinessAccessView {
   ownerId: string;
   name: string;
   status: BusinessStatus;
+  category: BusinessCategoryId;
+  /** Only when the category is "other". */
+  categoryOther: string | null;
   modules: readonly BusinessModuleId[];
   boss: {
     assignmentId: string;
@@ -21,6 +24,11 @@ export abstract class BusinessDirectory {
   abstract findOwned(ownerId: string, businessId: string): Promise<BusinessAccessView | null>;
 
   abstract find(businessId: string): Promise<BusinessAccessView | null>;
+  /**
+   * The ACTIVE businesses whose current boss has this email (already normalized), oldest first. A paused business
+   * and a replaced boss never appear: this is what decides which businesses a signed-in administrator may enter.
+   */
+  abstract findActiveByBossEmail(email: string): Promise<BusinessAccessView[]>;
 }
 
 /** Public contract to check whether a business has a functionality enabled. Authorization is decided here, on the server. */

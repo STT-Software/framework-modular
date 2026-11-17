@@ -9,9 +9,9 @@ import { buildAccessEmail } from './access-email';
 export interface AccessMailJob {
   challengeId: string;
   purpose: ChallengePurpose;
-  businessId: string;
-  businessName: string;
-  bossName: string;
+  /** Invitations only. */
+  businessName: string | null;
+  recipientName: string;
   /** Where the email goes. */
   email: string;
   code: string;
@@ -53,11 +53,10 @@ export class AccessMailer implements OnApplicationShutdown {
     const attemptedAt = this.clock.now();
     try {
       const url = new URL('/business/access', this.policy.publicAppUrl);
-      url.searchParams.set('business', job.businessId);
       const email = buildAccessEmail({
         purpose: job.purpose,
         businessName: job.businessName,
-        bossName: job.bossName,
+        recipientName: job.recipientName,
         code: job.code,
         ttlMinutes: Math.round(this.policy.ttlMs / 60_000),
         accessUrl: url.toString(),

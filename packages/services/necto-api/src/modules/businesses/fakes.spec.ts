@@ -55,6 +55,12 @@ export class InMemoryBusinessRepository extends BusinessRepository {
     return item ? this.copy(item) : null;
   }
 
+  async findActiveByBossEmail(email: string) {
+    return [...this.items.values()]
+      .filter((item) => item.status === 'active' && item.boss.email === email)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .map((item) => this.copy(item));
+  }
   async list(ownerId: string, query: ListQuery) {
     const text = query.q?.toLowerCase();
     const matching = [...this.items.values()]

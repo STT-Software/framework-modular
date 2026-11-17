@@ -32,14 +32,26 @@ describe('TokenService', () => {
     assert.equal(await tokens.verify(await jwt().signAsync({ role: 'superadmin' })), null);
   });
 
-  it('round-trips a business boss token with its business and assignment', async () => {
-    const boss: AuthenticatedUser = { userId: 'ana@x.co', role: 'business-boss', businessId: 'b1', assignmentId: 'a1' };
-    assert.deepEqual(await tokens.verify(await tokens.issue(boss)), boss);
+  it('round-trips a business administrator token with its session id', async () => {
+    const admin: AuthenticatedUser = { userId: 'ana@x.co', role: 'business-admin', sessionId: 's1' };
+    assert.deepEqual(await tokens.verify(await tokens.issue(admin)), admin);
   });
-  it('rejects a boss token missing its business or assignment', async () => {
-    assert.equal(await tokens.verify(await jwt().signAsync({ sub: 'ana@x.co', role: 'business-boss', aid: 'a1' })), null);
-    assert.equal(await tokens.verify(await jwt().signAsync({ sub: 'ana@x.co', role: 'business-boss', bid: 'b1' })), null);
+
+  it('rejects a business administrator token without a session id', async () => {
+    assert.equal(await tokens.verify(await jwt().signAsync({ sub: 'ana@x.co', role: 'business-admin' })), null);
   });
+
+  it('rejects the old per-business boss role: a token for it is no longer an identity', async () => {
+    assert.equal(await tokens.verify(await jwt().signAsync({ sub: 'ana@x.co', role: 'business-boss', bid: 'b1', aid: 'a1' })), null);
+  });
+
+  it('can issue a token that expires sooner than the default', async () => {
+    const short = await tokens.issue({ userId: 'ana@x.co', role: 'business-admin', sessionId: 's1' }, { expiresInSeconds: 1 });
+    assert.ok(await tokens.verify(short));
+    await new Promise((resolve) => setTimeout(resolve, 2100));
+    assert.equal(await tokens.verify(short), null);
+  });
+
   it('rejects an expired token', async () => {
     const expired = await jwt().signAsync({ sub: 'user-1', role: 'superadmin' }, { expiresIn: -10 });
     assert.equal(await tokens.verify(expired), null);
@@ -87,8 +99,8 @@ describe('SuperAdminGuard (what can you do?)', () => {
     assert.throws(() => guard.canActivate(contextFor({ user })), ForbiddenException);
   });
 
-  it('answers 403 to a business boss', () => {
-    const user: AuthenticatedUser = { userId: 'ana@x.co', role: 'business-boss', businessId: 'b1', assignmentId: 'a1' };
+  it('answers 403 to a business administrator', () => {
+    const user: AuthenticatedUser = { userId: 'ana@x.co', role: 'business-admin', sessionId: 's1' };
     assert.throws(() => guard.canActivate(contextFor({ user })), ForbiddenException);
   });
   it('answers 401 if nobody authenticated the request first', () => {

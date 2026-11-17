@@ -1,5 +1,5 @@
 import { superAdminSessionStore } from "@/modules/super-admin-auth";
-import type { Business, BusinessFilters, BusinessInput, BusinessPage, InvitationStatus } from "../types";
+import type { Business, BusinessFilters, BusinessInput, BusinessPage, InvitationStatus, TemporaryCode } from "../types";
 
 /**
  * Cliente HTTP de las rutas /businesses del backend (contrato en el README de packages/services/necto-api).
@@ -113,6 +113,10 @@ export const businessesApi = {
   },
   invitation(id: string): Promise<InvitationStatus> {
     return json<InvitationStatus>(`/businesses/${encodeURIComponent(id)}/invitation`);
+  },
+  /** A temporary code for the boss, to copy. Each call replaces the previous one. */
+  temporaryCode(id: string): Promise<TemporaryCode> {
+    return json<TemporaryCode>(`/businesses/${encodeURIComponent(id)}/invitation/temporary-code`, { method: "POST" });
   },
   resendInvitation(id: string): Promise<InvitationStatus> {
     return json<InvitationStatus>(`/businesses/${encodeURIComponent(id)}/invitation/resend`, { method: "POST" });

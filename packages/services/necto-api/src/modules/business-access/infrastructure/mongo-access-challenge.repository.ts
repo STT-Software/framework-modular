@@ -1,17 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
-import type { AccessChallenge, Delivery, NewChallenge } from '../domain/challenge';
+import type { AccessChallenge, ChallengePurpose, Delivery, NewChallenge } from '../domain/challenge';
 import { ChallengeRepository } from '../domain/challenge.repository';
 import { AccessChallengeRecord } from './access-challenge.schema';
 
 function toDomain(record: AccessChallengeRecord): AccessChallenge {
   return {
     id: record._id,
-    businessId: record.businessId,
-    assignmentId: record.assignmentId,
     email: record.email,
     purpose: record.purpose,
+    businessId: record.businessId ?? null,
+    assignmentId: record.assignmentId ?? null,
+    issuedBy: record.issuedBy ?? null,
     codeHmac: record.codeHmac,
     expiresAt: record.expiresAt,
     attempts: record.attempts,
@@ -39,25 +40,32 @@ export class MongoAccessChallengeRepository extends ChallengeRepository {
     await this.model.create({ _id: challenge.id, ...challenge, attempts: 0, status: 'pending', consumedAt: null });
   }
 
-  async supersedePending(businessId: string, email: string, exceptId: string): Promise<void> {
-    await this.model.updateMany({ businessId, email, status: 'pending', _id: { $ne: exceptId } }, { $set: { status: 'superseded' } });
+  async supersedePending(email: string, purposes: readonly ChallengePurpose[], exceptId: string): Promise<void> {
+    await this.model.updateMany({ email, purpose: { $in: purposes }, status: 'pending', _id: { $ne: exceptId } }, { $set: { status: 'superseded' } });
   }
 
-  async revokePendingExcept(businessId: string, keepAssignmentId: string): Promise<void> {
+  async findLatestPending(query: { email: string; purposes: readonly ChallengePurpose[]; now: Date }): Promise<AccessChallenge | null> {
+    const record = await this.model
+      .findOne({ email: query.email, purpose: { $in: query.purposes }, status: 'pending', expiresAt: { $gt: query.now } })
+      .sort({ createdAt: -1 })
+      .lean<AccessChallengeRecord>();
+    return record ? toDomain(record) : null;
+  }
+
+  async revokePendingForBusiness(businessId: string, keepAssignmentId: string): Promise<void> {
     await this.model.updateMany(
-      { businessId, status: 'pending', assignmentId: { $ne: keepAssignmentId } },
+      { businessId, purpose: { $in: ['invitation', 'manual'] }, status: 'pending', assignmentId: { $ne: keepAssignmentId } },
       { $set: { status: 'revoked' } },
     );
   }
 
-  async reserveAttempt(query: { businessId: string; email: string; assignmentId: string; now: Date }): Promise<AccessChallenge | null> {
+  async reserveAttempt(query: { email: string; purposes: readonly ChallengePurpose[]; now: Date }): Promise<AccessChallenge | null> {
     // One conditional write: it only matches a usable code, and it counts the try in the same step.
     const record = await this.model
       .findOneAndUpdate(
         {
-          businessId: query.businessId,
           email: query.email,
-          assignmentId: query.assignmentId,
+          purpose: { $in: query.purposes },
           status: 'pending',
           expiresAt: { $gt: query.now },
           $expr: { $lt: ['$attempts', '$maxAttempts'] },
@@ -82,8 +90,8 @@ export class MongoAccessChallengeRepository extends ChallengeRepository {
     return result.modifiedCount === 1;
   }
 
-  async latestCreatedAt(businessId: string, email: string): Promise<Date | null> {
-    const record = await this.model.findOne({ businessId, email }).sort({ createdAt: -1 }).select({ createdAt: 1 }).lean<{ createdAt: Date }>();
+  async latestCreatedAt(email: string, purposes: readonly ChallengePurpose[]): Promise<Date | null> {
+    const record = await this.model.findOne({ email, purpose: { $in: purposes } }).sort({ createdAt: -1 }).select({ createdAt: 1 }).lean<{ createdAt: Date }>();
     return record?.createdAt ?? null;
   }
 

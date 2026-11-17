@@ -12,7 +12,7 @@ vive solo en la máquina de quien la tiene (`referencias html/`, ignorada por gi
 | Ruta | Pantalla |
 |------|----------|
 | `/super` | Redirige a `/super/login`. |
-| `/super/login` | Inicio de sesión con **usuario o correo** y contraseña. |
+| `/super/login` | Inicio de sesión con **usuario o correo** y contraseña. Enlaza a `/super/register` y a `/business/access` ("¿Administras un negocio? Entra a tu negocio ↗"): el administrador de un negocio entra por otra puerta, con su correo y un código. |
 | `/super/register` | Registro con usuario, contraseña (y su confirmación), correo, documento de identidad (tipo + número) y aceptación de términos. |
 
 Tras iniciar sesión se guarda la sesión y se navega a `/welcome` (módulo [`onboarding`](../onboarding/README.md)), que al terminar lleva a `/workspace`. Tras registrarse se navega

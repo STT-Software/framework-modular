@@ -2,11 +2,13 @@ import type { ChallengePurpose } from '../domain/challenge';
 
 export interface AccessEmailInput {
   purpose: ChallengePurpose;
-  businessName: string;
-  bossName: string;
+  /** Who the email greets. */
+  recipientName: string;
+  /** Invitations only: the business the person was assigned to. */
+  businessName: string | null;
   code: string;
   ttlMinutes: number;
-  /** Link to the business access page. It never contains the code. */
+  /** Link to the access page. It never contains the code. */
   accessUrl: string;
 }
 
@@ -33,14 +35,20 @@ function oneLine(value: string): string {
  * as multi-factor authentication. Layout is a single column that reads well on a phone.
  */
 export function buildAccessEmail(input: AccessEmailInput): AccessEmail {
-  const business = oneLine(input.businessName);
-  const invitation = input.purpose === 'invitation';
-  const subject = invitation
-    ? `Te asignaron como jefe de ${business} en Necto`
-    : `Tu código para entrar a ${business} en Necto`;
-  const intro = invitation
-    ? `Hola ${oneLine(input.bossName)}, te asignaron como jefe de "${business}" en Necto.`
-    : `Hola ${oneLine(input.bossName)}, este es tu código para entrar a "${business}" en Necto.`;
+  const name = oneLine(input.recipientName);
+  const business = input.businessName ? oneLine(input.businessName) : null;
+  const subject =
+    input.purpose === 'invitation' && business
+      ? `Te asignaron como jefe de ${business} en Necto`
+      : input.purpose === 'reverify'
+        ? 'Tu código para confirmar tu identidad en Necto'
+        : 'Tu código para entrar a Necto';
+  const intro =
+    input.purpose === 'invitation' && business
+      ? `Hola ${name}, te asignaron como jefe de "${business}" en Necto.`
+      : input.purpose === 'reverify'
+        ? `Hola ${name}, este es el código para confirmar tu identidad en Necto.`
+        : `Hola ${name}, este es tu código para entrar a tu negocio en Necto.`;
   const validity = `El código es válido por ${input.ttlMinutes} minutos y solo puede usarse una vez.`;
   const ignore = 'Si no esperabas este correo, puedes ignorarlo: nadie podrá entrar sin el código.';
 
@@ -50,7 +58,7 @@ export function buildAccessEmail(input: AccessEmailInput): AccessEmail {
     `Tu código: ${input.code}`,
     validity,
     '',
-    `Entra aquí e introduce tu correo y el código: ${input.accessUrl}`,
+    `Entra aquí, escribe tu correo e introduce el código: ${input.accessUrl}`,
     '',
     ignore,
     '',
@@ -70,7 +78,7 @@ export function buildAccessEmail(input: AccessEmailInput): AccessEmail {
         </td></tr>
         <tr><td style="padding:8px 28px 0;font-size:13px;line-height:1.6;color:#667085;text-align:center;">${escapeHtml(validity)}</td></tr>
         <tr><td align="center" style="padding:20px 28px 0;">
-          <a href="${escapeHtml(input.accessUrl)}" style="display:inline-block;padding:12px 22px;border-radius:10px;background:#190088;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">Entrar a mi negocio</a>
+          <a href="${escapeHtml(input.accessUrl)}" style="display:inline-block;padding:12px 22px;border-radius:10px;background:#190088;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">Ir al acceso de Necto</a>
         </td></tr>
         <tr><td style="padding:20px 28px 0;font-size:12px;line-height:1.6;color:#667085;">${escapeHtml(ignore)}</td></tr>
         <tr><td style="padding:20px 28px 24px;font-size:11px;color:#98a2b3;">Necto · Conecta. Comparte. Crece.</td></tr>

@@ -44,6 +44,8 @@ export abstract class BusinessRepository {
   /** Any owner. Only for the public directory contract used by other modules. */
   abstract findById(id: string): Promise<Business | null>;
 
+  /** Any owner: the active businesses whose current boss has this email. Only for the public directory contract. */
+  abstract findActiveByBossEmail(email: string): Promise<Business[]>;
   abstract list(ownerId: string, query: ListQuery): Promise<{ items: Business[]; total: number }>;
 
   /** Saves the change only if the business still has `expectedVersion`. Returns null if it does not match. */

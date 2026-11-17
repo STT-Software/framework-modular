@@ -30,6 +30,9 @@ No registra rutas propias: sus piezas se montan dentro del layout del [workspace
 - **Invitación (pestaña Equipo):** muestra lo que se sabe. *Aceptada por el proveedor* **no** significa *recibida*: el texto lo dice
   expresamente. Si falló, indica el motivo (por ejemplo, correo no configurado) y permite reenviar (respetando la espera de 60 s y
   el límite por hora que impone el servidor). Mientras el envío está en curso se consulta unas veces más.
+- **Código temporal (ficha → Equipo → "Generar código temporal"):** provisional mientras el correo real no esté listo. Muestra el código **una
+  sola vez** (el servidor no lo guarda legible), con "Copiar código", la hora en que vence y la advertencia de que quien lo tenga entra como
+  el jefe. Vive solo en el panel: al cerrar la ficha o cambiar de pestaña desaparece; si se pierde, se genera otro (reemplaza al anterior).
 - **Pausar** bloquea al jefe (su sesión deja de funcionar) hasta reanudar.
 - **Exportar CSV:** se pide al servidor con el token (no es un enlace directo) y se guarda como archivo; respeta los filtros.
 - **Módulos:** el catálogo visual (nombre, descripción, color e icono) vive en `catalog.ts`; los identificadores son los que acepta el

@@ -2,18 +2,18 @@ export type SceneId = "logo" | "connect" | "share" | "grow";
 
 export interface SequenceItem {
   id: SceneId;
-  /** Milisegundos que se queda la escena en pantalla. */
+  /** Milisegundos que dura cada beat en pantalla (15 000 ms en flujo continuo). */
   duration: number;
-  /** Texto que leen los lectores de pantalla al entrar a la escena. */
+  /** Texto accesible para lectores de pantalla al entrar en cada acto. */
   announce: string;
 }
 
-/** Escenas de la bienvenida, en orden. Al terminar sigue la pantalla final ("ready"). */
+/** Secuencia continua de lanzamiento Necto IA ("Intelligence in motion"). */
 export const SEQUENCE: readonly SequenceItem[] = [
-  { id: "logo", duration: 2600, announce: "Necto. Todo empieza con una conexión." },
-  { id: "connect", duration: 3000, announce: "Conecta. Encuentra tu conexión." },
-  { id: "share", duration: 3000, announce: "Comparte. Tus ideas, más lejos." },
-  { id: "grow", duration: 2800, announce: "Crece. Lo construimos juntos." },
+  { id: "logo", duration: 3500, announce: "WhatsApp multiformato. Un mensaje, mil formas, un solo hilo." },
+  { id: "connect", duration: 3900, announce: "Necto IA contextual. La IA lee y enruta cada intención al instante." },
+  { id: "share", duration: 4000, announce: "Ecosistema modular. Pedidos, Agendamiento, Reservas, Inventarios, Turnos y Referidos conectados." },
+  { id: "grow", duration: 3600, announce: "Necto IA. Inteligencia en marcha. Conecta clientes, módulos y decisiones." },
 ];
 
-export const READY_ANNOUNCEMENT = "Qué bueno que estés aquí. Tu próxima conexión te espera.";
+export const READY_ANNOUNCEMENT = "Qué bueno que estés aquí.";

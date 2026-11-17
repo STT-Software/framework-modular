@@ -114,6 +114,7 @@ function PhoneForm({ profile }: { profile: Profile }) {
             }}
             autoComplete="tel-national"
             maxLength={25}
+            required
             error={Boolean(fieldError)}
             aria-describedby={fieldError ? "phone-hint phone-error" : "phone-hint"}
           />

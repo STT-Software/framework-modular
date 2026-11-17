@@ -1,143 +1,1284 @@
 /*
  * Estilos del módulo onboarding (prefijo `ob-`).
- * Salen de la referencia visual `necto-onboardingBienvenida`. Los colores propios de la
- * pantalla viven en variables `--ob-*` para claro y oscuro (clase `.dark` en <html>).
+ * Lanzamiento continuo 2D plano NECTO IA — geometría de marca (aros, cápsulas, disco y satélite), DM Sans 300/400/700.
  */
 .ob {
-  --ob-bg: #ffffff;
-  --ob-ink: #212121;
-  --ob-muted: #667085;
+  --ob-bg: #f5efe3;
+  --ob-ink: #190088;
+  --ob-muted: #212121;
   --ob-accent: #ff3f1a;
-  --ob-paper: #fff5f1;
-  --ob-line: #e4e7ec;
-  --ob-ghost: #ff3f1a08;
-  --ob-arch-mid: #ffd8cd;
-  --ob-card-border: #e4e7ec;
+  --ob-indigo: #190088;
+  --ob-cyan: #97d6df;
+  --ob-paper: #fff8f0;
+  --ob-line: rgba(25, 0, 136, 0.16);
+  --ob-ghost: rgba(25, 0, 136, 0.05);
   --ob-button: #190088;
-  position: relative; isolation: isolate; min-height: 100svh; overflow: hidden;
-  display: flex; flex-direction: column; color: var(--ob-ink); background: var(--ob-bg);
+  --ob-finale: #100548;
+  --ob-geo-line: rgba(25, 0, 136, 0.07);
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: var(--ob-ink);
+  background: var(--ob-bg);
   font-family: "DM Sans", Arial, sans-serif;
 }
+
 .dark .ob {
   --ob-bg: #100548;
   --ob-ink: #f7f5ff;
-  --ob-muted: #c1b9e0;
+  --ob-muted: #dfd9ff;
   --ob-accent: #ff3f1a;
-  --ob-paper: #fff9ed;
-  --ob-line: #d9d0ff2b;
-  --ob-ghost: #ffffff0a;
+  --ob-indigo: #b7adff;
+  --ob-paper: #1a0c5e;
+  --ob-line: rgba(217, 208, 255, 0.2);
+  --ob-ghost: rgba(255, 255, 255, 0.06);
   --ob-button: #6250e8;
-  --ob-arch-mid: #fff9ed;
-  --ob-card-border: #fff9ed66;
-}
-.ob[hidden],.ob [hidden] { display:none!important; }
-.ob *,.ob *::before,.ob *::after { box-sizing:border-box; }
-.ob-grain { position:absolute;inset:0;z-index:-2;background-image:linear-gradient(var(--ob-line) 1px,transparent 1px),linear-gradient(90deg,var(--ob-line) 1px,transparent 1px);background-size:72px 72px;opacity:.22;mask-image:radial-gradient(ellipse at center,black,transparent 74%); }
-.ob-ambient { position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none; }
-.ob-ambient i { position:absolute;border-radius:50%;border:1px solid var(--ob-line);width:min(920px,110vw);aspect-ratio:1;left:50%;top:48%;transform:translate(-50%,-50%); }
-.ob-ambient i+ i { width:min(710px,85vw); }
-.ob-header { display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 48px;position:relative;z-index:5; }
-.ob-edition { display:flex;align-items:center;gap:10px;font-size:10px;font-weight:500;letter-spacing:.15em; }
-.ob-edition>span:first-child { width:7px;height:7px;background:var(--ob-accent);border-radius:50%;box-shadow:0 0 0 5px var(--ob-ghost); }
-.ob-edition-short { display:none; }
-.ob-actions { display:flex;align-items:center;gap:8px; }
-.ob button,.ob a { -webkit-tap-highlight-color:transparent; }
-.ob-icon-button { display:flex;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid var(--ob-line);border-radius:50%;background:var(--ob-ghost);color:var(--ob-ink); }
-.ob-icon-button:hover { background:var(--ob-line); }
-.ob-stage { flex:1;display:grid;place-items:center;padding:0 24px;min-height:500px; }
-.ob-scene { grid-area:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;max-width:900px;text-align:center;position:relative;padding:20px 0 40px; }
-.ob-hero-logo { width:min(420px,70vw);position:relative; }
-.ob-hero-logo svg { display:block;width:100%;height:auto;overflow:visible; }
-.ob-hero-logo path { transform-box:fill-box;transform-origin:center; }
-.ob-hero-logo path[fill="#FF3F1A"] { fill:#ff3f1a; }
-.dark .ob-hero-logo path[fill="#FF3F1A"] { fill:#ff3f1a; }
-.dark .ob-hero-logo path[fill="#190088"] { fill:white; }
-.ob-logo-caption { margin-top:36px;color:var(--ob-ink);font-size:16px;letter-spacing:-.01em; }
-.ob-scene-logo { min-height:500px; }
-.ob-logo-aura { position:absolute;width:min(620px,85vw);aspect-ratio:1;top:46%;left:50%;border-radius:50%;background:radial-gradient(ellipse,var(--ob-ghost),transparent 70%);transform:translate(-50%,-50%); }
-.ob-graphic { width:min(480px,90vw);height:300px;position:relative;flex-shrink:0; }
-.ob-graphic>svg { width:100%;height:100%;overflow:visible; }
-.ob-scene-copy { margin-top:20px;display:flex;align-items:center;flex-direction:column;gap:15px; }
-.ob-kicker { display:block;font-size:10px;font-weight:600;letter-spacing:.2em; }
-.ob h1 { margin:0;font-size:clamp(30px,4.1vw,52px);font-weight:500;line-height:1.12;letter-spacing:-.045em; }
-.ob h1 em { font-style:normal;color:var(--ob-accent); }
-.ob-scene-copy p,.ob-scene-ready>p { font-size:16px;line-height:1.6;color:var(--ob-muted);margin:0; }
-.ob-network-orbit { stroke:var(--ob-line);stroke-dasharray:3 9; }
-.ob-connection { stroke:var(--ob-accent);stroke-width:2;stroke-dasharray:1; }
-.ob-connection-soft { opacity:.22;stroke-width:1; }
-.ob-node { transform-box:fill-box;transform-origin:center; }
-.ob-node-shell { fill:var(--ob-ghost);stroke:var(--ob-line); }
-.ob-node-core { fill:var(--ob-accent); }
-.ob-node-blue { fill:#190088; }
-.dark .ob-node-blue { fill:#b7adff; }
-.ob-node-cyan { fill:#97d6df; }
-.ob-network-center { fill:var(--ob-paper); }
-.ob-center-mark { position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%); }
-.ob-center-mark svg { display:block;width:100%;height:100%; }
-.ob-motion-card { position:absolute;left:50%;top:50%;width:168px;height:208px;background:var(--ob-paper);border:1px solid var(--ob-card-border);box-shadow:0 22px 40px #19008818;border-radius:20px;padding:20px;text-align:left;color:#190088; }
-.ob-card-mini { display:block;font-size:8px;letter-spacing:.13em;font-weight:600; }
-.ob-card-left { transform:translate(calc(-50% - 125px),-50%) rotate(-14deg);background:#97d6df; }
-.ob-card-right { transform:translate(calc(-50% + 125px),-50%) rotate(14deg);background:#e8ddff; }
-.ob-card-front { transform:translate(-50%,-50%) rotate(-3deg); }
-.ob-card-line { display:block;height:5px;border-radius:4px;background:#19008822;margin-top:13px;width:90%; }
-.ob-card-line.short { width:55%;margin-top:7px; }
-.ob-card-mark { width:58px;height:58px;margin-top:29px;margin-bottom:22px; }
-.ob-card-mark svg { width:100%;height:100%; }
-.ob-card-star { position:absolute;right:22px;top:80px;font-size:32px;color:#ff3f1a; }
-.ob-card-flower { position:relative;width:70px;height:76px;margin:24px 0 14px; }
-.ob-card-flower i { width:37px;height:37px;position:absolute;border-radius:50%;background:#190088; }
-.ob-card-flower i:nth-child(2) { left:29px; }
-.ob-card-flower i:nth-child(3) { top:29px; }
-.ob-card-flower i:nth-child(4) { top:29px;left:29px; }
-.ob-card-bubbles { height:76px;margin-top:24px;margin-bottom:14px;position:relative; }
-.ob-card-bubbles i { width:43px;height:43px;border-radius:50%;position:absolute;background:#ff3f1a;left:0;top:18px; }
-.ob-card-bubbles i:nth-child(2) { background:#190088;left:35px;top:0; }
-.ob-card-bubbles i:nth-child(3) { background:#97d6df;left:62px;top:32px; }
-.ob-growth-arch { stroke-width:36px;stroke-linecap:round;stroke-dasharray:1; }
-.arch-one { stroke:#97d6df; }
-.arch-two { stroke:var(--ob-arch-mid); }
-.arch-three { stroke:var(--ob-accent); }
-.ob-growth-baseline { stroke:var(--ob-line); }
-.ob-growth-dot { fill:var(--ob-accent);transform-box:fill-box;transform-origin:center; }
-.ob-growth-spark { stroke:var(--ob-accent);stroke-width:2;stroke-linecap:round; }
-.ob-scene-ready { gap:16px;padding:12px 0 20px; }
-.ob-ready-emblem { width:88px;height:88px;position:relative; }
-.ob-ready-emblem>span { position:absolute;inset:-16px;border:1px solid var(--ob-line);border-radius:50%; }
-.ob-ready-emblem>div { position:absolute;inset:0;background:var(--ob-paper);border-radius:30px;display:grid;place-items:center;box-shadow:0 16px 40px #19008812;transform:rotate(-5deg); }
-.ob-ready-emblem svg { width:62px;height:62px; }
-.ob-continue { min-height:52px;min-width:220px;display:flex;align-items:center;justify-content:center;gap:44px;border-radius:12px;background:var(--ob-button);color:white;padding:0 24px;font-size:15px;font-weight:500;margin-top:8px;box-shadow:0 10px 24px #1900881a; }
-.ob-continue:hover { filter:brightness(1.12); }
-.ob-footer { display:flex;justify-content:space-between;align-items:center;gap:24px;padding:20px 48px 28px;font-size:12px;color:var(--ob-muted); }
-.ob-story-progress { display:flex;gap:6px;width:164px; }
-.ob-story-progress>span { width:36px;height:3px;border-radius:5px;background:var(--ob-line);overflow:hidden; }
-.ob-story-progress i { display:block;width:100%;height:100%;background:var(--ob-accent);transform:scaleX(0);transform-origin:left; }
-.ob-story-progress .is-complete i { transform:scaleX(1); }
-.ob-sr-only { position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0; }
-@media(max-width:600px) {
-  .ob-header { padding:20px;gap:10px; }
-  .ob-edition-long { display:none; }
-  .ob-edition-short { display:inline; }
-  .ob-stage { min-height:520px;padding:0 20px; }
-  .ob-scene { padding:24px 0 32px; }
-  .ob-scene-logo { min-height:440px; }
-  .ob-graphic { height:240px;width:min(400px,90vw); }
-  .ob-scene-copy { gap:13px;margin-top:22px; }
-  .ob-scene-copy p,.ob-scene-ready>p { font-size:14px;max-width:280px; }
-  .ob-footer { padding:22px 20px 28px;flex-direction:column;gap:15px; }
-  .ob-hero-logo { width:min(330px,82vw); }
-  .ob-logo-caption { font-size:14px; }
-  .ob-cards { zoom:.76;height:300px; }
-  .ob-ready-emblem { width:92px;height:92px; }
-  .ob-ready-emblem svg { width:52px;height:52px; }
-  .ob-scene-ready { gap:20px; }
+  --ob-finale: #07021f;
+  --ob-geo-line: rgba(217, 208, 255, 0.08);
 }
 
-/* Ajustes que en la referencia eran globales y aquí se acotan a la pantalla */
-.ob button { cursor: pointer; }
+.ob[hidden],
+.ob [hidden] {
+  display: none !important;
+}
+
+.ob *,
+.ob *::before,
+.ob *::after {
+  box-sizing: border-box;
+}
+
+/* ── Cabecera y HUD adaptativo ───────────────────────────────────────────── */
+.ob-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 26px 48px;
+  position: relative;
+  z-index: 5;
+}
+
+.ob-header-brand {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ob-header-brand svg {
+  display: block;
+}
+
+.ob-header-brand path {
+  transition: fill 280ms ease 200ms;
+}
+
+.dark .ob-header-brand path[fill="#190088"] {
+  fill: #ffffff;
+}
+
+.ob-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ob button,
+.ob a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ob-icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--ob-line);
+  border-radius: 50%;
+  background: var(--ob-ghost);
+  color: var(--ob-ink);
+  transition: background-color 150ms ease, transform 150ms ease, color 280ms ease 200ms, border-color 280ms ease 200ms;
+}
+
+.ob-icon-button:hover {
+  background: var(--ob-line);
+}
+
+.ob-icon-button:active {
+  transform: scale(0.95);
+}
+
+.ob[data-scene="share"] .ob-header-brand path {
+  fill: #ffffff;
+}
+
+.ob[data-scene="share"] .ob-footer {
+  color: #100548;
+}
+
+.ob[data-scene="share"] .ob-icon-button {
+  color: #100548;
+  border-color: rgba(16, 5, 72, 0.24);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ob[data-scene="share"] .ob-story-progress > span {
+  background: rgba(16, 5, 72, 0.24);
+}
+
+.ob[data-scene="share"] .ob-story-progress i {
+  background: #ffffff;
+}
+
+.ob[data-scene="grow"] .ob-header-brand path[fill="#190088"] {
+  fill: #ffffff;
+}
+
+.ob[data-scene="grow"] .ob-header-brand path[fill="#FF3F1A"] {
+  fill: #ff3f1a;
+}
+
+.ob[data-scene="grow"] .ob-footer {
+  color: #dfd9ff;
+}
+
+.ob[data-scene="grow"] .ob-icon-button {
+  color: #dfd9ff;
+  border-color: rgba(217, 208, 255, 0.26);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ob[data-scene="grow"] .ob-story-progress > span {
+  background: rgba(217, 208, 255, 0.22);
+}
+
+.ob[data-scene="grow"] .ob-story-progress i {
+  background: #ff3f1a;
+}
+
+/* ── Escenario continuo (un solo lienzo, una sola línea de tiempo) ───────── */
+.ob-stage {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 0 48px;
+  min-height: 460px;
+}
+
+.ob-launch {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 72px);
+  width: 100%;
+  max-width: 1320px;
+  padding: 8px 0 16px;
+}
+
+/* Cortinillas a pantalla completa con el ángulo de la diagonal de la N */
+.ob-wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  /* Capa propia en la GPU; fuera de pantalla hasta que la línea de tiempo la mueve. */
+  left: -50vw;
+  right: auto;
+  width: 200vw;
+  transform-origin: 0 0;
+  transform: translateX(calc(-150vw - 40vh)) skewX(20deg);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.ob-wipe-orange {
+  background: #ff3f1a;
+}
+
+.ob-wipe-navy {
+  background: var(--ob-finale);
+}
+
+/*
+ * Geometría de marca a pantalla completa (ver `BrandGeometry.tsx`): primitivas planas de trazo grueso cortadas por
+ * los bordes. Todas pintan con `currentColor`; la línea de tiempo cambia el fondo animando `color`.
+ */
+.ob-geo {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--ob-geo-line);
+  --ob-geo-stroke: 3.2vmin;
+}
+
+.ob-geo > * {
+  position: absolute;
+  display: block;
+}
+
+.ob-geo-ring-a,
+.ob-geo-ring-b,
+.ob-geo-capsule,
+.ob-geo-square,
+.ob-geo-arc {
+  border: var(--ob-geo-stroke) solid currentColor;
+  border-radius: 50%;
+}
+
+.ob-geo-ring-a {
+  width: 74vmin;
+  height: 74vmin;
+  left: -26vmin;
+  top: -34vmin;
+}
+
+.ob-geo-ring-b {
+  width: 40vmin;
+  height: 40vmin;
+  right: -14vmin;
+  bottom: -20vmin;
+}
+
+.ob-geo-capsule {
+  width: 42vmin;
+  height: 17vmin;
+  left: 26vmin;
+  bottom: -6vmin;
+  border-radius: 9vmin;
+  rotate: -25deg;
+}
+
+/* Un módulo: entra sobre el naranja, en el lugar de la cápsula. */
+.ob-geo-square {
+  width: 19vmin;
+  height: 19vmin;
+  left: 32vmin;
+  bottom: 3vmin;
+  border-radius: 28%;
+  color: rgba(255, 255, 255, 0.22);
+  rotate: -25deg;
+  opacity: 0;
+}
+
+/* Cuarto de círculo macizo anclado a la esquina superior derecha. */
+.ob-geo-quarter {
+  width: 34vmin;
+  height: 34vmin;
+  right: 0;
+  top: 0;
+  border-radius: 0 0 0 100%;
+  background: currentColor;
+  color: rgba(255, 255, 255, 0.2);
+  transform-origin: 100% 0;
+  scale: 0;
+}
+
+.ob-geo-arc {
+  width: 46vmin;
+  height: 46vmin;
+  right: 4vmin;
+  top: 6vmin;
+  border-color: transparent;
+  border-top-color: currentColor;
+  border-right-color: currentColor;
+  color: rgba(151, 214, 223, 0.7);
+  rotate: -25deg;
+  opacity: 0;
+}
+
+/* Onda de voz (acto de los mensajes). */
+.ob-geo-wave {
+  width: 22vmin;
+  left: 47%;
+  top: 11vmin;
+  overflow: visible;
+  color: rgba(25, 0, 136, 0.12);
+  opacity: 0;
+}
+
+.dark .ob-geo-wave {
+  color: rgba(217, 208, 255, 0.14);
+}
+
+.ob-geo-wave path {
+  stroke: currentColor;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+}
+
+/* Los tres puntos de "escribiendo". */
+.ob-geo-dots {
+  display: flex !important;
+  gap: 1.6vmin;
+  right: 22vmin;
+  bottom: 9vmin;
+  color: rgba(25, 0, 136, 0.14);
+  opacity: 0;
+}
+
+.dark .ob-geo-dots {
+  color: rgba(217, 208, 255, 0.16);
+}
+
+.ob-geo-dots b,
+.ob-geo-plus b,
+.ob-geo-slashes b {
+  display: block;
+  background: currentColor;
+  border-radius: 999px;
+}
+
+.ob-geo-dots b {
+  width: 2.6vmin;
+  height: 2.6vmin;
+}
+
+/* Signo + de trazo grueso (la IA suma contexto). */
+.ob-geo-plus {
+  width: 8vmin;
+  height: 8vmin;
+  left: 49%;
+  bottom: 14vmin;
+  color: rgba(25, 0, 136, 0.12);
+  opacity: 0;
+}
+
+.dark .ob-geo-plus {
+  color: rgba(217, 208, 255, 0.14);
+}
+
+.ob-geo-plus b {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 2.4vmin;
+  height: 100%;
+}
+
+.ob-geo-plus b + b {
+  width: 100%;
+  height: 2.4vmin;
+}
+
+/* Barras con el ángulo de la diagonal de la N (cierre). */
+.ob-geo-slashes {
+  display: flex !important;
+  align-items: flex-end;
+  gap: 2.2vmin;
+  left: 7vmin;
+  bottom: 9vmin;
+  color: rgba(255, 255, 255, 0.12);
+  transform: skewX(20deg);
+  opacity: 0;
+}
+
+.ob-geo-slashes b {
+  width: 2.4vmin;
+  height: 13vmin;
+  border-radius: 1.2vmin;
+  transform-origin: 50% 100%;
+}
+
+.ob-geo-slashes b:nth-child(2) {
+  height: 9vmin;
+}
+
+.ob-geo-slashes b:nth-child(3) {
+  height: 5vmin;
+}
+
+.ob-geo-disc {
+  width: 7vmin;
+  height: 7vmin;
+  left: 60vmin;
+  bottom: 6vmin;
+  border-radius: 50%;
+  background: currentColor;
+  color: #97d6df;
+}
+
+.ob-geo-dot {
+  width: 1.8vmin;
+  height: 1.8vmin;
+  left: 50%;
+  top: 22vmin;
+  border-radius: 50%;
+  background: currentColor;
+  color: #ff3f1a;
+}
+
+/*
+ * Ready · juego de formas (`GeometryPlayground`): flotan bajo el texto y se pueden disparar con un clic. La escena y
+ * el marco dejan pasar el puntero; solo lo interactivo (formas, botón, cabecera) lo recoge.
+ */
+.ob[data-scene="ready"] .ob-stage,
+.ob[data-scene="ready"] .ob-footer,
+.ob[data-scene="ready"] .ob-header,
+.ob-scene-ready {
+  pointer-events: none;
+}
+
+.ob[data-scene="ready"] .ob-header > *,
+.ob-scene-ready .ob-continue {
+  pointer-events: auto;
+}
+
+.ob-play {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ob-play-piece {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
+}
+
+.ob-play-spark {
+  position: absolute;
+  width: 1.8vmin;
+  height: 1.8vmin;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.ob-shape {
+  --w: calc(var(--size) * 1vmin);
+  position: relative;
+  width: var(--w);
+  height: var(--w);
+}
+
+.ob-shape.tone-indigo {
+  color: rgba(25, 0, 136, 0.24);
+}
+
+.dark .ob-shape.tone-indigo {
+  color: rgba(217, 208, 255, 0.3);
+}
+
+.ob-shape.tone-orange {
+  color: #ff3f1a;
+}
+
+.ob-shape.tone-cyan {
+  color: #97d6df;
+}
+
+.ob-shape.is-ring {
+  border: calc(var(--w) * 0.16) solid currentColor;
+  border-radius: 50%;
+}
+
+.ob-shape.is-capsule {
+  height: calc(var(--w) * 0.42);
+  border: calc(var(--w) * 0.1) solid currentColor;
+  border-radius: 999px;
+}
+
+.ob-shape.is-square {
+  border: calc(var(--w) * 0.17) solid currentColor;
+  border-radius: 28%;
+}
+
+.ob-shape.is-quarter {
+  background: currentColor;
+  border-radius: 100% 0 0 0;
+}
+
+.ob-shape.is-arc {
+  border: calc(var(--w) * 0.15) solid transparent;
+  border-top-color: currentColor;
+  border-right-color: currentColor;
+  border-radius: 50%;
+}
+
+.ob-shape.is-wave {
+  height: calc(var(--w) * 0.3);
+}
+
+.ob-shape.is-wave svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ob-shape.is-wave path {
+  stroke: currentColor;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.ob-shape.is-dots {
+  height: calc(var(--w) * 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ob-shape.is-dots b {
+  width: calc(var(--w) * 0.28);
+  height: calc(var(--w) * 0.28);
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ob-shape.is-plus b {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: calc(var(--w) * 0.3);
+  height: 100%;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.ob-shape.is-plus b + b {
+  width: 100%;
+  height: calc(var(--w) * 0.3);
+}
+
+.ob-shape.is-slashes {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(var(--w) * 0.12);
+  transform: skewX(20deg);
+}
+
+.ob-shape.is-slashes b {
+  width: calc(var(--w) * 0.22);
+  height: 100%;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.ob-shape.is-slashes b:nth-child(2) {
+  height: 70%;
+}
+
+.ob-shape.is-slashes b:nth-child(3) {
+  height: 40%;
+}
+
+.ob-shape.is-disc {
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ── Columna tipográfica ─────────────────────────────────────────────────── */
+.ob-copy-stack {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-items: center;
+  min-height: 380px;
+}
+
+.ob-copy-beat {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.ob-display-title {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-size: clamp(2.6rem, 5.4vw, 5.25rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 0.98;
+  color: var(--ob-ink);
+  transition: color 300ms ease 250ms;
+}
+
+.ob-mask {
+  display: block;
+  overflow: hidden;
+  padding: 0.04em 0 0.1em;
+  margin: -0.04em 0 -0.1em;
+}
+
+.ob-mask > span {
+  display: block;
+  transform: translateY(110%);
+  transition: transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* Entra cuando el texto anterior ya salió (~570 ms): nunca se solapan. */
+  transition-delay: calc(var(--i, 0) * 70ms + 580ms);
+}
+
+.ob-copy-beat.is-active .ob-mask > span {
+  transform: translateY(0);
+}
+
+.ob-copy-beat.is-past .ob-mask > span {
+  transform: translateY(-110%);
+  transition: transform 440ms cubic-bezier(0.7, 0, 0.84, 0);
+  transition-delay: calc(var(--i, 0) * 30ms);
+}
+
+.ob-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ob-accent);
+  transition: color 300ms ease 250ms;
+}
+
+.ob-kicker::before {
+  content: "";
+  width: 28px;
+  height: 2px;
+  background: currentColor;
+}
+
+.ob-accent-text {
+  color: var(--ob-accent);
+  transition: color 300ms ease 250ms;
+}
+
+.ob-lead {
+  max-width: 430px;
+  font-size: clamp(1rem, 1.25vw, 1.2rem);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--ob-muted);
+  transition: color 300ms ease 250ms;
+}
+
+/* Colores del texto sobre las cortinillas */
+.ob-launch[data-beat="2"] .ob-display-title {
+  color: #ffffff;
+}
+
+.ob-launch[data-beat="2"] .ob-accent-text,
+.ob-launch[data-beat="2"] .ob-kicker,
+.ob-launch[data-beat="2"] .ob-lead {
+  color: #100548;
+}
+
+.ob-launch[data-beat="3"] .ob-display-title {
+  color: #ffffff;
+}
+
+.ob-launch[data-beat="3"] .ob-accent-text {
+  color: #ff3f1a;
+}
+
+.ob-launch[data-beat="3"] .ob-kicker {
+  color: #97d6df;
+}
+
+.ob-launch[data-beat="3"] .ob-lead {
+  color: #dfd9ff;
+}
+
+/* ── Lienzo vectorial ────────────────────────────────────────────────────── */
+.ob-launch-visual {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 680px;
+  justify-self: end;
+}
+
+.ob-hero-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: "DM Sans", Arial, sans-serif;
+}
+
+/* Conversación */
+.ob-bubble-frame {
+  fill: var(--ob-paper);
+  stroke: #97d6df;
+  stroke-width: 2.5;
+  stroke-opacity: 0;
+}
+
+.ob-bubble-tail {
+  fill: var(--ob-paper);
+}
+
+/* Sombras planas (sin filter: drop-shadow, que recalcula el desenfoque en cada fotograma). */
+.ob-flat-shadow {
+  fill: #190088;
+  opacity: 0.07;
+}
+
+.dark .ob-flat-shadow {
+  fill: #000000;
+  opacity: 0.25;
+}
+
+.ob-bubble-name {
+  fill: var(--ob-accent);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ob-bubble-text {
+  fill: var(--ob-ink);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.ob-bubble-time {
+  fill: var(--ob-muted);
+  opacity: 0.55;
+  font-size: 13px;
+}
+
+.ob-voice-play {
+  fill: #ff3f1a;
+}
+
+.ob-voice-icon {
+  fill: #ffffff;
+}
+
+.ob-wave rect {
+  fill: var(--ob-indigo);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ob-photo {
+  fill: #97d6df;
+}
+
+.ob-photo-hill {
+  fill: #190088;
+}
+
+.ob-photo-ground {
+  fill: #ff3f1a;
+}
+
+.ob-photo-sun {
+  fill: #fff8f0;
+}
+
+.ob-typing-bg {
+  fill: var(--ob-paper);
+}
+
+.ob-typing rect:not(.ob-typing-bg) {
+  fill: var(--ob-indigo);
+  opacity: 0.6;
+}
+
+/* Etiquetas de intención */
+.ob-tag rect {
+  fill: #ff3f1a;
+}
+
+.ob-tag text {
+  fill: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.ob-tag-check {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ob-tag.is-cyan rect {
+  fill: #97d6df;
+}
+
+.ob-tag.is-cyan text {
+  fill: #100548;
+}
+
+.ob-tag.is-cyan .ob-tag-check {
+  stroke: #100548;
+}
+
+.ob-tag.is-indigo rect {
+  fill: #190088;
+}
+
+.dark .ob-tag.is-indigo rect {
+  fill: #6250e8;
+}
+
+/* Núcleo */
+.ob-hub-tile {
+  fill: #190088;
+}
+
+.dark .ob-hub-tile {
+  fill: #6250e8;
+}
+
+.ob-hub-glow {
+  fill: #97d6df;
+  opacity: 0;
+}
+
+.ob-hub-mark path[fill="#190088"] {
+  fill: #ffffff;
+}
+
+/* Módulos */
+.ob-link {
+  stroke: #ffffff;
+  stroke-opacity: 0.55;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+}
+
+.ob-pulse {
+  stroke: #ffffff;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 0.12 1.2;
+  stroke-dashoffset: 1;
+  opacity: 0;
+}
+
+/* Chispa en la punta del conector mientras se dibuja. */
+.ob-spark {
+  stroke: #ffffff;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 0.04 2;
+  stroke-dashoffset: 0.05;
+  opacity: 0;
+}
+
+.ob-hub-ripple {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 3;
+  opacity: 0;
+}
+
+.ob-port {
+  fill: #ffffff;
+  stroke: #100548;
+  stroke-width: 3;
+  scale: 0;
+}
+
+.ob-port-ripple {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2;
+  opacity: 0;
+}
+
+.ob-card-shadow {
+  fill: #100548;
+  opacity: 0.2;
+}
+
+.ob-card-bg {
+  fill: #fff8f0;
+}
+
+.ob-card-icon-bg {
+  fill: #ff3f1a;
+}
+
+.ob-card-icon {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ob-card-label {
+  fill: #100548;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.ob-card-meta {
+  fill: #100548;
+  opacity: 0.6;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.ob-card.is-indigo .ob-card-bg {
+  fill: #100548;
+}
+
+.ob-card.is-indigo .ob-card-label,
+.ob-card.is-indigo .ob-card-meta {
+  fill: #ffffff;
+}
+
+.ob-card.is-cyan .ob-card-bg {
+  fill: #97d6df;
+}
+
+.ob-card.is-cyan .ob-card-icon-bg {
+  fill: #100548;
+}
+
+/* Cierre: logotipo */
+/* Un blanco apenas lavanda: así el brillo final (blanco puro) se nota al pasar sobre las letras. */
+.ob-lockup-word path {
+  fill: #e4e0ff;
+}
+
+.ob-lockup-tagline path {
+  fill: #97d6df;
+}
+
+.ob-lockup-rule {
+  fill: #ff3f1a;
+}
+
+/* ── Pantalla final Ready (2D plano) ───────── */
+.ob-scene-ready {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 20px 0 36px;
+  gap: 18px;
+}
+
+.ob-ready-dissolve {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: var(--ob-finale);
+  pointer-events: none;
+  /* Estado final (oculto): la animación de entrada barre la cortina en diagonal hasta aquí. */
+  left: -50vw;
+  right: auto;
+  width: 200vw;
+  transform-origin: 0 0;
+  /* Estado final (fuera de pantalla a la derecha): la animación de entrada barre la cortina hasta aquí. */
+  transform: translateX(calc(150vw + 5vh)) skewX(20deg);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.ob-ready-crest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  z-index: 2;
+}
+
+.ob-ready-emblem {
+  display: block;
+  overflow: visible;
+}
+
+/* Cada letra se encoge sobre sí misma mientras viaja hacia la N. */
+.ob-ready-word path {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ob-ready-tile {
+  fill: var(--ob-paper);
+  stroke: var(--ob-line);
+  stroke-width: 2;
+}
+
+.dark .ob-ready-emblem path[fill="#190088"] {
+  fill: #ffffff;
+}
+
+.ob-ready-slash {
+  width: 72px;
+  height: 5px;
+  background: #ff3f1a;
+  transform-origin: center;
+}
+
+.ob-scene-ready h1 {
+  margin: 0;
+  color: var(--ob-ink);
+  font-size: clamp(2.1rem, 4.4vw, 3.25rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.07;
+}
+
+.ob-scene-ready em {
+  font-style: normal;
+  color: var(--ob-accent);
+}
+
+.ob-continue {
+  min-height: 52px;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  border-radius: 12px;
+  background: var(--ob-button);
+  color: #ffffff;
+  padding: 0 26px;
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 6px;
+  position: relative;
+  z-index: 2;
+  transition: filter 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ob-continue span {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ob-continue:hover {
+  filter: brightness(1.12);
+}
+
+.ob-continue:hover span {
+  transform: translateX(4px);
+}
+
+.ob-continue:active {
+  transform: scale(0.97);
+}
+
+/* ── Pie y progreso ──────────────────────────────────────────────────────── */
+.ob-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 48px 28px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ob-muted);
+  position: relative;
+  z-index: 5;
+  transition: color 280ms ease 200ms;
+}
+
+/* Saltar la intro: discreto, hereda el color del pie en cada acto. */
+.ob-skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0.72;
+  transition: opacity 160ms ease;
+}
+
+.ob-skip:hover {
+  opacity: 1;
+}
+
+.ob-skip span {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ob-skip:hover span {
+  transform: translateX(3px);
+}
+
+.ob-story-progress {
+  display: flex;
+  gap: 6px;
+  width: 164px;
+}
+
+.ob-story-progress > span {
+  width: 36px;
+  height: 3px;
+  border-radius: 5px;
+  background: var(--ob-line);
+  overflow: hidden;
+  transition: background-color 280ms ease 200ms;
+}
+
+.ob-story-progress i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--ob-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: background-color 280ms ease 200ms;
+}
+
+.ob-story-progress .is-complete i {
+  transform: scaleX(1);
+}
+
+.ob-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Responsive móvil / tablet ───────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .ob-stage {
+    padding: 0 24px;
+  }
+
+  .ob-launch {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    gap: 24px;
+  }
+
+  .ob-copy-stack {
+    min-height: 250px;
+    justify-items: center;
+  }
+
+  .ob-copy-beat {
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ob-display-title {
+    align-items: center;
+  }
+
+  .ob-lead {
+    max-width: 340px;
+  }
+
+  .ob-launch-visual {
+    max-width: 440px;
+    justify-self: center;
+  }
+
+  /* En columna el texto ocupa la parte alta: el arco pasa abajo, detrás del gráfico. */
+  .ob-geo-arc {
+    width: 70vmin;
+    height: 70vmin;
+    top: auto;
+    right: -12vmin;
+    bottom: 18vh;
+  }
+}
+
+@media (max-width: 600px) {
+  .ob-header {
+    padding: 18px 20px;
+    gap: 10px;
+  }
+
+  .ob-header-brand svg {
+    width: 124px;
+    height: auto;
+  }
+
+  .ob-stage {
+    min-height: 440px;
+    padding: 0 20px;
+  }
+
+  .ob-display-title {
+    font-size: clamp(1.85rem, 8vw, 2.55rem);
+  }
+
+  .ob-launch-visual {
+    max-width: 340px;
+  }
+
+  .ob-footer {
+    padding: 18px 20px 24px;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+.ob button {
+  cursor: pointer;
+}
+
 .ob button:focus-visible,
-.ob a:focus-visible { outline: 3px solid #9786ef; outline-offset: 4px; }
-.ob-continue:focus-visible { outline-color: var(--ob-accent); }
+.ob a:focus-visible {
+  outline: 3px solid #9786ef;
+  outline-offset: 4px;
+}
+
+.ob-continue:focus-visible {
+  outline-color: var(--ob-accent);
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .ob *, .ob *::before, .ob *::after { transition: none !important; animation: none !important; }
+  /* Sin animación no hay expansión: Ready muestra directamente el logotipo completo. */
+  .ob-ready-tile {
+    display: none;
+  }
+
+  .ob-ready-mark {
+    translate: var(--mark-x) 0;
+    scale: var(--mark-scale);
+  }
+
+  .ob *,
+  .ob *::before,
+  .ob *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

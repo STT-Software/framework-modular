@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { useId, useState, type FormEvent } from "react";
+import { Link } from "react-router";
 import { Input } from "@/elements/form/input";
 import { Label } from "@/elements/form/label";
 import { useFocusHeading } from "../hooks/useFocusHeading";
@@ -107,6 +108,17 @@ export const EmailStep = observer(({ onHelp }: { onHelp: () => void }) => {
         <button type="button" onClick={onHelp}>
           Habla con tu superadministrador
         </button>
+      </p>
+      {/* Salida simétrica al acceso de superadministradores, visible sin bajar hasta el pie de página. */}
+      <p className="na-support-copy na-role-switch">
+        ¿Eres superadministrador?{" "}
+        <Link to="/super/login">
+          Inicia sesión
+        </Link>{" "}
+        o{" "}
+        <Link to="/super/register">
+          regístrate <span aria-hidden="true">↗</span>
+        </Link>
       </p>
     </section>
   );

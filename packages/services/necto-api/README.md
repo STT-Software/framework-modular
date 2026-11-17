@@ -43,7 +43,7 @@ base de MongoDB conservan su nombre histórico `super_admin_auth`: renombrar la 
 | `npm run db:up` / `npm run db:down` | Levanta / detiene MongoDB. Los datos se conservan en el volumen. |
 | `npm run dev:api` | Backend con recarga automática. |
 | `npm run build:api` | Compila. Luego `npm start` dentro de la carpeta del backend. |
-| `npm run test:api` | Pruebas: servicios de `auth` y `onboarding`, seguridad y reglas de arquitectura. |
+| `npm run test:api` | Pruebas: servicios de `auth` y `onboarding`, DTOs, seguridad, reglas de arquitectura y el script de migración del teléfono. |
 
 Para borrar también los datos y volver a crear las bases y usuarios:
 `docker compose -f infra/docker-compose.yml down -v`.
@@ -73,7 +73,8 @@ Si falta una variable obligatoria o el secreto es débil, el servicio no arranca
 | `GET` | `/auth/super/me` | Perfil del superadmin autenticado (requiere `Authorization: Bearer <token>`). |
 | `GET` | `/onboarding/profile/me` | Perfil de bienvenida de quien tiene el token (requiere token). |
 | `PUT` | `/onboarding/profile/phone` | Onboarding, paso 1: guarda el teléfono (requiere token). |
-| `PUT` | `/onboarding/profile/sources` | Onboarding, paso 2: guarda dónde nos conoció (requiere token). |
+| `PUT` | `/onboarding/profile/sources` | Onboarding, paso 2 (opcional): guarda dónde nos conoció u «Omitir» (requiere token). |
+| `PUT` | `/onboarding/profile/intro-seen` | Marca que la cuenta ya vio la intro de bienvenida (requiere token). |
 | `GET` | `/businesses/catalog` | Catálogo de módulos y categorías (superadmin). |
 | `GET` / `POST` | `/businesses` | Lista los negocios del superadmin / crea uno con su jefe y módulos (requiere cabecera `Idempotency-Key`). |
 | `GET` / `PUT` | `/businesses/:id` | Ficha / edición (perfil, módulos y jefe) conservando el id. |
@@ -156,53 +157,83 @@ Todas sus rutas exigen `Authorization: Bearer <token>` con el token de superadmi
 (se verifica en el mismo proceso con los guards de `platform/security`, sin llamadas entre módulos). El id del usuario sale siempre
 del token (`sub`); nunca se manda en el cuerpo ni en la URL, así nadie puede leer o escribir el perfil de otra cuenta.
 
-Las tres rutas responden con la misma forma:
+Las cuatro rutas responden con la misma forma:
 
 ```json
-{ "phone": "+573001234567", "sources": ["instagram", "family"], "completed": true }
+{ "phone": "+573001234567", "sources": ["other"], "sourceOther": "Un amigo", "completed": true, "introSeen": true }
 ```
 
-- `GET /onboarding/profile/me` sin perfil guardado responde `200` con `{ "phone": null, "sources": [], "completed": false }` (no es un error).
-- `completed` pasa a `true` cuando se guardan los orígenes (paso 2). Antes es `false`.
+- `GET /onboarding/profile/me` sin perfil guardado responde `200` con
+  `{ "phone": null, "sources": [], "sourceOther": null, "completed": false, "introSeen": false }` (no es un error).
+- `completed` pasa a `true` cuando se guarda el paso 2, también si la persona eligió **Omitir** (lista vacía). Antes es
+  `false`. El cliente nunca debe deducir el avance de `sources.length`: con teléfono y `completed: false` toca el paso 2.
+- `sourceOther` es el texto libre de «Otro»; `null` con cualquier otra elección.
+- `introSeen` es `true` si `completed`, si ya hay perfil (quien guardó un teléfono ya pasó la bienvenida) o si la
+  cuenta marcó la intro como vista, en cualquier dispositivo. Así la intro solo la ven los usuarios nuevos, una vez.
+
+### Intro vista
+
+`PUT /onboarding/profile/intro-seen` (sin cuerpo)
+
+- El frontend lo llama **al terminar el primer acto** de la intro de `/welcome` (no al empezarla), o al pulsar
+  «Empezar» en el póster de movimiento reducido. Responde el perfil, ya con `introSeen: true`.
+- Es idempotente: llamarlo de nuevo no cambia nada y se conserva la primera fecha.
 
 ### Teléfono
 
 `PUT /onboarding/profile/phone`
 
 ```json
-{ "phone": "+573001234567" }
+{ "phone": "+57 300 123 4567" }
 ```
 
-- Formato **E.164**: `+`, indicativo del país (sin cero inicial) y número; entre 8 y 15 dígitos en total, sin espacios.
-  El frontend lo arma con el país elegido y lo que escribe la persona.
-- **No se puede repetir entre usuarios.** Si otra cuenta ya usa el número responde `409 Phone number already in use`.
-  Un usuario sí puede volver a guardar su propio número o cambiarlo.
+- Debe ser un **móvil válido de su país, con indicativo** (`+57…`). Se aceptan espacios, guiones, puntos y paréntesis;
+  sin `+` no se adivina el país y se rechaza.
+- Se **normaliza a E.164** (`+573001234567`) antes de validar y de guardar, con
+  [`libphonenumber-js/mobile`](https://www.npmjs.com/package/libphonenumber-js) (metadatos de móviles: los fijos no
+  pasan). La regla vive en una sola función, `domain/phone-number.ts`, que usan el DTO, el servicio y el script de
+  migración; el frontend aplica la misma librería.
+- **No se puede repetir entre usuarios.** Como se compara la forma canónica, `+57 300 123 4567` y `+573001234567` son el
+  mismo número. Si otra cuenta ya lo usa responde `409` con `code: "phone-in-use"`. Un usuario sí puede volver a
+  guardar su propio número o cambiarlo.
 - Un índice único en MongoDB lo garantiza aunque dos peticiones lleguen al mismo tiempo (una gana, la otra recibe `409`).
 - Límite de **10 peticiones por minuto por IP**: un `409` revela si un número está en uso, por eso no se deja sondear.
-- Formato inválido o campos de más: `400`.
+- Número inválido o campos de más: `400` (con `fields.phone`).
 
 ### Dónde nos conoció
 
 `PUT /onboarding/profile/sources`
 
 ```json
-{ "sources": ["instagram", "family", "other"] }
+{ "sources": ["other"], "sourceOther": "Un amigo del gimnasio" }
 ```
 
 - Valores permitidos: `instagram`, `tiktok`, `facebook`, `youtube`, `whatsapp`, `linkedin`, `family`, `business`, `other`.
-- Al menos uno, sin repetidos. Fuera de la lista o campos de más: `400`.
-- Requiere haber guardado antes el teléfono; si no, responde `409 Save the phone number first`.
-- Volver a llamarlo reemplaza la lista y conserva la fecha en que se completó.
+- **Elección única y opcional**: una opción como máximo, o la lista vacía `[]` para **Omitir**. Las dos completan el
+  perfil. Dos opciones, valores fuera de la lista o campos de más: `400`.
+- `sourceOther` (opcional, hasta 80 caracteres, se recortan los espacios): el texto libre de «Otro». Solo se guarda con
+  `["other"]`; con otra elección se descarta, así una respuesta vieja no sobrevive a un cambio de opinión.
+- Requiere haber guardado antes el teléfono; si no, responde `409` con `code: "phone-required"` (el frontend vuelve al
+  paso 1).
+- Volver a llamarlo reemplaza la respuesta y conserva la fecha en que se completó. Los perfiles guardados antes de la
+  elección única pueden conservar varias opciones hasta que se vuelvan a guardar.
 
 ### Errores comunes del onboarding
 
-| Código | Cuándo |
-|--------|--------|
-| `400` | Cuerpo inválido. |
-| `401` | Sin token, token inválido o vencido. |
-| `403` | Token válido de un usuario cuyo rol no es `superadmin`. |
-| `409` | Teléfono en uso por otra cuenta, u orígenes sin teléfono guardado. |
-| `429` | Demasiadas peticiones. |
+Los `409` llevan un `code` estable para que el cliente distinga el caso sin leer el mensaje:
+
+| HTTP | `code` | Cuándo |
+|------|--------|--------|
+| `400` | | Cuerpo inválido (`fields` dice qué campo). |
+| `401` | | Sin token, token inválido o vencido. |
+| `403` | | Token válido de un usuario cuyo rol no es `superadmin`. |
+| `409` | `phone-in-use` | El teléfono ya es de otra cuenta. |
+| `409` | `phone-required` | Paso 2 sin haber guardado el teléfono. |
+| `429` | | Demasiadas peticiones. |
+
+```json
+{ "message": "Phone number already in use", "error": "Conflict", "statusCode": 409, "code": "phone-in-use" }
+```
 
 ### Datos
 
@@ -211,10 +242,41 @@ Colección `onboarding_profiles` (un documento por usuario), en la misma base `s
 | Campo | Descripción |
 |-------|-------------|
 | `userId` | Id del superadmin (el `sub` del token). **Único.** |
-| `phone` | Teléfono E.164. **Único.** |
-| `sources` | Lista de orígenes. Vacía hasta el paso 2. |
-| `completedAt` | Fecha en que terminó los dos pasos; `null` mientras tanto. |
+| `phone` | Móvil en E.164 canónico. **Único.** |
+| `sources` | Orígenes: vacío hasta el paso 2 y también si la persona eligió Omitir. Como máximo uno desde la elección única. |
+| `sourceOther` | Texto libre de «Otro» o `null`. Los documentos anteriores a este campo no lo tienen (se lee como `null`). |
+| `completedAt` | Fecha en que terminó los dos pasos (la del reloj del servidor, `Clock`); `null` mientras tanto. |
 | `createdAt`, `updatedAt` | Marcas de tiempo automáticas. |
+
+Colección `onboarding_intro_views` (un documento por usuario que ya vio la intro). Va aparte porque un perfil siempre
+tiene teléfono y la intro se ve antes de darlo:
+
+| Campo | Descripción |
+|-------|-------------|
+| `userId` | Id del superadmin (el `sub` del token). **Único.** |
+| `seenAt` | Cuándo vio la intro por primera vez. No cambia después. |
+| `createdAt`, `updatedAt` | Marcas de tiempo automáticas. |
+
+### Migración del teléfono
+
+Los teléfonos guardados antes de la normalización pueden estar escritos de otra forma. El script
+`scripts/normalize-onboarding-phones.ts` los reescribe en E.164 canónico con la misma función que usa el API:
+
+```bash
+cd packages/services/necto-api
+npm run migrate:phones              # en seco: informa y no escribe nada
+npm run migrate:phones -- --apply   # escribe los cambios
+```
+
+- Lee `MONGODB_URI` del entorno o de `.env`. Es **idempotente**: lo que ya está en forma canónica no se toca.
+- Se corre **después del despliegue** y **una segunda vez más tarde**, para recoger lo que escribió el API viejo entretanto.
+- **Nunca fusiona cuentas.** Si dos perfiles quedarían con el mismo número (o MongoDB rechaza la escritura con el error
+  `11000`), no reescribe ninguno y lo informa como colisión; una persona decide qué cuenta conserva el número.
+- Los números que no son un móvil válido con indicativo se informan y se dejan como están.
+- En el informe los teléfonos salen enmascarados (`+57*******567`). Termina con código `2` si hay colisiones o números
+  ilegibles, `1` si falla y `0` si no queda nada pendiente.
+- Vive fuera de `src/` porque es una herramienta de operación, no parte del API; su lógica pura tiene pruebas en
+  `scripts/normalize-onboarding-phones.spec.ts`, que corren con `npm run test:api`.
 
 El módulo **no consulta** la colección `super_admins`: confía en la firma del token para saber quién es el usuario.
 
@@ -387,8 +449,8 @@ src/
     │   ├── onboarding.module.ts
     │   ├── api/                 Controlador y DTOs
     │   ├── application/         Casos de uso: teléfono (paso 1), orígenes (paso 2) y lectura
-    │   ├── domain/              Perfil, orígenes permitidos, errores y el puerto del repositorio
-    │   └── infrastructure/      Esquema de Mongo y repositorio de `onboarding_profiles`
+    │   ├── domain/              Perfil, orígenes permitidos, normalización del teléfono, errores y el puerto del repositorio
+    │   └── infrastructure/      Esquemas de Mongo y repositorio de `onboarding_profiles` y `onboarding_intro_views`
     ├── businesses/              Negocios, jefe vigente y módulos habilitados (colección `businesses`)
     └── business-access/         Acceso de administradores por OTP, sesiones y permisos (`access_challenges`, `access_rate_limits`, `admin_sessions`)
 ```
@@ -402,7 +464,7 @@ habla con un repositorio abstracto (`domain/*.repository.ts`) que implementa `in
 | Módulo | Responsabilidad | Datos de los que es dueño | Rutas |
 |--------|-----------------|---------------------------|-------|
 | `auth` | Registro y login del superadmin; emite la sesión | Colección `super_admins` | `/auth/super/*` |
-| `onboarding` | Teléfono (único entre usuarios) y dónde conoció Necto el usuario | Colección `onboarding_profiles` | `/onboarding/profile/*` |
+| `onboarding` | Teléfono (único entre usuarios), dónde conoció Necto el usuario y si ya vio la intro | Colecciones `onboarding_profiles` y `onboarding_intro_views` | `/onboarding/profile/*` |
 | `businesses` | Negocios, jefe vigente, catálogo y habilitación de módulos | Colección `businesses` | `/businesses/*` |
 | `business-access` | Invitación por correo, acceso de administradores con OTP, sesiones y permisos por negocio/módulo | `access_challenges`, `access_rate_limits`, `admin_sessions` | `/business-access/*`, `/businesses/:id/invitation*` |
 
@@ -436,8 +498,13 @@ Son tres cosas distintas y viven en lugares distintos:
 
 `npm run test:api` (runner nativo de Node con `tsx`; no hace falta MongoDB):
 
-- **Casos de uso** de `auth` y `onboarding` con repositorios en memoria (registro, duplicados, login, teléfono único entre
-  usuarios, orden de los pasos, fecha de completado).
+- **Casos de uso** de `auth` y `onboarding` con repositorios en memoria y reloj fijo (registro, duplicados, login,
+  teléfono normalizado y único entre usuarios, orden de los pasos, paso 2 opcional, texto de «Otro», intro vista, fecha de
+  completado).
+- **DTOs del onboarding** con `validate()` de class-validator: normalización del teléfono, lista vacía, dos opciones y
+  `sourceOther`.
+- **Script de migración del teléfono** (`scripts/normalize-onboarding-phones.spec.ts`): plan idempotente, colisiones sin
+  fusionar y números ilegibles.
 - **Seguridad:** emisión y verificación de tokens (incluido el de administrador de negocio), `AuthenticationGuard` y `SuperAdminGuard`.
 - **`businesses`:** creación, idempotencia, validación del catálogo, edición, reemplazo del jefe, pausa y CSV.
 - **`business-access`:** códigos por correo (un solo uso, vencimiento, intentos, límites, carrera de dos verificaciones), invitación y

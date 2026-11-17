@@ -5,6 +5,7 @@ import { PhoneAlreadyInUseError } from '../domain/errors';
 import type { OnboardingProfile } from '../domain/onboarding-profile';
 import { OnboardingProfileRepository } from '../domain/onboarding-profile.repository';
 import type { ProfileSource } from '../domain/profile-sources';
+import { IntroViewRecord } from './intro-view.schema';
 import { OnboardingProfileRecord } from './onboarding-profile.schema';
 
 interface MongoDuplicateKeyError {
@@ -21,13 +22,17 @@ function toDomain(record: OnboardingProfileRecord): OnboardingProfile {
     userId: record.userId,
     phone: record.phone,
     sources: record.sources,
+    sourceOther: record.sourceOther ?? null,
     completedAt: record.completedAt,
   };
 }
 
 @Injectable()
 export class MongoOnboardingProfileRepository extends OnboardingProfileRepository {
-  constructor(@InjectModel(OnboardingProfileRecord.name) private readonly model: Model<OnboardingProfileRecord>) {
+  constructor(
+    @InjectModel(OnboardingProfileRecord.name) private readonly model: Model<OnboardingProfileRecord>,
+    @InjectModel(IntroViewRecord.name) private readonly introViews: Model<IntroViewRecord>,
+  ) {
     super();
   }
 
@@ -44,7 +49,7 @@ export class MongoOnboardingProfileRepository extends OnboardingProfileRepositor
         const record = await this.model
           .findOneAndUpdate(
             { userId },
-            { $set: { phone }, $setOnInsert: { sources: [], completedAt: null } },
+            { $set: { phone }, $setOnInsert: { sources: [], sourceOther: null, completedAt: null } },
             { upsert: true, returnDocument: 'after' },
           )
           .lean();
@@ -59,10 +64,30 @@ export class MongoOnboardingProfileRepository extends OnboardingProfileRepositor
     }
   }
 
-  async saveSources(userId: string, sources: ProfileSource[], completedAt: Date): Promise<OnboardingProfile | null> {
+  async saveSources(
+    userId: string,
+    sources: ProfileSource[],
+    sourceOther: string | null,
+    completedAt: Date,
+  ): Promise<OnboardingProfile | null> {
     const record = await this.model
-      .findOneAndUpdate({ userId }, { $set: { sources, completedAt } }, { returnDocument: 'after' })
+      .findOneAndUpdate({ userId }, { $set: { sources, sourceOther, completedAt } }, { returnDocument: 'after' })
       .lean();
     return record ? toDomain(record) : null;
+  }
+
+  async findIntroSeenAt(userId: string): Promise<Date | null> {
+    const record = await this.introViews.findOne({ userId }).lean();
+    return record?.seenAt ?? null;
+  }
+
+  async markIntroSeen(userId: string, seenAt: Date): Promise<void> {
+    // Two marks of the same user can arrive together (two tabs): one fails on the userId index, and that is fine,
+    // because the other one already saved it.
+    try {
+      await this.introViews.updateOne({ userId }, { $setOnInsert: { seenAt } }, { upsert: true });
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) throw error;
+    }
   }
 }

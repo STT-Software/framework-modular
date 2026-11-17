@@ -27,7 +27,7 @@ interface ReadySceneProps {
   onContinue: () => void;
 }
 
-/** Pantalla final plana en 2D: invita a continuar hacia la configuración con "Comenzar". */
+/** Pantalla final plana en 2D (cierre del onboarding): "Ir a mi workspace" lleva al workspace. */
 export function ReadyScene({ onContinue }: ReadySceneProps) {
   const ref = useRef<HTMLElement>(null);
 
@@ -38,7 +38,7 @@ export function ReadyScene({ onContinue }: ReadySceneProps) {
         root.querySelector(".ob-ready-dissolve"),
         [
           { transform: "translateX(0) skewX(20deg)" },
-          { transform: "translateX(calc(150vw + 5vh)) skewX(20deg)" },
+          { transform: "translateX(calc(100vw + 40vh)) skewX(20deg)" },
         ],
         { duration: 900, easing: "cubic-bezier(0.83, 0, 0.17, 1)" },
       );
@@ -152,12 +152,12 @@ export function ReadyScene({ onContinue }: ReadySceneProps) {
         <span className="ob-ready-slash" />
       </div>
       <h1 id="ob-ready-title" data-reveal>
-        Qué bueno que
+        Todo listo.
         <br />
-        <em>estés aquí.</em>
+        <em>Crezcamos juntos.</em>
       </h1>
       <button type="button" className="ob-continue" data-reveal onClick={onContinue}>
-        Comenzar <span aria-hidden="true">→</span>
+        Ir a mi workspace <span aria-hidden="true">→</span>
       </button>
     </section>
   );

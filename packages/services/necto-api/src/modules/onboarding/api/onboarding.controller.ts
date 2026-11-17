@@ -29,8 +29,14 @@ export class OnboardingController {
     return this.onboarding.savePhone(user.userId, dto.phone);
   }
 
+  /** The first act of the welcome intro was shown: it will not be shown again to this account, on any device. No body. */
+  @Put('intro-seen')
+  markIntroSeen(@CurrentUser() user: AuthenticatedUser) {
+    return this.onboarding.markIntroSeen(user.userId);
+  }
+
   @Put('sources')
   saveSources(@CurrentUser() user: AuthenticatedUser, @Body() dto: SaveSourcesDto) {
-    return this.onboarding.saveSources(user.userId, dto.sources);
+    return this.onboarding.saveSources(user.userId, dto.sources, dto.sourceOther);
   }
 }

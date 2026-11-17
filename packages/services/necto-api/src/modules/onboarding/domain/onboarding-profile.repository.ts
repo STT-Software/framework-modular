@@ -11,6 +11,17 @@ export abstract class OnboardingProfileRepository {
    */
   abstract savePhone(userId: string, phone: string): Promise<OnboardingProfile>;
 
-  /** Saves the sources and the completion date. Returns null if the user has no profile yet. */
-  abstract saveSources(userId: string, sources: ProfileSource[], completedAt: Date): Promise<OnboardingProfile | null>;
+  /** Saves the sources, the "other" text and the completion date. Returns null if the user has no profile yet. */
+  abstract saveSources(
+    userId: string,
+    sources: ProfileSource[],
+    sourceOther: string | null,
+    completedAt: Date,
+  ): Promise<OnboardingProfile | null>;
+
+  /** When the user first saw the welcome intro, or null if they never did. */
+  abstract findIntroSeenAt(userId: string): Promise<Date | null>;
+
+  /** Records that the user saw the welcome intro. Idempotent: the first date is kept. */
+  abstract markIntroSeen(userId: string, seenAt: Date): Promise<void>;
 }

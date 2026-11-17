@@ -4,7 +4,7 @@
 > (Kiro, Claude, Copilot, Codex u otra). Está pensado para retomar el trabajo en una
 > sesión nueva, sin el historial de la anterior. Léelo completo antes de tocar nada.
 >
-> **Es una foto, no la verdad absoluta.** Actualizado el **2026-11-16**, con `integration` en `cafd78e` más la actualización visual del shell del workspace (`feature/workspace-updates`). Si algo de aquí contradice el código, manda el código: verifica con `git log`, `git status` y leyendo los archivos. Y **actualízalo** cuando cambie el estado del proyecto (ver la última sección).
+> **Es una foto, no la verdad absoluta.** Actualizado el **2026-11-17**, con `integration` en `c66ef6e` más las actualizaciones de bienvenida (`feature/update-welcome`). Si algo de aquí contradice el código, manda el código: verifica con `git log`, `git status` y leyendo los archivos. Y **actualízalo** cuando cambie el estado del proyecto (ver la última sección).
 
 ## Índice
 
@@ -101,8 +101,8 @@ independientes). **Hoy está construido el acceso del SuperAdmin, su bienvenida 
 | MongoDB de desarrollo (Docker) | `infra/` | Funciona; una base (`super_admin_auth`) y un usuario para el backend |
 | Pantallas `/super/login` y `/super/register` | `packages/apps/web/modules/app/src/modules/super-admin-auth` | Funcionan, conectadas al servicio |
 | Cerrar sesión | `src/app/SignOutButton.tsx` | Funciona (borra la sesión del navegador) |
-| Módulo `onboarding` del backend | `packages/services/necto-api/src/modules/onboarding` | Funciona, probado con MongoDB real: guarda teléfono (único entre usuarios) y dónde nos conoció, por id de usuario, en la colección `onboarding_profiles` |
-| Onboarding (bienvenida + perfil) | `src/modules/onboarding` (README propio) | Funciona: `/welcome` (animación con *Saltar intro* una vez se sabe que el perfil no está completo; la pantalla final es un juego de formas) → *Comenzar* → `/welcome/phone` → `/welcome/source` → `/workspace`. Con el perfil ya completo, solo se ve la primera escena y entra a `/workspace`; no vuelve a ver los pasos |
+| Módulo `onboarding` del backend | `packages/services/necto-api/src/modules/onboarding` | Funciona, probado con MongoDB real: guarda teléfono (`onboarding_profiles`, único entre usuarios), dónde nos conoció y si ya vio la intro (`onboarding_intro_views`, vía `PUT /onboarding/profile/intro-seen`) |
+| Onboarding (bienvenida + perfil) | `src/modules/onboarding` (README propio) | Funciona: `/welcome` muestra la intro animada una sola vez por cuenta (en cualquier dispositivo, vía `introSeen`), sin botón para saltarla, y luego lleva a `/welcome/phone` → `/welcome/source` → `/welcome/ready` (con `GeometryPlayground`) → pantalla de carga «El cruce» (`WorkspaceLoader`) → `/workspace`. Con `introSeen` o perfil completo, `/welcome` entra directo en `WorkspaceLoader` |
 | Workspace de negocios | `src/modules/workspace` (solo frontend, README propio) | Funciona: `/workspace` con sidebar, barra superior y el directorio de negocios **vacío** (0 negocios, filtros apagados) con la tienda animada **en movimiento continuo**; `/workspace/profile` ("Mi perfil") muestra solo el nombre del usuario. Solo se entra con sesión **y** perfil completo |
 | Puertas de acceso | `src/app/RequireSuperAdmin.tsx` y `RequireOnboardingCompleted.tsx` | Sin sesión, `/` y URLs desconocidas llevan a `/super/login`; con sesión, a `/workspace`. Los módulos con `requiresSuperAdmin: true` quedan detrás de la primera; los que además llevan `requiresOnboardingCompleted: true` (el workspace) detrás de la segunda: sin perfil completo, `/welcome` |
 | Registro de módulos + aislamiento de fallos | `src/app/modules.ts`, `ModuleRoutes.tsx`, `ModuleBoundary.tsx` | Funciona |
@@ -356,14 +356,15 @@ Mismo README: [`packages/services/necto-api/README.md`](../packages/services/nec
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `GET` | `/onboarding/profile/me` | Perfil de quien tiene el token: `{ phone, sources, completed }` (vacío si no hay). |
-| `PUT` | `/onboarding/profile/phone` | Paso 1. Cuerpo `{ phone }` en E.164 (`+573001234567`). `409` si otra cuenta ya lo usa. |
-| `PUT` | `/onboarding/profile/sources` | Paso 2. Cuerpo `{ sources: [...] }` con `instagram`, `tiktok`, `facebook`, `youtube`, `whatsapp`, `linkedin`, `family`, `business`, `other`. Marca el perfil como completo. `409` si aún no hay teléfono. |
+| `GET` | `/onboarding/profile/me` | Perfil de quien tiene el token: `{ phone, sources, sourceOther, completed, introSeen }` (vacío si no hay). |
+| `PUT` | `/onboarding/profile/intro-seen` | Marca que la cuenta ya vio la intro de bienvenida (idempotente, sin cuerpo). |
+| `PUT` | `/onboarding/profile/phone` | Paso 1. Cuerpo `{ phone }`: móvil válido con indicativo (`+57…`), normalizado a E.164 canónico con `libphonenumber-js/mobile`. `409` (`code: "phone-in-use"`) si otra cuenta ya lo usa (script de migración `npm run migrate:phones` en `necto-api`). |
+| `PUT` | `/onboarding/profile/sources` | Paso 2. Cuerpo `{ sources, sourceOther? }`: hasta 1 opción (`instagram`, `tiktok`, `facebook`, `youtube`, `whatsapp`, `linkedin`, `family`, `business`, `other`) o `[]` para omitir; `sourceOther` opcional (máx. 80 chars, solo con `["other"]`). Marca el perfil como completo. `409` (`code: "phone-required"`) si aún no hay teléfono. |
 
 - Exige el JWT que emite el módulo `auth` (rol `superadmin`); se verifica en el mismo proceso con `AuthenticationGuard` +
   `SuperAdminGuard` de `platform/security` (así `auth` y `onboarding` no se importan entre sí). El id del usuario llega con
   `@CurrentUser()` (viene del `sub` del token), nunca del cuerpo. Sin token `401`; con un rol que no es superadmin `403`.
-- Colección Mongo `onboarding_profiles`, en la misma base `super_admin_auth`; `userId` y `phone` son **únicos** (índices).
+- Colecciones Mongo: `onboarding_profiles` (`userId` y `phone` **únicos**) y `onboarding_intro_views` (`userId` **único**), en la misma base `super_admin_auth`.
 
 ## 10. Frontend: patrones y diseño
 
@@ -505,11 +506,7 @@ Contrato completo en el README del servicio. Resumen:
 - Los **dos logins son distintos**: el SuperAdmin ya está; el del admin de un negocio vendrá después.
 - Registro del SuperAdmin con confirmación de contraseña, tipo de documento y términos.
 - **Onboarding = módulo del mismo backend** (`modules/onboarding` en `necto-api`, mismo proceso, puerto 8080 y base): teléfono
-  único entre usuarios (E.164, índice único) y orígenes, un documento por `userId`. Se guarda el teléfono al pulsar *Continuar*
-  (para avisar el duplicado ahí) y los orígenes al *Finalizar*. Quien ya completó el perfil no lo repite (los pasos lo llevan
-  a `/workspace`; **"Mi perfil" no los reabre**, solo muestra el nombre); la bienvenida animada se puede saltar con *Saltar intro* (solo con el perfil incompleto)
-  (~11 s) solo si el perfil está sin completar; si ya está completo, se ve únicamente la primera escena (el logo, 2,6 s) y
-  entra sola a `/workspace`.
+  único entre usuarios (E.164, índice único), orígenes y registro de intro vista (`onboarding_intro_views`, un documento por `userId`). Al empezar la intro en `/welcome` se marca vista con `PUT /onboarding/profile/intro-seen` (solo la ven usuarios nuevos, una vez por cuenta, sin botón de saltar). Se guarda el teléfono al pulsar *Continuar* (para avisar el duplicado ahí) y los orígenes al *Finalizar*, pasando luego al cierre `/welcome/ready` (`GeometryPlayground`). Al pulsar *Ir a mi workspace* (y en siguientes inicios de sesión), `WorkspaceLoader` («El cruce») anima la transición mientras consulta el perfil y precarga el workspace (`preloadWorkspacePage`) antes de navegar a `/workspace` (o al paso 1 si el perfil sigue incompleto). **"Mi perfil" en `/workspace/profile` no reabre estos pasos**, solo muestra el nombre.
 - **Workspace = destino del onboarding** (`/workspace`, módulo de frontend `workspace`, sin backend propio por ahora). Se entra con
   sesión de superadmin **y** perfil completo (`RequireOnboardingCompleted`, que consulta al backend una vez al entrar; si la consulta
   falla, se trata como incompleto y lleva a `/welcome`). `/` redirige a `/workspace`. Fiel a la referencia `necto-workspace`

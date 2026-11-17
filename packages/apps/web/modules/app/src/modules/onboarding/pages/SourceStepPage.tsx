@@ -5,18 +5,19 @@ import { Button } from "@/elements/ui/button";
 import type { Profile } from "../api/onboardingApi";
 import { ProfileGate } from "../components/ProfileGate";
 import { ProfileSetupLayout } from "../components/ProfileSetupLayout";
-import { serviceErrorMessage } from "../serviceErrors";
-import { AFTER_ONBOARDING_PATH, PHONE_STEP_PATH } from "../paths";
+import { nextOnboardingPath } from "../flow";
+import { isPhoneRequiredError, PHONE_REQUIRED_MESSAGE, serviceErrorMessage } from "../serviceErrors";
+import { PHONE_STEP_PATH, READY_STEP_PATH, SOURCE_STEP_PATH } from "../paths";
 import { SOURCE_OPTIONS, type SourceId } from "../sources";
 import { onboardingProfileStore } from "../stores/onboardingProfile.store";
 
 const HEADING_ID = "source-heading";
-const ENTER_APP_DELAY_MS = 1500;
+/** Cuánto se ve el "¡Listo!" antes de pasar a la pantalla final. */
+const ENTER_READY_DELAY_MS = 1500;
 
-/** "Selecciona todas las que apliquen." / "1 opción seleccionada." / "N opciones seleccionadas." */
+/** "Elige una opción." / "1 opción seleccionada." (el servicio acepta como máximo una). */
 function selectionNote(total: number): string {
-  if (total === 0) return "Selecciona todas las que apliquen.";
-  return total === 1 ? "1 opción seleccionada." : `${total} opciones seleccionadas.`;
+  return total === 0 ? "Elige una opción." : "1 opción seleccionada.";
 }
 
 type Phase = "editing" | "saving" | "done";
@@ -25,7 +26,8 @@ function SourceForm({ initialSources }: { initialSources: SourceId[] }) {
   const navigate = useNavigate();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const firstChoiceRef = useRef<HTMLInputElement>(null);
-  const [selected, setSelected] = useState<SourceId[]>(initialSources);
+  // Perfiles antiguos pueden traer varias fuentes; el servicio ahora acepta una sola, así que se conserva la primera.
+  const [selected, setSelected] = useState<SourceId[]>(initialSources.slice(0, 1));
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("editing");
@@ -34,15 +36,16 @@ function SourceForm({ initialSources }: { initialSources: SourceId[] }) {
     headingRef.current?.focus({ preventScroll: true });
   }, []);
 
-  // Con el perfil guardado se muestra "¡Listo!" un momento y se entra a la app.
+  // Con el perfil guardado se muestra "¡Listo!" un momento y se pasa a la pantalla final (que lleva al workspace).
   useEffect(() => {
     if (phase !== "done") return;
-    const timer = window.setTimeout(() => navigate(AFTER_ONBOARDING_PATH, { replace: true }), ENTER_APP_DELAY_MS);
+    const timer = window.setTimeout(() => navigate(READY_STEP_PATH, { replace: true }), ENTER_READY_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [phase, navigate]);
 
+  /** Selección única: marcar una opción reemplaza la anterior; marcar la misma la quita. */
   function toggle(id: SourceId) {
-    setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+    setSelected((current) => (current.includes(id) ? [] : [id]));
     setFieldError(null);
     setFormError(null);
   }
@@ -59,9 +62,15 @@ function SourceForm({ initialSources }: { initialSources: SourceId[] }) {
     setFormError(null);
     setPhase("saving");
     try {
-      await onboardingProfileStore.saveSources(selected);
+      await onboardingProfileStore.saveSources(selected.slice(0, 1));
       setPhase("done");
     } catch (error) {
+      if (isPhoneRequiredError(error)) {
+        // El servicio no tiene el teléfono (la copia en memoria estaba vieja): se olvida y se vuelve al paso 1 con un aviso.
+        onboardingProfileStore.invalidate();
+        navigate(PHONE_STEP_PATH, { replace: true, state: { notice: PHONE_REQUIRED_MESSAGE } });
+        return;
+      }
       setFormError(serviceErrorMessage(error));
       setPhase("editing");
     }
@@ -77,7 +86,7 @@ function SourceForm({ initialSources }: { initialSources: SourceId[] }) {
       <p className="ob-setup-description">Cuéntanos cómo llegaste a Necto.</p>
       <form onSubmit={handleSubmit} noValidate className="ob-setup-form">
         <fieldset className="ob-setup-sources" aria-describedby={fieldError ? "source-error" : undefined} disabled={busy}>
-          <legend>Puedes seleccionar más de una opción.</legend>
+          <legend>Elige la opción que mejor te describa.</legend>
           <div className="ob-setup-choice-grid">
             {SOURCE_OPTIONS.map((option, index) => (
               <label key={option.id} className="ob-setup-choice">
@@ -143,8 +152,8 @@ function SourceForm({ initialSources }: { initialSources: SourceId[] }) {
  */
 function SourceStep({ loaded }: { loaded: Profile }) {
   const [initial] = useState(loaded);
-  if (initial.completed) return <Navigate to={AFTER_ONBOARDING_PATH} replace />;
-  if (!initial.phone) return <Navigate to={PHONE_STEP_PATH} replace />;
+  const next = nextOnboardingPath(initial);
+  if (next !== SOURCE_STEP_PATH) return <Navigate to={next} replace />;
   return <SourceForm initialSources={initial.sources} />;
 }
 

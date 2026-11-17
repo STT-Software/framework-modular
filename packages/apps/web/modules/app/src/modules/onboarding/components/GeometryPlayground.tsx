@@ -1,5 +1,6 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { prefersReducedMotion } from "../hooks/useReducedMotion";
+import { isLowPowerDevice } from "../hooks/motionBudget";
 
 /*
  * Pantalla final como un pequeño juego motion graphic: las formas de la geometría de marca flotan por la pantalla y
@@ -10,6 +11,12 @@ import { prefersReducedMotion } from "../hooks/useReducedMotion";
  *
  * Física propia y mínima en `requestAnimationFrame` (sin librerías): cada forma es un círculo de colisión con masa
  * proporcional a su área. Solo se escribe `transform` (lo compone la GPU). Con movimiento reducido quedan quietas.
+ *
+ * Rendimiento (la pantalla puede quedarse abierta mucho rato): el bucle no es eterno. Tras unos segundos sin que la
+ * persona mueva el puntero, toque o use el teclado, las formas frenan hasta quedarse quietas y el bucle se detiene;
+ * cualquier interacción lo reanuda. Mientras solo flotan se actualizan a ~30 fps (a esa velocidad no se nota) y solo
+ * los disparos y las entradas van a la frecuencia de la pantalla. Con la pestaña oculta se detiene. En equipos
+ * modestos todo va a ~30 fps, frena antes y las ráfagas tienen menos chispas.
  */
 
 type Kind = "ring" | "capsule" | "square" | "quarter" | "arc" | "wave" | "dots" | "plus" | "slashes" | "disc";
@@ -95,6 +102,8 @@ interface Body {
   armedAt: number;
   /** Disparada con un clic y aún rápida: es la única que puede eliminar a otras. */
   shot: boolean;
+  /** Dirección (rad) con la que retoma la deriva si estaba quieta. */
+  heading: number;
   pop?: Animation;
 }
 
@@ -104,6 +113,11 @@ const RESPAWN_SPREAD = 1600;
 const RESPAWN_GAP = 650;
 /** Tiempo de gracia tras aparecer: no explota (solo rebota) para no destruirse nada más entrar. */
 const GRACE = 1400;
+/** Sin interacción durante este tiempo, las formas frenan y el bucle se detiene (en equipos modestos, antes). */
+const IDLE_MS = 9000;
+const IDLE_MS_LITE = 5000;
+/** Intervalo mínimo entre pasos mientras las formas solo flotan (~30 fps). */
+const CALM_FRAME_MS = 32;
 
 export function GeometryPlayground() {
   const ref = useRef<HTMLDivElement>(null);
@@ -112,6 +126,9 @@ export function GeometryPlayground() {
     const root = ref.current;
     if (!root) return;
     const reduce = prefersReducedMotion();
+    const lite = isLowPowerDevice();
+    const idleMs = lite ? IDLE_MS_LITE : IDLE_MS;
+    const sparkCount = lite ? 5 : 9;
     let W = window.innerWidth;
     let H = window.innerHeight;
     const unit = Math.min(W, H) / 100;
@@ -141,6 +158,7 @@ export function GeometryPlayground() {
         entering: false,
         armedAt: performance.now() + 500 + i * 90 + 750 + GRACE,
         shot: false,
+        heading,
       };
     });
 
@@ -177,14 +195,14 @@ export function GeometryPlayground() {
     window.addEventListener("resize", onResize);
 
     const burst = (px: number, py: number, tone: Tone) => {
-      for (let k = 0; k < 9; k++) {
+      for (let k = 0; k < sparkCount; k++) {
         const spark = document.createElement("i");
         spark.className = "ob-play-spark";
         spark.style.left = `${px}px`;
         spark.style.top = `${py}px`;
         spark.style.background = SPARK_COLORS[tone];
         root.appendChild(spark);
-        const a = (k / 9) * Math.PI * 2 + Math.random() * 0.4;
+        const a = (k / sparkCount) * Math.PI * 2 + Math.random() * 0.4;
         const d = unit * (6 + Math.random() * 5);
         const duration = 560 + Math.random() * 220;
         spark.animate([{ translate: "-50% -50%" }, { translate: `calc(-50% + ${Math.cos(a) * d}px) calc(-50% + ${Math.sin(a) * d}px)` }], {
@@ -253,7 +271,39 @@ export function GeometryPlayground() {
       timers.add(timer);
     };
 
+    // Reposo: sin interacción las formas frenan y el bucle se detiene; cualquier interacción lo reanuda.
+    let frame = 0;
+    let last = performance.now();
+    let lastInput = last;
+    let resting = false;
+    const wake = () => {
+      lastInput = performance.now();
+      if (resting) {
+        resting = false;
+        for (const b of bodies) {
+          // Quieta del todo: retoma la deriva en su dirección (el roce la lleva a su velocidad de crucero).
+          if (Math.hypot(b.vx, b.vy) < b.cruise * 0.2) {
+            b.vx = Math.cos(b.heading) * b.cruise * 0.5;
+            b.vy = Math.sin(b.heading) * b.cruise * 0.5;
+          }
+        }
+      }
+      if (!frame && document.visibilityState === "visible") {
+        last = performance.now();
+        frame = requestAnimationFrame(step);
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      } else {
+        wake();
+      }
+    };
+
     const onPointerDown = (event: PointerEvent) => {
+      wake();
       const el = (event.target as Element).closest(".ob-play-piece");
       const b = bodies.find((body) => body.el === el);
       if (!b || !b.alive) return;
@@ -281,19 +331,40 @@ export function GeometryPlayground() {
       burst(event.clientX, event.clientY, b.tone);
     };
     root.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", wake, { passive: true });
+    window.addEventListener("pointerdown", wake, { passive: true });
+    window.addEventListener("keydown", wake);
+    document.addEventListener("visibilitychange", onVisibility);
 
-    let last = performance.now();
-    let frame = requestAnimationFrame(function step(now) {
+    function step(now: number) {
+      // Algo rápido en pantalla (un disparo, una forma que entra o que estalla): a la frecuencia de la pantalla.
+      // Si solo flotan, ~30 fps; en equipos modestos, siempre ~30 fps.
+      const busy = bodies.some((b) => b.shot || b.entering || !b.alive || Math.hypot(b.vx, b.vy) > b.cruise * 1.5);
+      if ((lite || !busy) && now - last < CALM_FRAME_MS) {
+        frame = requestAnimationFrame(step);
+        return;
+      }
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
+      if (!resting && !busy && now - lastInput > idleMs) resting = true;
 
       for (const b of bodies) {
         if (!b.alive) continue;
-        // Roce: tras un disparo la velocidad decae hasta la deriva; si queda muy lenta, recupera la deriva.
         const speed = Math.hypot(b.vx, b.vy);
+        if (resting) {
+          // En reposo frenan suavemente hasta quedarse quietas (también el giro).
+          const f = Math.exp(-2.2 * dt);
+          b.vx *= f;
+          b.vy *= f;
+          b.spin *= f;
+          if (speed > 0.01) b.heading = Math.atan2(b.vy, b.vx);
+        }
+        // Roce: tras un disparo la velocidad decae hasta la deriva; si queda muy lenta, recupera la deriva.
         // Al frenar deja de ser un proyectil: ya no elimina, solo rebota.
         if (b.shot && speed < b.cruise * 3) b.shot = false;
-        if (speed > b.cruise) {
+        if (resting) {
+          /* Sin roce ni recuperación: está frenando. */
+        } else if (speed > b.cruise) {
           const f = Math.max(b.cruise / speed, Math.exp(-1.5 * dt));
           b.vx *= f;
           b.vy *= f;
@@ -315,7 +386,7 @@ export function GeometryPlayground() {
             else b.vy += Math.sign(ey || 1) * push;
           }
         }
-        b.spin = b.baseSpin + (b.spin - b.baseSpin) * Math.exp(-1.3 * dt);
+        if (!resting) b.spin = b.baseSpin + (b.spin - b.baseSpin) * Math.exp(-1.3 * dt);
         b.x += b.vx * dt;
         b.y += b.vy * dt;
         b.angle += b.spin * dt;
@@ -394,8 +465,15 @@ export function GeometryPlayground() {
       }
 
       bodies.forEach(place);
+
+      // Quietas del todo: el bucle se detiene hasta la próxima interacción.
+      if (resting && bodies.every((b) => Math.hypot(b.vx, b.vy) < unit * 0.05 && Math.abs(b.spin) < 0.5)) {
+        frame = 0;
+        return;
+      }
       frame = requestAnimationFrame(step);
-    });
+    }
+    frame = requestAnimationFrame(step);
 
     return () => {
       cancelAnimationFrame(frame);
@@ -403,6 +481,10 @@ export function GeometryPlayground() {
       timers.forEach((timer) => window.clearTimeout(timer));
       window.removeEventListener("resize", onResize);
       root.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", wake);
+      window.removeEventListener("pointerdown", wake);
+      window.removeEventListener("keydown", wake);
+      document.removeEventListener("visibilitychange", onVisibility);
       entrances.forEach((a) => a.cancel());
     };
   }, []);

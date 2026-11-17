@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Navigate, useNavigate } from "react-router";
+import { Navigate, useLocation, useNavigate } from "react-router";
 import { Alert } from "@/elements/ui/alert";
 import { Button } from "@/elements/ui/button";
 import { Input } from "@/elements/form/input";
@@ -9,9 +9,10 @@ import { cn } from "@/utils";
 import { OnboardingError, type Profile } from "../api/onboardingApi";
 import { ProfileGate } from "../components/ProfileGate";
 import { ProfileSetupLayout } from "../components/ProfileSetupLayout";
-import { AFTER_ONBOARDING_PATH, SOURCE_STEP_PATH } from "../paths";
+import { nextOnboardingPath } from "../flow";
+import { SOURCE_STEP_PATH } from "../paths";
 import { checkPhone, COUNTRIES, PHONE_FORMAT_ERROR, splitPhone } from "../phone";
-import { serviceErrorMessage } from "../serviceErrors";
+import { isPhoneInUseError, PHONE_IN_USE_MESSAGE, serviceErrorMessage } from "../serviceErrors";
 import { onboardingProfileStore } from "../stores/onboardingProfile.store";
 
 const HEADING_ID = "phone-heading";
@@ -19,15 +20,21 @@ const COUNTRY_OPTIONS = COUNTRIES.map((country) => ({ value: country.dialCode, l
 
 /** Texto de error del campo cuando el servicio rechaza el número. */
 function phoneFieldError(error: unknown): string | null {
-  if (error instanceof OnboardingError) {
-    if (error.kind === "conflict") return "Este número ya está registrado con otra cuenta. Usa otro número.";
-    if (error.kind === "validation") return PHONE_FORMAT_ERROR;
-  }
+  if (isPhoneInUseError(error)) return PHONE_IN_USE_MESSAGE;
+  if (error instanceof OnboardingError && error.kind === "validation") return PHONE_FORMAT_ERROR;
   return null;
+}
+
+/** Aviso que deja otra pantalla al traer a la persona aquí (por ejemplo, el paso 2 cuando faltaba el teléfono). */
+function noticeFrom(state: unknown): string | null {
+  const notice = (state as { notice?: unknown } | null)?.notice;
+  return typeof notice === "string" ? notice : null;
 }
 
 function PhoneForm({ profile }: { profile: Profile }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [notice] = useState(() => noticeFrom(location.state));
   const headingRef = useRef<HTMLHeadingElement>(null);
   const initial = splitPhone(profile.phone);
   const [dialCode, setDialCode] = useState(initial.dialCode);
@@ -85,6 +92,11 @@ function PhoneForm({ profile }: { profile: Profile }) {
         de teléfono?
       </h1>
       <p className="ob-setup-description">Agrega un número de contacto a tu perfil.</p>
+      {notice && (
+        <div className="ob-setup-alert" aria-live="polite">
+          <Alert variant="warning" title="Falta tu número" message={notice} />
+        </div>
+      )}
       <form onSubmit={handleSubmit} noValidate className="ob-setup-form">
         <Label htmlFor="profile-phone" className="ob-setup-field-label">
           Número de teléfono
@@ -141,13 +153,13 @@ function PhoneForm({ profile }: { profile: Profile }) {
   );
 }
 
-/** Paso 1 de 2: teléfono. Si el perfil ya está completo, entra directo al workspace. */
+/** Paso 1 de 2: teléfono. Si el perfil ya está completo, entra directo al workspace (`nextOnboardingPath`). */
 export default function PhoneStepPage() {
   return (
     <ProfileSetupLayout step={1} title="Necto · Tu teléfono" headingId={HEADING_ID} width="narrow">
       <ProfileGate>
         {(profile) =>
-          profile.completed ? <Navigate to={AFTER_ONBOARDING_PATH} replace /> : <PhoneForm profile={profile} />
+          profile.completed ? <Navigate to={nextOnboardingPath(profile)} replace /> : <PhoneForm profile={profile} />
         }
       </ProfileGate>
     </ProfileSetupLayout>

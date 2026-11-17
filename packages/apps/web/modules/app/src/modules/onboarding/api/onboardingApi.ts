@@ -16,8 +16,17 @@ export interface Profile {
   /** Teléfono en formato E.164 (+573001234567), o null si aún no lo guardó. */
   phone: string | null;
   sources: SourceId[];
+  /**
+   * Texto libre de «Otro» (máximo 80 caracteres), o null. Opcional: un servicio anterior no lo envía.
+   */
+  sourceOther?: string | null;
   /** True cuando ya terminó los dos pasos. */
   completed: boolean;
+  /**
+   * True si la cuenta ya vio la intro de bienvenida (en cualquier dispositivo) o ya completó el perfil: la intro solo
+   * la ven los usuarios nuevos, una vez.
+   */
+  introSeen: boolean;
 }
 
 export type OnboardingErrorKind =
@@ -29,12 +38,21 @@ export type OnboardingErrorKind =
   | "timeout"
   | "server";
 
+/**
+ * Códigos que el servicio pone en `code` para distinguir errores del mismo estado HTTP (contrato en el README del API):
+ * - `phone-in-use`: otra cuenta ya usa el número (409).
+ * - `phone-required`: se envió el paso 2 sin teléfono guardado (409); hay que volver al paso 1.
+ */
+export type OnboardingErrorCode = "phone-in-use" | "phone-required";
+
 /** Error del servicio con un tipo claro, para que la pantalla decida qué mostrar. */
 export class OnboardingError extends Error {
   constructor(
     readonly kind: OnboardingErrorKind,
     readonly status: number | null,
     message: string,
+    /** Código del servicio (`code` del cuerpo), o null si no vino (errores de red o un servicio anterior). */
+    readonly code: OnboardingErrorCode | (string & {}) | null = null,
   ) {
     super(message);
     this.name = "OnboardingError";
@@ -77,11 +95,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    const raw = (body as { message?: string | string[] } | null)?.message;
+    const parsed = body as { message?: string | string[]; code?: unknown } | null;
+    const raw = parsed?.message;
     const message = Array.isArray(raw) ? raw.join(", ") : (raw ?? response.statusText);
+    const code = typeof parsed?.code === "string" ? parsed.code : null;
     // El token venció o no es válido: se cierra la sesión y la puerta de acceso lleva al login.
     if (response.status === 401) superAdminSessionStore.signOut();
-    throw new OnboardingError(kindFromStatus(response.status), response.status, message);
+    throw new OnboardingError(kindFromStatus(response.status), response.status, message, code);
   }
   return body as T;
 }
@@ -93,7 +113,16 @@ export const onboardingApi = {
   savePhone(phone: string): Promise<Profile> {
     return request<Profile>("/onboarding/profile/phone", { method: "PUT", body: JSON.stringify({ phone }) });
   },
-  saveSources(sources: SourceId[]): Promise<Profile> {
-    return request<Profile>("/onboarding/profile/sources", { method: "PUT", body: JSON.stringify({ sources }) });
+  /**
+   * Paso 2. `sources` vacío es «Omitir»; `sourceOther` solo cuenta con `other` (si no se pasa, no se envía: así sigue
+   * funcionando con un servicio anterior).
+   */
+  saveSources(sources: SourceId[], sourceOther?: string | null): Promise<Profile> {
+    const body = sourceOther === undefined ? { sources } : { sources, sourceOther };
+    return request<Profile>("/onboarding/profile/sources", { method: "PUT", body: JSON.stringify(body) });
+  },
+  /** La intro de bienvenida ya se mostró: no se volverá a mostrar a esta cuenta en ningún dispositivo. */
+  markIntroSeen(): Promise<Profile> {
+    return request<Profile>("/onboarding/profile/intro-seen", { method: "PUT" });
   },
 };

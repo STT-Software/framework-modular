@@ -25,7 +25,7 @@ super-admin-auth/
 ├── index.ts                    Puerta pública: definición del módulo y sesión
 ├── SuperAdminAuthLayout.tsx    Layout compartido (formulario + panel de marca)
 ├── pages/                      LoginPage, RegisterPage
-├── components/                 NectoLogo, AuthFields, TermsCheckbox, SubmitButton, AuthThemeToggle, FormHeading
+├── components/                 NectoLogo, AuthFields, TermsCheckbox, SubmitButton, AuthThemeToggle, FormHeading, BrandGeometryBackground
 ├── api/superAdminAuthApi.ts    Cliente HTTP del servicio (timeout y errores tipados)
 ├── stores/                     Sesión del superadmin (MobX + sessionStorage)
 ├── documentTypes.ts            Tipos de documento (CC, CE, PA, NIT)

@@ -16,6 +16,7 @@ interface FieldProps {
   error?: string | null;
   autoComplete?: string;
   maxLength?: number;
+  required?: boolean;
 }
 
 /** Acabado Necto sobre el Input de Elements: más alto y con foco índigo. */
@@ -40,6 +41,7 @@ export function TextField({
   error,
   autoComplete,
   maxLength,
+  required,
   type = "text",
 }: FieldProps & { type?: "text" | "email" }) {
   return (
@@ -58,6 +60,7 @@ export function TextField({
         hint={error ?? undefined}
         autoComplete={autoComplete}
         maxLength={maxLength}
+        required={required}
         className={inputClassName(Boolean(error))}
       />
     </div>
@@ -73,6 +76,7 @@ export function PasswordField({
   onChange,
   error,
   autoComplete,
+  required,
 }: FieldProps) {
   const [visible, setVisible] = useState(false);
 
@@ -92,6 +96,7 @@ export function PasswordField({
           error={Boolean(error)}
           hint={error ?? undefined}
           autoComplete={autoComplete}
+          required={required}
           className={inputClassName(Boolean(error), "pr-12")}
         />
         <button

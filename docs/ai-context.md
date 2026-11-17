@@ -102,8 +102,8 @@ independientes). **Hoy está construido el acceso del SuperAdmin, su bienvenida 
 | Pantallas `/super/login` y `/super/register` | `packages/apps/web/modules/app/src/modules/super-admin-auth` | Funcionan, conectadas al servicio |
 | Cerrar sesión | `src/app/SignOutButton.tsx` | Funciona (borra la sesión del navegador) |
 | Módulo `onboarding` del backend | `packages/services/necto-api/src/modules/onboarding` | Funciona, probado con MongoDB real: guarda teléfono (único entre usuarios) y dónde nos conoció, por id de usuario, en la colección `onboarding_profiles` |
-| Onboarding (bienvenida + perfil) | `src/modules/onboarding` (README propio) | Funciona: `/welcome` (animación, sin Omitir ni Pausar) → *Comenzar* → `/welcome/phone` → `/welcome/source` → `/workspace`. Con el perfil ya completo, solo se ve la primera escena y entra a `/workspace`; no vuelve a ver los pasos |
-| Workspace de negocios | `src/modules/workspace` y `src/shell` (solo frontend, README propio) | Funciona: `/workspace` construido sobre `BaseAppShell` / `BaseAppSidebar` / `BaseAppHeader` con barra lateral flotante colapsable a riel vertical de íconos clickeables, barra superior flotante con `ToggleAppSidebar`, `Breadcrumb` de Elements, `ThemeToggleButton` y menú de usuario, y el directorio de negocios real con tienda animada y vista `/workspace/profile`. Solo se entra con sesión **y** perfil completo |
+| Onboarding (bienvenida + perfil) | `src/modules/onboarding` (README propio) | Funciona: `/welcome` (animación con *Saltar intro* una vez se sabe que el perfil no está completo; la pantalla final es un juego de formas) → *Comenzar* → `/welcome/phone` → `/welcome/source` → `/workspace`. Con el perfil ya completo, solo se ve la primera escena y entra a `/workspace`; no vuelve a ver los pasos |
+| Workspace de negocios | `src/modules/workspace` (solo frontend, README propio) | Funciona: `/workspace` con sidebar, barra superior y el directorio de negocios **vacío** (0 negocios, filtros apagados) con la tienda animada **en movimiento continuo**; `/workspace/profile` ("Mi perfil") muestra solo el nombre del usuario. Solo se entra con sesión **y** perfil completo |
 | Puertas de acceso | `src/app/RequireSuperAdmin.tsx` y `RequireOnboardingCompleted.tsx` | Sin sesión, `/` y URLs desconocidas llevan a `/super/login`; con sesión, a `/workspace`. Los módulos con `requiresSuperAdmin: true` quedan detrás de la primera; los que además llevan `requiresOnboardingCompleted: true` (el workspace) detrás de la segunda: sin perfil completo, `/welcome` |
 | Registro de módulos + aislamiento de fallos | `src/app/modules.ts`, `ModuleRoutes.tsx`, `ModuleBoundary.tsx` | Funciona |
 | **Negocios + acceso del jefe (end to end)** | Backend: `src/modules/businesses` y `src/modules/business-access` de `necto-api`. Frontend: `src/modules/businesses` (store, asistente de 3 pasos, tarjetas y ficha), `src/modules/business-access` (pantalla pública `/business/access`) y el workspace con datos reales. Rama `feature/businesses` (apilada sobre `feature/workspace`, sin PR ni push) | Verificado con MongoDB real, un servidor SMTP de pruebas local y el navegador: crear (el doble clic no duplica), editar, reemplazar jefe (el anterior pierde la sesión), pausar/reanudar, filtros, CSV, invitación por correo con OTP y acceso del jefe. 115 pruebas automáticas del backend en verde; el frontend no tiene pruebas automáticas |
@@ -366,7 +366,7 @@ Mismo README: [`packages/services/necto-api/README.md`](../packages/services/nec
 ## 10. Frontend: patrones y diseño
 
 **Diseño de referencia:** `referencias html/necto-superlogin.html` (sección 11) y diseño NECTO en StockFlow. Dos columnas:
-formulario a la izquierda y panel de marca a la derecha con fondo interactivo de puntos (`InteractiveDotGrid`),
+formulario a la izquierda y panel de marca a la derecha con fondo interactivo de geometría de marca (`BrandGeometryBackground`),
 aros decorativos (`DecorativeCircles`) y mensajes rotativos con transición escalonada (`RotatingBrandMessages`).
 Tema **claro** (panel naranja `#ff3f1a`) y **oscuro** (panel azul profundo `#190088`). Fuente **DM Sans** (300, 400, 700).
 
@@ -494,7 +494,7 @@ Contrato completo en el README del servicio. Resumen:
 - **Onboarding = módulo del mismo backend** (`modules/onboarding` en `necto-api`, mismo proceso, puerto 8080 y base): teléfono
   único entre usuarios (E.164, índice único) y orígenes, un documento por `userId`. Se guarda el teléfono al pulsar *Continuar*
   (para avisar el duplicado ahí) y los orígenes al *Finalizar*. Quien ya completó el perfil no lo repite (los pasos lo llevan
-  a `/workspace`; **"Mi perfil" no los reabre**, solo muestra el nombre); la bienvenida animada (sin Omitir ni Pausar) se ve entera
+  a `/workspace`; **"Mi perfil" no los reabre**, solo muestra el nombre); la bienvenida animada se puede saltar con *Saltar intro* (solo con el perfil incompleto)
   (~11 s) solo si el perfil está sin completar; si ya está completo, se ve únicamente la primera escena (el logo, 2,6 s) y
   entra sola a `/workspace`.
 - **Workspace = destino del onboarding** (`/workspace`, módulo de frontend `workspace`, sin backend propio por ahora). Se entra con

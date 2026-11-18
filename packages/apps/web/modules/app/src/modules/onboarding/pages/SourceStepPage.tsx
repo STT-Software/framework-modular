@@ -8,7 +8,8 @@ import { ProfileSetupLayout } from "../components/ProfileSetupLayout";
 import { nextOnboardingPath } from "../flow";
 import { isPhoneRequiredError, PHONE_REQUIRED_MESSAGE, serviceErrorMessage } from "../serviceErrors";
 import { PHONE_STEP_PATH, READY_STEP_PATH, SOURCE_STEP_PATH } from "../paths";
-import { SOURCE_OPTIONS, type SourceId } from "../sources";
+import { SOURCE_OPTIONS, SourceIcon, type SourceId } from "../sources";
+import { SourceArt } from "../scenes/SetupArt";
 import { onboardingProfileStore } from "../stores/onboardingProfile.store";
 
 const HEADING_ID = "source-heading";
@@ -98,8 +99,8 @@ function SourceForm({ initialSources }: { initialSources: SourceId[] }) {
                   checked={selected.includes(option.id)}
                   onChange={() => toggle(option.id)}
                 />
-                <span className={`ob-setup-app-icon ${option.iconClassName}`} aria-hidden="true">
-                  {option.icon}
+                <span className="ob-setup-app-icon" aria-hidden="true">
+                  <SourceIcon id={option.id} />
                 </span>
                 <span>{option.label}</span>
               </label>
@@ -160,7 +161,14 @@ function SourceStep({ loaded }: { loaded: Profile }) {
 /** Paso 2 de 2: dónde nos conociste. Sin teléfono guardado vuelve al paso 1. */
 export default function SourceStepPage() {
   return (
-    <ProfileSetupLayout step={2} title="Necto · Dónde nos conociste" headingId={HEADING_ID} width="wide">
+    <ProfileSetupLayout
+      step={2}
+      title="Necto · Dónde nos conociste"
+      headingId={HEADING_ID}
+      width="wide"
+      art={<SourceArt />}
+      caption="Cada canal cuenta. Así sabemos dónde seguir creciendo contigo."
+    >
       <ProfileGate>{(profile) => <SourceStep loaded={profile} />}</ProfileGate>
     </ProfileSetupLayout>
   );

@@ -17,7 +17,7 @@ import { onboardingProfileStore } from "../stores/onboardingProfile.store";
 
 /**
  * Cierre del onboarding (`/welcome/ready`): la pantalla final con el juego de formas, después de guardar el
- * teléfono y dónde nos conoció. "Ir a mi workspace" abre la pantalla de carga «El cruce» (`WorkspaceLoader`), que
+ * teléfono y dónde nos conoció. "Comencemos juntos" abre la pantalla de carga «El cruce» (`WorkspaceLoader`), que
  * descarga el workspace mientras se anima y, al terminar, entra en él.
  *
  * Si el perfil completo ya está en memoria (recién guardado en esta pestaña) se usa tal cual, sin consultar ni

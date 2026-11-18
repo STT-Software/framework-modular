@@ -7,7 +7,7 @@ export interface BrandMessage {
 
 const EXIT_DURATION_MS = 240;
 
-export function useRotatingBrandMessages(count: number, intervalMs = 4800) {
+export function useRotatingBrandMessages(count: number, intervalMs = 2800) {
   const [index, setIndex] = useState(0);
   const [fadeState, setFadeState] = useState<"in" | "out">("in");
   const timeoutRef = useRef<number | null>(null);

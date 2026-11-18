@@ -1,6 +1,7 @@
 import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/500.css";
 import "@fontsource/dm-sans/600.css";
+import "../styles/onboarding.css";
 import "../styles/profile-setup.css";
 import type { ReactNode } from "react";
 import { PageMeta } from "@/shell/meta";
@@ -19,11 +20,15 @@ interface ProfileSetupLayoutProps {
   headingId: string;
   /** El panel del paso 1 es más angosto que el del paso 2. */
   width: "narrow" | "wide";
+  /** Ilustración del paso (`SetupArt`), en un panel junto al formulario. */
+  art?: ReactNode;
+  /** Frase corta bajo la ilustración. */
+  caption?: string;
   children: ReactNode;
 }
 
-/** Marco de los pasos de perfil: logotipo, tema, progreso "Paso N de 2" y pie. */
-export function ProfileSetupLayout({ step, title, headingId, width, children }: ProfileSetupLayoutProps) {
+/** Marco de los pasos de perfil: logotipo, tema, progreso "Paso N de 2", ilustración del paso y pie. */
+export function ProfileSetupLayout({ step, title, headingId, width, art, caption, children }: ProfileSetupLayoutProps) {
   return (
     <main className="ob-setup">
       <PageMeta title={title} />
@@ -33,30 +38,38 @@ export function ProfileSetupLayout({ step, title, headingId, width, children }: 
         </div>
         <ThemeIconButton className="ob-setup-theme" />
       </header>
-      <section
-        className={cn("ob-setup-panel", width === "narrow" ? "ob-setup-panel-phone" : "ob-setup-panel-source")}
-        aria-labelledby={headingId}
-      >
-        <div className="ob-setup-progress-caption">
-          <span>COMPLETA TU PERFIL</span>
-          <span>
-            Paso {step} de {TOTAL_STEPS}
-          </span>
-        </div>
-        <div
-          className="ob-setup-progress"
-          role="progressbar"
-          aria-label={`Paso ${step} de ${TOTAL_STEPS}`}
-          aria-valuemin={0}
-          aria-valuemax={TOTAL_STEPS}
-          aria-valuenow={step}
+      <div className={cn("ob-setup-body", art ? "has-art" : undefined)}>
+        <section
+          className={cn("ob-setup-panel", width === "narrow" ? "ob-setup-panel-phone" : "ob-setup-panel-source")}
+          aria-labelledby={headingId}
         >
-          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-            <i key={i} className={i < step ? "is-done" : undefined} />
-          ))}
-        </div>
-        {children}
-      </section>
+          <div className="ob-setup-progress-caption">
+            <span>COMPLETA TU PERFIL</span>
+            <span>
+              Paso {step} de {TOTAL_STEPS}
+            </span>
+          </div>
+          <div
+            className="ob-setup-progress"
+            role="progressbar"
+            aria-label={`Paso ${step} de ${TOTAL_STEPS}`}
+            aria-valuemin={0}
+            aria-valuemax={TOTAL_STEPS}
+            aria-valuenow={step}
+          >
+            {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+              <i key={i} className={i < step ? "is-done" : undefined} />
+            ))}
+          </div>
+          {children}
+        </section>
+        {art ? (
+          <aside className="ob-setup-aside" aria-hidden="true">
+            <div className="ob-setup-art">{art}</div>
+            {caption ? <p className="ob-setup-art-caption">{caption}</p> : null}
+          </aside>
+        ) : null}
+      </div>
       <footer className="ob-setup-footer">Conecta. Comparte. Crece.</footer>
     </main>
   );

@@ -2,6 +2,7 @@ import { useRef, type CSSProperties } from "react";
 import { LOGO_PATHS, MARK_PATH_COUNT, TAGLINE_PATH_COUNT } from "@/brand/logoPaths";
 import { GeometryPlayground } from "../components/GeometryPlayground";
 import { useSceneMotion } from "../hooks/useSceneMotion";
+import { ReadyArt } from "./SetupArt";
 
 /*
  * Emblema: la N aparece en su recuadro, el recuadro se abre y de la N brotan las letras y el lema hasta formar el
@@ -27,7 +28,7 @@ interface ReadySceneProps {
   onContinue: () => void;
 }
 
-/** Pantalla final plana en 2D (cierre del onboarding): "Ir a mi workspace" lleva al workspace. */
+/** Pantalla final plana en 2D (cierre del onboarding): "Comencemos juntos" lleva al workspace. */
 export function ReadyScene({ onContinue }: ReadySceneProps) {
   const ref = useRef<HTMLElement>(null);
 
@@ -106,6 +107,8 @@ export function ReadyScene({ onContinue }: ReadySceneProps) {
       <GeometryPlayground />
       <div className="ob-ready-dissolve" aria-hidden="true" />
       <div className="ob-ready-crest" aria-hidden="true">
+        {/* What the person just completed arrives around the logo once it has formed */}
+        <ReadyArt />
         <svg className="ob-ready-emblem" width={CREST.w} height={CREST.h} viewBox={`0 0 ${CREST.w} ${CREST.h}`} fill="none">
           <rect
             className="ob-ready-tile"
@@ -157,7 +160,7 @@ export function ReadyScene({ onContinue }: ReadySceneProps) {
         <em>Crezcamos juntos.</em>
       </h1>
       <button type="button" className="ob-continue" data-reveal onClick={onContinue}>
-        Ir a mi workspace <span aria-hidden="true">→</span>
+        Comencemos juntos <span aria-hidden="true">→</span>
       </button>
     </section>
   );

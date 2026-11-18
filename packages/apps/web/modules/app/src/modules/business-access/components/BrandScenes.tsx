@@ -536,7 +536,7 @@ export function SlideArt({ slide }: { slide: SlideId }) {
 /* ── Slide rotation (same pattern as useRotatingBrandMessages) ──────────────── */
 
 const EXIT_DURATION_MS = 240;
-const ROTATE_MS = 5500;
+const ROTATE_MS = 2800;
 
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;

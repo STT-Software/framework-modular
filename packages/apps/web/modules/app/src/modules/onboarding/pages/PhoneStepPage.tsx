@@ -11,6 +11,7 @@ import { ProfileGate } from "../components/ProfileGate";
 import { ProfileSetupLayout } from "../components/ProfileSetupLayout";
 import { nextOnboardingPath } from "../flow";
 import { SOURCE_STEP_PATH } from "../paths";
+import { PhoneArt } from "../scenes/SetupArt";
 import { checkPhone, COUNTRIES, PHONE_FORMAT_ERROR, splitPhone } from "../phone";
 import { isPhoneInUseError, PHONE_IN_USE_MESSAGE, serviceErrorMessage } from "../serviceErrors";
 import { onboardingProfileStore } from "../stores/onboardingProfile.store";
@@ -156,7 +157,14 @@ function PhoneForm({ profile }: { profile: Profile }) {
 /** Paso 1 de 2: teléfono. Si el perfil ya está completo, entra directo al workspace (`nextOnboardingPath`). */
 export default function PhoneStepPage() {
   return (
-    <ProfileSetupLayout step={1} title="Necto · Tu teléfono" headingId={HEADING_ID} width="narrow">
+    <ProfileSetupLayout
+      step={1}
+      title="Necto · Tu teléfono"
+      headingId={HEADING_ID}
+      width="narrow"
+      art={<PhoneArt />}
+      caption="Un número para contactarte cuando lo necesites."
+    >
       <ProfileGate>
         {(profile) =>
           profile.completed ? <Navigate to={nextOnboardingPath(profile)} replace /> : <PhoneForm profile={profile} />

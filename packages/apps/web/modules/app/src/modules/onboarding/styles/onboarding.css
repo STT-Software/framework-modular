@@ -702,278 +702,662 @@
   color: #dfd9ff;
 }
 
-/* ── Lienzo vectorial ────────────────────────────────────────────────────── */
+/* ── Lienzo vectorial: una ilustración por acto ─────────────────────────── */
 .ob-launch-visual {
   position: relative;
   z-index: 2;
+  display: grid;
   width: 100%;
   max-width: 680px;
+  aspect-ratio: 460 / 350;
   justify-self: end;
 }
 
-.ob-hero-svg {
+/*
+ * Cambio de escena como `.sa-scene-enter` del registro (opacidad + 10px, cubic-bezier(0.22, 1, 0.36, 1), 0.32 s).
+ * La escena nueva entra con el texto (~0.6 s), cuando la cortinilla ya cubre el gráfico; la anterior sale en 0.24 s
+ * y se oculta del todo para no gastar estilo ni pintura.
+ */
+.ob-art-scene {
+  position: relative;
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translateY(10px);
+  visibility: hidden;
+  transition: opacity 0.24s ease, transform 0.24s ease, visibility 0s linear 0.24s;
+}
+
+.ob-art-scene.is-active {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.62s, transform 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.62s,
+    visibility 0s linear 0.62s;
+}
+
+.ob-art-scene.is-past {
+  transform: translateY(-10px);
+}
+
+/*
+ * Performance. Whatever moves inside an SVG is repainted on the main thread, so the scene on screen (and the one
+ * leaving) gets its own compositing layer: its repaints stay inside it and never drag the text column or the page
+ * background along. `contain` keeps the SVG layout work of each frame from reaching the rest of the page.
+ */
+.ob-launch-visual {
+  contain: layout style;
+}
+
+.ob-art-scene.is-active,
+.ob-art-scene.is-past {
+  will-change: transform, opacity;
+}
+
+.ob-art-scene > .ob-scene-art {
+  position: relative;
+}
+
+/* Dotted orbit ring in its own layer (see `ArtOrbitRing`): rotated by the GPU around the orbit center. */
+.ob-art-orbit-layer {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  overflow: visible;
+  transform-origin: 50% 49.714%;
+}
+
+.ob-art-scene.is-active .ob-art-orbit-layer {
+  will-change: transform;
+}
+
+/*
+ * ── Arte vectorial de la intro (`LaunchSequence`) ─────────────────────────────────────────────────────────────────
+ * Cuatro composiciones estáticas, una por acto, con el lenguaje de `RegisterScenes` (`sa-art-*`) y `BrandScenes`
+ * (`na-art-*`): geometría editorial plana, tarjetas con borde 1.3, íconos de trazo 1.5, sin degradados ni personas.
+ * Cada capa pinta solo con estas variables, que dependen del fondo de su acto (crema u oscuro en los actos 0 y 1,
+ * cortinilla naranja en el 2) y del tema. El cierre (acto 3) es la animación del logotipo, con sus propias clases.
+ */
+.ob-art-scene {
+  /* Actos 0 y 1 sobre el crema (tema claro): tarjetas blancas con borde cálido, órbitas y enlaces índigo. */
+  --ob-art-paper: #ffffff;
+  --ob-art-line: #e6dece;
+  --ob-art-blue: #190088;
+  --ob-art-cyan: #97d6df;
+  --ob-art-accent: #ff3f1a;
+  --ob-art-mark: #190088;
+  --ob-art-orbit: rgba(25, 0, 136, 0.14);
+  --ob-art-link: rgba(25, 0, 136, 0.3);
+  --ob-art-spark: rgba(255, 63, 26, 0.85);
+  --ob-art-shadow: rgba(25, 0, 136, 0.07);
+}
+
+/* Actos 0 y 1 sobre el índigo profundo del tema oscuro (como el panel oscuro de /business/access). */
+.dark .ob-art-scene {
+  --ob-art-paper: #21165d;
+  --ob-art-line: #ffffff15;
+  --ob-art-blue: #ddd6ff;
+  --ob-art-mark: #b7adff;
+  --ob-art-orbit: #ffffff15;
+  --ob-art-link: rgba(221, 214, 255, 0.22);
+  --ob-art-spark: rgba(221, 214, 255, 0.65);
+  --ob-art-shadow: rgba(0, 0, 0, 0.13);
+}
+
+/* Acto 2 sobre la cortinilla naranja (como el panel claro de /super/register). */
+.ob-art-scene[data-act="2"] {
+  --ob-art-paper: #ffffff;
+  --ob-art-line: #dfe4ef;
+  --ob-art-blue: #190088;
+  --ob-art-mark: #190088;
+  --ob-art-orbit: rgba(255, 255, 255, 0.3);
+  --ob-art-link: rgba(255, 255, 255, 0.5);
+  --ob-art-spark: rgba(255, 255, 255, 0.85);
+  --ob-art-shadow: rgba(138, 29, 8, 0.2);
+}
+
+/* En oscuro, el naranja no cambia: las tarjetas pasan a índigo profundo y las órbitas siguen en blanco. */
+.dark .ob-art-scene[data-act="2"] {
+  --ob-art-paper: #21165d;
+  --ob-art-line: #ffffff1c;
+  --ob-art-blue: #ddd6ff;
+  --ob-art-mark: #b7adff;
+}
+
+.ob-scene-art {
+  display: block;
+  width: 100%;
+  height: 100%;
   overflow: visible;
   font-family: "DM Sans", Arial, sans-serif;
 }
 
-/* Conversación */
-.ob-bubble-frame {
-  fill: var(--ob-paper);
-  stroke: #97d6df;
-  stroke-width: 2.5;
-  stroke-opacity: 0;
+/* Fondo de cada escena: órbitas, enlaces, destellos y sombra basal. */
+.ob-art-orbit { fill: none; stroke: var(--ob-art-orbit); stroke-dasharray: 3 7; }
+.ob-art-orbit-solid { fill: none; stroke: var(--ob-art-orbit); opacity: 0.6; }
+.ob-art-link { fill: none; stroke: var(--ob-art-link); stroke-width: 1.2; stroke-linecap: round; }
+.ob-art-spark { fill: var(--ob-art-spark); }
+.ob-art-shadow { fill: var(--ob-art-shadow); }
+
+/* Superficies. */
+.ob-art-card { fill: var(--ob-art-paper); stroke: var(--ob-art-line); stroke-width: 1.3; }
+.ob-art-soft { fill: color-mix(in srgb, var(--ob-art-line) 40%, var(--ob-art-paper)); }
+.ob-art-rule { fill: none; stroke: var(--ob-art-line); stroke-width: 1; }
+.ob-art-wire { fill: none; stroke: var(--ob-art-line); stroke-width: 1.3; stroke-linecap: round; }
+.ob-art-orange-tint { fill: color-mix(in srgb, var(--ob-art-accent) 10%, var(--ob-art-paper)); }
+.ob-art-cyan-tint { fill: color-mix(in srgb, var(--ob-art-cyan) 24%, var(--ob-art-paper)); }
+.ob-art-dash-accent { stroke: var(--ob-art-accent); stroke-width: 1.3; stroke-dasharray: 4 4; }
+
+/* Tinta, íconos y texto. */
+.ob-art-icon { fill: none; stroke: var(--ob-art-blue); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ob-art-icon-accent { fill: none; stroke: var(--ob-art-accent); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ob-art-text { fill: var(--ob-art-blue); font-weight: 500; }
+.ob-art-label { fill: var(--ob-art-blue); opacity: 0.5; font-weight: 500; letter-spacing: 0.12em; }
+.ob-art-ink { fill: var(--ob-art-blue); }
+.ob-art-orange { fill: var(--ob-art-accent); }
+.ob-art-cyan { fill: var(--ob-art-cyan); }
+.ob-art-cyan-halo { fill: var(--ob-art-cyan); opacity: 0.25; }
+
+/* Contenido sobre rellenos de color: check índigo sobre cian, blanco sobre naranja y del color del papel sobre tinta. */
+.ob-art-check { fill: none; stroke: #190088; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ob-art-check-light { fill: none; stroke: #ffffff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ob-art-check-ink { fill: none; stroke: var(--ob-art-paper); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ob-art-on-accent { fill: #ffffff; stroke: none; }
+.ob-art-on-cyan { fill: #190088; stroke: none; }
+.ob-art-on-ink { fill: var(--ob-art-paper); stroke: none; }
+
+/* Marca: el índigo de sus trazos se adapta al fondo; el naranja se queda. */
+.ob-art-mark path[fill="#190088"] { fill: var(--ob-art-mark); }
+
+/*
+ * Movimiento dentro de las escenas 0 a 2: cada pieza (`.ob-art-pop`, con su orden en `--pop`) entra con un leve
+ * rebote después de que aparece la escena, como si la historia se armara delante. Solo opacidad y `translate`
+ * (no pisa el `transform` de las piezas inclinadas).
+ */
+.ob-art-pop {
+  opacity: 0;
+  translate: 0 12px;
 }
 
-.ob-bubble-tail {
-  fill: var(--ob-paper);
+.ob-art-scene.is-active .ob-art-pop {
+  animation: ob-art-pop 0.62s cubic-bezier(0.34, 1.45, 0.64, 1) both;
+  animation-delay: calc(var(--pop-start, 0.74s) + var(--pop, 0) * 140ms);
 }
 
-/* Sombras planas (sin filter: drop-shadow, que recalcula el desenfoque en cada fotograma). */
-.ob-flat-shadow {
-  fill: #190088;
-  opacity: 0.07;
+/*
+ * Ilustraciones fuera de la intro (`ArtStage`: pasos del perfil y cierre). Se ven desde el principio (sin la
+ * transición de cambio de acto) y, pasado un rato, sus bucles reposan para que un formulario quieto no repinte el SVG.
+ */
+.ob-art-scene.ob-art-stage {
+  opacity: 1;
+  visibility: visible;
+  transition: none;
 }
 
-.dark .ob-flat-shadow {
-  fill: #000000;
-  opacity: 0.25;
+.ob-art-scene.ob-art-stage:not(.ob-ready-art) {
+  transform: none;
 }
 
-.ob-bubble-name {
-  fill: var(--ob-accent);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+.ob-art-scene.is-settled * {
+  animation-play-state: paused !important;
 }
 
-.ob-bubble-text {
-  fill: var(--ob-ink);
-  font-size: 22px;
-  font-weight: 400;
-  letter-spacing: -0.01em;
+@media (prefers-reduced-motion: reduce) {
+  .ob-art-stage *,
+  .ob-art-stage *::before,
+  .ob-art-stage *::after {
+    animation: none !important;
+  }
 }
 
-.ob-bubble-time {
-  fill: var(--ob-muted);
-  opacity: 0.55;
-  font-size: 13px;
+.ob-art-scene.is-past .ob-art-pop {
+  opacity: 1;
+  translate: none;
 }
 
-.ob-voice-play {
-  fill: #ff3f1a;
+@keyframes ob-art-pop {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
 }
 
-.ob-voice-icon {
-  fill: #ffffff;
-}
-
-.ob-wave rect {
-  fill: var(--ob-indigo);
+/*
+ * ── Motion inside the scenes (acts 0 to 2) ──────────────────────────────────────────────────────────────────────
+ * Cause → effect, timed in seconds from the moment the scene becomes active (it fades in at 0.62 s). Every rule hangs
+ * from `.ob-art-scene.is-active`: when the act changes the class goes away and every loop stops with it. Only
+ * transform (the individual `translate` / `scale` / `rotate` properties, which never override the `transform`
+ * attribute of the tilted pieces), opacity and stroke-dashoffset are animated. Base styles are the final state, so
+ * without animation (reduced motion) the art reads complete. `.ob-launch.is-lite` drops the secondary loops.
+ */
+.ob-art-scene :is(
+    .ob-wave-bar,
+    .ob-play-pulse,
+    .ob-pulse-dot,
+    .ob-pulse-ring,
+    .ob-halo-pulse,
+    .ob-float,
+    .ob-scan,
+    .ob-mark-beat,
+    .ob-badge-pop,
+    .ob-port-flash,
+    .ob-hub-ring,
+    .ob-art-spark
+  ) {
   transform-box: fill-box;
   transform-origin: center;
 }
 
-.ob-photo {
-  fill: #97d6df;
-}
-
-.ob-photo-hill {
-  fill: #190088;
-}
-
-.ob-photo-ground {
-  fill: #ff3f1a;
-}
-
-.ob-photo-sun {
-  fill: #fff8f0;
-}
-
-.ob-typing-bg {
-  fill: var(--ob-paper);
-}
-
-.ob-typing rect:not(.ob-typing-bg) {
-  fill: var(--ob-indigo);
-  opacity: 0.6;
-}
-
-/* Etiquetas de intención */
-.ob-tag rect {
-  fill: #ff3f1a;
-}
-
-.ob-tag text {
-  fill: #ffffff;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-.ob-tag-check {
-  fill: none;
-  stroke: #ffffff;
-  stroke-width: 2.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.ob-tag.is-cyan rect {
-  fill: #97d6df;
-}
-
-.ob-tag.is-cyan text {
-  fill: #100548;
-}
-
-.ob-tag.is-cyan .ob-tag-check {
-  stroke: #100548;
-}
-
-.ob-tag.is-indigo rect {
-  fill: #190088;
-}
-
-.dark .ob-tag.is-indigo rect {
-  fill: #6250e8;
-}
-
-/* Núcleo */
-.ob-hub-tile {
-  fill: #190088;
-}
-
-.dark .ob-hub-tile {
-  fill: #6250e8;
-}
-
-.ob-hub-glow {
-  fill: #97d6df;
+/* Hidden helpers: they only show while they animate. */
+.ob-pulse-ring,
+.ob-port-flash,
+.ob-hub-ring,
+.ob-trace {
   opacity: 0;
 }
 
-.ob-hub-mark path[fill="#190088"] {
-  fill: #ffffff;
+.ob-port-flash {
+  fill: none;
+  stroke: var(--ob-art-cyan);
+  stroke-width: 1.5;
 }
 
-/* Módulos */
-.ob-link {
+.ob-hub-ring {
+  fill: none;
   stroke: #ffffff;
-  stroke-opacity: 0.55;
-  stroke-width: 3;
-  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.ob-trace {
   stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  opacity: 0;
 }
 
-.ob-pulse {
-  stroke: #ffffff;
-  stroke-width: 5;
-  stroke-linecap: round;
-  stroke-dasharray: 0.12 1.2;
-  stroke-dashoffset: 1;
-  opacity: 0;
+.ob-check-draw {
+  stroke-dasharray: 1;
 }
 
-/* Chispa en la punta del conector mientras se dibuja. */
-.ob-spark {
-  stroke: #ffffff;
-  stroke-width: 8;
-  stroke-linecap: round;
-  stroke-dasharray: 0.04 2;
-  stroke-dashoffset: 0.05;
-  opacity: 0;
+/*
+ * The pills and cards that travel carry their own center (set inline, in viewBox units): with `view-box` the browser
+ * does not have to measure the bounding box of a group full of text on every frame.
+ */
+.ob-pill-shot,
+.ob-card-dock {
+  transform-box: view-box;
 }
 
-.ob-hub-ripple {
-  fill: none;
-  stroke: #ffffff;
-  stroke-width: 3;
-  opacity: 0;
+.ob-progress-fill {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
 }
 
-.ob-port {
+/* Background: the dotted orbit turns slowly and the sparks twinkle (all three acts). */
+.ob-art-scene.is-active .ob-art-orbit-layer {
+  animation: ob-spin 60s linear infinite;
+}
+
+.ob-art-scene.is-active .ob-art-spark {
+  animation: ob-twinkle 1.8s ease-in-out infinite alternate;
+}
+
+.ob-art-scene.is-active .ob-art-spark:nth-child(odd) {
+  animation-delay: -0.9s;
+}
+
+/* Data along the dotted (1 4) and dashed (4 4) links, always in the direction of the path. */
+.ob-art-scene.is-active .ob-flow-dots {
+  animation: ob-flow-dots 0.8s linear var(--d, 1.2s) infinite;
+}
+
+/* A connector is traced (pathLength 1), then hands over to its dashed twin, which keeps the data flowing. */
+.ob-art-scene.is-active .ob-trace {
+  animation:
+    ob-trace 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--d) both,
+    ob-fade-out 0.25s linear var(--f) forwards;
+}
+
+.ob-art-scene.is-active .ob-flow-dash {
+  animation:
+    ob-fade-in 0.25s linear var(--f) both,
+    ob-flow-dash 0.7s linear var(--f) infinite;
+}
+
+/* Act 0 · the voice note plays, the contact is online and typing, the satellites float. */
+.ob-art-scene.is-active .ob-wave-bar {
+  animation: ob-wave 0.46s ease-in-out calc(1.1s + var(--i) * 45ms) infinite alternate;
+}
+
+.ob-art-scene.is-active .ob-wave-bar:nth-of-type(3n) {
+  animation-duration: 0.58s;
+}
+
+.ob-art-scene.is-active .ob-wave-bar:nth-of-type(3n + 1) {
+  animation-duration: 0.38s;
+}
+
+.ob-art-scene.is-active .ob-play-pulse {
+  animation: ob-breathe 0.6s ease-in-out 1.1s infinite alternate;
+}
+
+.ob-art-scene.is-active .ob-typing-dot {
+  animation: ob-typing 1s ease-in-out calc(1.3s + var(--i) * 150ms) infinite;
+}
+
+.ob-art-scene.is-active .ob-float {
+  animation: ob-float 2.6s ease-in-out calc(var(--d) * -0.85s) infinite alternate;
+}
+
+.ob-art-scene.is-active .ob-pulse-dot {
+  animation: ob-breathe 0.9s ease-in-out infinite alternate;
+}
+
+.ob-art-scene.is-active .ob-pulse-ring {
+  animation: ob-ring 1.6s ease-out 1s infinite;
+}
+
+.ob-art-scene.is-active .ob-halo-pulse {
+  animation: ob-halo 1.6s ease-in-out infinite alternate;
+}
+
+/* Act 1 · the magnifier scans, the bar fills while the mark beats, and each intent is fired from the engine. */
+.ob-art-scene.is-active .ob-scan {
+  animation: ob-scan 0.9s ease-in-out 1.3s infinite alternate;
+}
+
+.ob-art-scene.is-active .ob-progress-fill {
+  animation: ob-fill 1.7s cubic-bezier(0.45, 0, 0.55, 1) 1.35s both;
+}
+
+.ob-art-scene.is-active .ob-mark-beat {
+  animation: ob-beat 0.55s ease-in-out 1.4s infinite;
+}
+
+.ob-art-scene.is-active .ob-pill-shot {
+  animation: ob-shot 0.7s cubic-bezier(0.34, 1.45, 0.64, 1) var(--d) both;
+}
+
+.ob-art-scene.is-active .ob-check-draw {
+  animation: ob-trace 0.35s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--d) + 0.4s) both;
+}
+
+/* Act 2 · the hub sends energy; each card docks when its connector reaches the port, which flashes, and checks in. */
+.ob-art-scene.is-active .ob-hub-ring {
+  animation: ob-hub-ring 0.48s ease-out var(--d) 3;
+}
+
+.ob-art-scene.is-active .ob-card-dock {
+  animation: ob-dock 0.75s cubic-bezier(0.34, 1.45, 0.64, 1) var(--d) both;
+}
+
+.ob-art-scene.is-active .ob-port-flash {
+  animation: ob-flash 0.7s ease-out calc(var(--d) + 0.05s);
+}
+
+.ob-art-scene.is-active .ob-badge-pop {
+  animation: ob-badge 0.5s cubic-bezier(0.34, 1.9, 0.5, 1) calc(var(--d) + 0.25s) both;
+}
+
+/*
+ * Modest devices (`isLowPowerDevice()`, which includes any 4-core machine): every motion that tells the story stays
+ * (voice wave, typing, online pulse, floating satellites, data flow, scan, beat), since they are small transforms
+ * on a few shapes. Only the spark twinkle goes; the orbit spin runs on the GPU and costs nothing on the main thread.
+ */
+.ob-launch.is-lite .ob-art-scene.is-active .ob-art-spark {
+  animation: none;
+}
+
+@keyframes ob-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes ob-twinkle {
+  from {
+    scale: 1;
+    opacity: 1;
+  }
+  to {
+    scale: 0.6;
+    opacity: 0.45;
+  }
+}
+
+@keyframes ob-flow-dots {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+@keyframes ob-flow-dash {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -8;
+  }
+}
+
+@keyframes ob-trace {
+  from {
+    opacity: 1;
+    stroke-dashoffset: 1;
+  }
+  to {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ob-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ob-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ob-wave {
+  from {
+    scale: 1 1;
+  }
+  to {
+    scale: 1 0.3;
+  }
+}
+
+@keyframes ob-breathe {
+  from {
+    scale: 1;
+  }
+  to {
+    scale: 1.12;
+  }
+}
+
+@keyframes ob-typing {
+  0%,
+  60%,
+  100% {
+    translate: 0 0;
+  }
+  30% {
+    translate: 0 -2.5px;
+  }
+}
+
+@keyframes ob-float {
+  from {
+    translate: 0 3px;
+    rotate: -1deg;
+  }
+  to {
+    translate: 0 -3px;
+    rotate: 1.5deg;
+  }
+}
+
+@keyframes ob-ring {
+  from {
+    opacity: 0.7;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 3;
+  }
+}
+
+@keyframes ob-halo {
+  from {
+    scale: 1;
+    opacity: 0.25;
+  }
+  to {
+    scale: 1.4;
+    opacity: 0.08;
+  }
+}
+
+@keyframes ob-scan {
+  from {
+    translate: -6px 0;
+    rotate: -8deg;
+  }
+  to {
+    translate: 6px 0;
+    rotate: 8deg;
+  }
+}
+
+@keyframes ob-fill {
+  from {
+    scale: 0 1;
+  }
+  to {
+    scale: 1 1;
+  }
+}
+
+@keyframes ob-beat {
+  0%,
+  100% {
+    scale: 1;
+  }
+  45% {
+    scale: 1.1;
+  }
+}
+
+@keyframes ob-shot {
+  from {
+    opacity: 0;
+    translate: var(--fx) var(--fy);
+    scale: 0.3;
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes ob-dock {
+  from {
+    opacity: 0;
+    translate: var(--fx) var(--fy);
+    scale: 0.55;
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes ob-flash {
+  from {
+    opacity: 0.9;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 3.4;
+  }
+}
+
+@keyframes ob-badge {
+  from {
+    scale: 0;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+@keyframes ob-hub-ring {
+  from {
+    opacity: 0.8;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 1.45;
+  }
+}
+
+/* Cierre (acto 3): la N en su recuadro se convierte en el logotipo completo (`buildFinale`). */
+.ob-finale-tile {
+  fill: #190088;
+}
+
+.dark .ob-finale-tile {
+  fill: #6250e8;
+}
+
+.ob-finale-mark path[fill="#190088"] {
   fill: #ffffff;
-  stroke: #100548;
-  stroke-width: 3;
-  scale: 0;
 }
 
-.ob-port-ripple {
-  fill: none;
-  stroke: #ffffff;
-  stroke-width: 2;
-  opacity: 0;
-}
-
-.ob-card-shadow {
-  fill: #100548;
-  opacity: 0.2;
-}
-
-.ob-card-bg {
-  fill: #fff8f0;
-}
-
-.ob-card-icon-bg {
-  fill: #ff3f1a;
-}
-
-.ob-card-icon {
-  fill: none;
-  stroke: #ffffff;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.ob-card-label {
-  fill: #100548;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.ob-card-meta {
-  fill: #100548;
-  opacity: 0.6;
-  font-size: 13px;
-  font-weight: 400;
-}
-
-.ob-card.is-indigo .ob-card-bg {
-  fill: #100548;
-}
-
-.ob-card.is-indigo .ob-card-label,
-.ob-card.is-indigo .ob-card-meta {
-  fill: #ffffff;
-}
-
-.ob-card.is-cyan .ob-card-bg {
-  fill: #97d6df;
-}
-
-.ob-card.is-cyan .ob-card-icon-bg {
-  fill: #100548;
-}
-
-/* Cierre: logotipo */
 /* Un blanco apenas lavanda: así el brillo final (blanco puro) se nota al pasar sobre las letras. */
-.ob-lockup-word path {
+.ob-finale-word path {
   fill: #e4e0ff;
 }
 
-.ob-lockup-tagline path {
+.ob-finale-tagline path {
   fill: #97d6df;
 }
 
-.ob-lockup-rule {
+.ob-finale-rule {
   fill: #ff3f1a;
+}
+
+/* Oculto hasta que pasa (en equipos modestos no se anima y no debe verse). */
+.ob-finale-shine {
+  opacity: 0;
 }
 
 /* ── Pantalla final Ready (2D plano) ───────── */
@@ -1015,8 +1399,36 @@
 }
 
 .ob-ready-emblem {
+  position: relative;
+  z-index: 1;
   display: block;
   overflow: visible;
+}
+
+/*
+ * Ilustración del cierre (`ReadyArt`): una franja de 760 × 240 centrada en el logotipo, detrás de él. Lo que ya se
+ * completó (teléfono y origen) llega a sus lados cuando el logotipo termina de formarse. En pantallas angostas no
+ * cabe junto al logotipo y se omite.
+ */
+.ob-ready-crest {
+  position: relative;
+}
+
+.ob-art-scene.ob-ready-art {
+  position: absolute;
+  left: 50%;
+  top: 48px;
+  z-index: 0;
+  width: min(760px, 92vw);
+  aspect-ratio: 760 / 240;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .ob-art-scene.ob-ready-art {
+    display: none;
+  }
 }
 
 /* Cada letra se encoge sobre sí misma mientras viaja hacia la N. */
@@ -1238,6 +1650,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ob-art-pop {
+    opacity: 1;
+    translate: none;
+  }
+
   /* Sin animación no hay expansión: Ready muestra directamente el logotipo completo. */
   .ob-ready-tile {
     display: none;

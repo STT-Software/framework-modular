@@ -1,3 +1,4 @@
+import { DecorativeCircles } from "@/brand/DecorativeCircles";
 import InteractiveDotGrid from "@/brand/InteractiveDotGrid";
 import type { AccessView } from "../stores/adminAccess.store";
 import { SlideArt, SlideIndicators, useBrandSlides, type SlideId } from "./BrandScenes";
@@ -59,6 +60,13 @@ export function BrandPanel({ view }: BrandPanelProps) {
         glowDistance={160}
         className="-z-10"
       />
+      <div className="dark:hidden">
+        <DecorativeCircles variant="brand" className="-z-10" />
+      </div>
+      <div className="hidden dark:block">
+        <DecorativeCircles variant="indigo" className="-z-10" />
+      </div>
+      <div className="na-brand-glow" aria-hidden="true" />
       <div className="na-brand-content">
         <div className="na-motion-scene" aria-hidden="true">
           <div key={slide} className={`na-slide ${motionClass}`} data-slide={slide}>

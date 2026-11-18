@@ -53,7 +53,7 @@ forma de entrar.
 - **Elements:** `Button`, `Input`, `Label`, `Alert`, `Select` y `Checkbox`. El acabado Necto (altura, foco
   índigo, flecha animada) se aplica con `className` desde este módulo; los
   componentes de `src/elements/` no se modificaron.
-- **Base común:** `uiStore` (tema), `brand/InteractiveDotGrid`, `brand/NectoLogo`, `PageMeta`, `cn`, colores `necto-*` de `css/theme.css`.
+- **Base común:** `uiStore` (tema), `brand/InteractiveDotGrid`, `brand/DecorativeCircles`, `brand/NectoLogo`, `PageMeta`, `cn`, colores `necto-*` de `css/theme.css`.
 - **Fuente:** DM Sans (`@fontsource/dm-sans`, 400/500/600), cargada solo con este módulo.
 - No importa de ningún otro módulo.
 

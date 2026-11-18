@@ -4,7 +4,7 @@ import { Clock } from '../../../platform/time/clock';
 import { AccessPolicy } from '../domain/access-policy';
 import { purposeFamily, SIGN_IN_PURPOSES, type AccessChallenge, type ChallengePurpose, type NewChallenge } from '../domain/challenge';
 import { ChallengeRepository } from '../domain/challenge.repository';
-import { generateCode, hmacCode, sameHmac } from '../domain/code-hmac';
+import { generateCode, hmacCode, sameHmac } from '../../../platform/otp/code-hmac';
 import { InvalidAccessCodeError, TooManyRequestsError } from '../domain/errors';
 import { RateLimiter } from '../domain/rate-limiter';
 

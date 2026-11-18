@@ -13,10 +13,29 @@ vive solo en la máquina de quien la tiene (`referencias html/`, ignorada por gi
 |------|----------|
 | `/super` | Redirige a `/super/login`. |
 | `/super/login` | Inicio de sesión con **usuario o correo** y contraseña. Enlaza a `/super/register` y a `/business/access` ("¿Administras un negocio? Entra a tu negocio ↗"): el administrador de un negocio entra por otra puerta, con su correo y un código. |
-| `/super/register` | Registro con usuario, contraseña (y su confirmación), correo, documento de identidad (tipo + número) y aceptación de términos. Enlaza a `/super/login` y a `/business/access` ("¿Administras un negocio? Entra a tu negocio ↗"). |
+| `/super/register` | Registro con usuario, contraseña (y su confirmación), correo, documento de identidad (tipo + número) y aceptación de términos; después, **paso del código** de 6 dígitos enviado al correo (ver "Registro con código"). Enlaza a `/super/login` y a `/business/access` ("¿Administras un negocio? Entra a tu negocio ↗"). |
 
-Tras iniciar sesión se guarda la sesión y se navega a `/welcome` (módulo [`onboarding`](../onboarding/README.md)), que al terminar lleva a `/workspace`. Tras registrarse se navega
-a `/super/login` con un aviso de "Cuenta creada" y el usuario ya escrito.
+Tras iniciar sesión se guarda la sesión y se navega a `/welcome` (módulo [`onboarding`](../onboarding/README.md)), que al terminar lleva a `/workspace`. Tras verificar el código del
+registro la cuenta queda creada, se guarda la sesión igual que en el login y también se navega a `/welcome`.
+
+## Registro con código
+
+1. El formulario válido llama a `register` (`202 { registrationId, email, expiresAt, resendAvailableAt }`): el
+   servidor guarda un registro pendiente y envía el código. La cuenta aún no existe.
+2. `RegisterPage` pasa a `RegisterCodeStep` (basado en `CodeStep` de business-access): 6 casillas sobre un único
+   input (escritura, pegado y autocompletado `one-time-code`), foco al entrar, cuenta atrás de vencimiento y de
+   reenvío con `useTick` (`src/hooks/useTick.ts`, se pausa con la pestaña oculta).
+3. `verifyRegistration` crea la cuenta y devuelve `{ accessToken, superAdmin }` → `superAdminSessionStore.signIn` → `/welcome`.
+
+- Los datos del formulario (contraseña incluida) viven **solo en el estado de `RegisterPage`**, nunca en storage.
+  "Cambiar correo" vuelve al formulario con todo intacto.
+- Errores (por `code` estable del backend): `invalid-code` (aviso, se puede reintentar), `too-many-attempts`
+  (se bloquea y pide un código nuevo con `resendRegistrationCode`), `code-expired` (el pendiente ya no existe:
+  "Reenviar código" vuelve a llamar a `register` con los mismos datos), `resend-too-soon`, `too-many-codes` (5 códigos por correo cada 30 min, contando registros y reenvíos), `429` genérico, red.
+  Un `409` en `verify` vuelve al formulario y marca el campo en conflicto.
+- Panel de marca: mientras se ve el paso del código, `SuperAdminAuthLayout` muestra fija la escena del código
+  (`src/brand/CodeVerificationArt.tsx`, la misma del slide "codigo" de business-access, con clases `sa-art-*`) y el
+  mensaje "Verifica tu correo." La página avisa al layout con `useOutletContext<AuthLayoutContext>().setCodeStep`.
 
 ## Estructura
 
@@ -25,7 +44,7 @@ super-admin-auth/
 ├── index.ts                    Puerta pública: definición del módulo y sesión
 ├── SuperAdminAuthLayout.tsx    Layout compartido (formulario + panel de marca)
 ├── pages/                      LoginPage, RegisterPage
-├── components/                 NectoLogo, AuthFields, TermsCheckbox, SubmitButton, AuthThemeToggle, AuthCrossLinks, FormHeading, DecorativeCircles, RotatingBrandMessages, RegisterScenes
+├── components/                 NectoLogo, AuthFields, TermsCheckbox, SubmitButton, RegisterCodeStep, AuthThemeToggle, AuthCrossLinks, FormHeading, DecorativeCircles, RotatingBrandMessages, RegisterScenes
 ├── api/superAdminAuthApi.ts    Cliente HTTP del servicio (timeout y errores tipados)
 ├── stores/                     Sesión del superadmin (MobX + sessionStorage)
 ├── documentTypes.ts            Tipos de documento (CC, CE, PA, NIT)
@@ -49,7 +68,7 @@ forma de entrar.
 
 ## Dependencias
 
-- **Backend:** módulo `auth` de `necto-api` (endpoints `/auth/super/register`, `/auth/super/login`, `/auth/super/me`).
+- **Backend:** módulo `auth` de `necto-api` (endpoints `/auth/super/register`, `/auth/super/register/verify`, `/auth/super/register/resend`, `/auth/super/login`, `/auth/super/me`).
 - **Elements:** `Button`, `Input`, `Label`, `Alert`, `Select` y `Checkbox`. El acabado Necto (altura, foco
   índigo, flecha animada) se aplica con `className` desde este módulo; los
   componentes de `src/elements/` no se modificaron.

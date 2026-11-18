@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { Alert } from "@/elements/ui/alert";
 import { PageMeta } from "@/shell/meta";
 import { superAdminAuthApi, SuperAdminAuthError } from "../api/superAdminAuthApi";
@@ -32,10 +32,8 @@ function loginErrorMessage(error: unknown): string {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const registeredUsername = (location.state as { registeredUsername?: string } | null)?.registeredUsername;
 
-  const [identifier, setIdentifier] = useState(registeredUsername ?? "");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ identifier?: string | null; password?: string | null }>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -73,12 +71,6 @@ export default function LoginPage() {
         title="Inicia sesión"
         subtitle="Qué bueno verte. Sigamos conectando."
       />
-
-      {registeredUsername && (
-        <div className="mb-6">
-          <Alert variant="success" title="Cuenta creada" message="Ya puedes iniciar sesión con tus datos." />
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         <TextField

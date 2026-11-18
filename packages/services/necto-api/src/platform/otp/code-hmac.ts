@@ -5,7 +5,7 @@ export function generateCode(): string {
   return String(randomInt(0, 1_000_000)).padStart(6, '0');
 }
 
-/** What a stored code is tied to: changing any of these makes the code useless. */
+/** What a stored code is tied to: changing any of these makes the code useless. `challengeId` is the id of whatever the code belongs to (an access challenge, a pending registration...). */
 export interface CodeBinding {
   challengeId: string;
   email: string;

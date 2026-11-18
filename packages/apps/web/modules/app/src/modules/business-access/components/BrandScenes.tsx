@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { LOGO_PATHS, MARK_PATH_COUNT, TAGLINE_PATH_COUNT } from "@/brand/logoPaths";
+import { CodeVerificationArt } from "@/brand/CodeVerificationArt";
 import { NectoLogo } from "@/brand/NectoLogo";
 
 /*
@@ -144,88 +145,11 @@ function AccessArt() {
 /*
  * Slide 2 · codigo: a one-time code card rising out of an open envelope, stamped with a cyan "verified" seal.
  * Satellites: a clock token (code validity, lower left) and a shield token (secure access, upper right).
+ * The drawing lives in `src/brand/CodeVerificationArt.tsx`, shared with the /super/register code step.
  */
 
-// Six code cells split 3 + 3 around a center dot (card coordinates, card centered on x = 230).
-const CODE = ["4", "8", "2", "1", "9", "5"];
-const CELL_X = [172, 191, 210, 234, 253, 272];
-
 function CodeArt() {
-  return (
-    <svg className="na-slide-art" viewBox="0 0 460 350" fill="none">
-      {/* Background: orbits, dotted links, sparks and base shadow */}
-      <ArtOrbits />
-      <path className="na-art-link" strokeDasharray="1 4" d="M118 112Q140 150 132 186M354 126Q394 178 340 214" />
-      <ArtSpark cx={148} cy={46} size={14} />
-      <ArtSpark cx={386} cy={252} size={10} />
-      <ellipse className="na-art-shadow" cx="232" cy="300" rx="122" ry="10" />
-
-      {/* Envelope back and open flap (behind the card) */}
-      <rect className="na-art-card" x="148" y="162" width="164" height="124" rx="10" />
-      <path className="na-art-card" strokeLinejoin="round" d="M150 166 230 120l80 46" />
-
-      {/* Code card rising out of the envelope */}
-      <g transform="rotate(-4 230 156)">
-        <rect className="na-art-card" x="162" y="66" width="136" height="150" rx="14" />
-        <rect className="na-art-orange-tint" x="174" y="78" width="26" height="26" rx="8" />
-        <ArtMark x={178} y={82} size={18} />
-        <text className="na-art-label" x="208" y="88" fontSize="6">
-          CÓDIGO DE ACCESO
-        </text>
-        <text className="na-art-text" x="208" y="100" fontSize="8">
-          Un solo uso
-        </text>
-        {CODE.map((digit, i) => (
-          <g key={i}>
-            <rect className="na-art-soft" x={CELL_X[i]} y="116" width="16" height="22" rx="5" />
-            <text className="na-art-text" x={CELL_X[i] + 8} y="131" fontSize="11" textAnchor="middle">
-              {digit}
-            </text>
-          </g>
-        ))}
-        <circle className="na-art-ink" cx="230" cy="127" r="1.4" />
-        {/* Quiet expiry line: kept neutral so the orange mark and the clock carry the accent */}
-        <rect className="na-art-soft" x="176" y="150" width="108" height="4" rx="2" />
-      </g>
-
-      {/* Envelope front pocket with its folds */}
-      <path className="na-art-card" strokeLinejoin="round" d="M148 170 230 214l82-44v106a10 10 0 0 1-10 10H158a10 10 0 0 1-10-10Z" />
-      <path className="na-art-rule" d="m154 281 58-40m94 40-58-40" />
-
-      {/* Verification seal stamped on the envelope */}
-      <g transform="translate(304 240) rotate(-6)">
-        <circle className="na-art-card" r="30" />
-        <path id="na-code-seal-arc" d="M-19.9 11.5a23 23 0 1 1 39.8 0" fill="none" />
-        <text className="na-art-label" fontSize="6" textAnchor="middle">
-          <textPath href="#na-code-seal-arc" startOffset="50%">
-            CÓDIGO VERIFICADO
-          </textPath>
-        </text>
-        <ArtCheckBadge cx={0} cy={4} r={11} />
-      </g>
-
-      {/* Satellite: clock token (validity) */}
-      <g transform="translate(96 222) rotate(-12)">
-        <rect className="na-art-card" x="-29" y="-29" width="58" height="58" rx="18" />
-        <circle className="na-art-icon-accent" cy="-6" r="10" />
-        <path className="na-art-icon-accent" d="M0-12v6l4 3" />
-        <text className="na-art-text" y="17" fontSize="7" textAnchor="middle">
-          10 min
-        </text>
-      </g>
-
-      {/* Satellite: shield token (secure access) */}
-      <g transform="translate(356 88) rotate(9)">
-        <rect className="na-art-card" x="-27.5" y="-27.5" width="55" height="55" rx="18" />
-        <path className="na-art-icon" d="M0-12 10-8v7c0 6.5-4.3 11-10 13-5.7-2-10-6.5-10-13v-7Z" />
-        <path className="na-art-icon" d="m-4 0 3 3 5.5-5.5" />
-      </g>
-
-      {/* Cyan orb */}
-      <circle className="na-art-cyan-halo" cx="112" cy="104" r="11.5" />
-      <circle className="na-art-cyan" cx="112" cy="104" r="5.5" />
-    </svg>
-  );
+  return <CodeVerificationArt classPrefix="na" />;
 }
 
 /* ── Slide 3 · regreso: trusted device and valid session ────────────────────────── */

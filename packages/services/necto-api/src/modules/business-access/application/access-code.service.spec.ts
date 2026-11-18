@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { FixedClock } from '../../../platform/time/fixed-clock.spec';
 import { REVERIFY_PURPOSES, SIGN_IN_PURPOSES } from '../domain/challenge';
-import { generateCode, hmacCode, sameHmac } from '../domain/code-hmac';
+import { generateCode, hmacCode, sameHmac } from '../../../platform/otp/code-hmac';
 import { InvalidAccessCodeError, TooManyRequestsError } from '../domain/errors';
 import { InMemoryChallengeRepository, InMemoryRateLimiter, testPolicy } from '../fakes.spec';
 import { AccessCodeService } from './access-code.service';

@@ -213,3 +213,46 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
 .sa-art-on-accent { fill: #fff; stroke: none; }
 .sa-art-dash-accent { stroke: var(--sa-art-accent); stroke-width: 1.3; stroke-dasharray: 4 4; }
 .dark .sa-art-shadow { fill: #0003; }
+
+/*
+ * ── Register code step (RegisterCodeStep.tsx) ────────────────────────────────
+ * Six visual cells over one real <input> (same pattern as business-access CodeStep): typing, paste and the
+ * one-time-code autofill all land in the input; the cells only draw it.
+ */
+.sa-back { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 13px; color: #212121b3; }
+.sa-back:hover { color: #190088; }
+.dark .sa-back { color: #ececec99; }
+.dark .sa-back:hover { color: #97d6df; }
+.sa-back > span { font-size: 18px; }
+.sa-email-chip { display: inline-flex; align-items: center; gap: 9px; max-width: 100%; margin: -16px 0 24px; padding: 8px 11px; border: 1px solid #ececec; border-radius: 8px; background: #fafafa; font-size: 13px; color: #212121; }
+.dark .sa-email-chip { border-color: #ffffff1a; background: #ffffff0a; color: #ececec; }
+.sa-email-chip svg { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
+.sa-email-chip > span { overflow-wrap: anywhere; min-width: 0; }
+.sa-otp { position: relative; isolation: isolate; border-radius: 8px; }
+.sa-otp-cells { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 9px; }
+.sa-otp-cells > span { display: grid; place-items: center; height: 58px; min-width: 0; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; color: #212121; font-size: 26px; font-weight: 500; transition: border-color 0.15s, background 0.15s; }
+.dark .sa-otp-cells > span { border-color: #ffffff26; background: #1f2937; color: #ececec; }
+.sa-otp-cells > span.is-current { border-color: #ff3f1a; box-shadow: 0 0 0 3px #ff3f1a14; }
+.sa-otp input { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; color: transparent !important; -webkit-text-fill-color: transparent; caret-color: transparent; background: transparent; border: 0; border-radius: 8px; font-size: 18px; cursor: text; }
+.sa-otp input::selection { background: transparent; color: transparent; }
+.sa-otp input:focus { outline: none; }
+.sa-otp:has(input:focus-visible) { outline: 2px solid #190088; outline-offset: 4px; }
+.dark .sa-otp:has(input:focus-visible) { outline-color: #97d6df; }
+.sa-otp:has(input[aria-invalid="true"]) .sa-otp-cells > span { border-color: #f04438; }
+.sa-otp.is-blocked .sa-otp-cells > span { background: #f2f4f7; color: #98a2b3; }
+.dark .sa-otp.is-blocked .sa-otp-cells > span { background: #ffffff0a; color: #ececec66; }
+.sa-code-expiry { margin: 10px 0 0; text-align: right; font-size: 12px; color: #212121b3; font-variant-numeric: tabular-nums; }
+.dark .sa-code-expiry { color: #ececec99; }
+.sa-code-expiry > span { font-weight: 700; color: #212121; }
+.dark .sa-code-expiry > span { color: #ececec; }
+.sa-resend { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin-top: 20px; font-size: 14px; color: #212121; }
+.dark .sa-resend { color: #ececec; }
+.sa-resend button { font-weight: 700; color: #190088; }
+.dark .sa-resend button { color: #97d6df; }
+.sa-resend button:hover:not(:disabled) { text-decoration: underline; }
+.sa-resend button:disabled { opacity: 0.6; cursor: default; font-variant-numeric: tabular-nums; }
+@media (max-width: 420px) { .sa-otp-cells { gap: 6px; } .sa-otp-cells > span { height: 50px; font-size: 22px; } }
+
+/* Code step in the brand panel: one fixed scene, no rotation. */
+.sa-code-scene { position: relative; width: 100%; max-width: 460px; aspect-ratio: 460 / 350; margin: 0 auto 6px; }
+@media (min-width: 1600px) { .sa-code-scene { max-width: 510px; } }

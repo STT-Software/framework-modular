@@ -41,7 +41,7 @@ export const DataPanel = observer(({ categoryPath, onOpenCategory }: { categoryP
   if (!state) return null;
   const name = store.form.name || state.profile.name;
   return (
-    <section className="no-panel" aria-label="Datos del negocio">
+    <section className="no-panel no-panel-enter" aria-label="Datos del negocio">
       <div className="no-card no-data-card">
         <header className="no-card-header">
           <div>

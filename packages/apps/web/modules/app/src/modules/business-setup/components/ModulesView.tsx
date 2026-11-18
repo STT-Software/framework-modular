@@ -28,7 +28,7 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
   const ready = state.progress.baseReady;
   const started = state.progress.currentStep !== null;
   return (
-    <section aria-labelledby="no-modules-title">
+    <section className="no-enter" aria-labelledby="no-modules-title">
       <div className="no-welcome">
         <div className="no-welcome-copy">
           <span className="no-eyebrow">

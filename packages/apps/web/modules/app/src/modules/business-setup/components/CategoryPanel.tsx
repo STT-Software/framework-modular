@@ -8,7 +8,7 @@ import { ModuleIcon } from "./ModuleIcon";
 export const CategoryPanel = observer(() => {
   const store = businessSetupStore;
   return (
-    <section className="no-panel" aria-label="Tipo de negocio">
+    <section className="no-panel no-panel-enter" aria-label="Tipo de negocio">
       <div className="no-category-intro">
         <span className="no-source-badge">
           <svg viewBox="0 0 24 24" aria-hidden="true">

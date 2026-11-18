@@ -27,7 +27,7 @@ export const ReviewPanel = observer(({ onEdit, onViewModule }: { onEdit: (step: 
     ["Moneda", state.business.currency],
   ];
   return (
-    <section className="no-panel" aria-label="Revisión de la configuración base">
+    <section className="no-panel no-panel-enter" aria-label="Revisión de la configuración base">
       <div className="no-card no-review-identity">
         <div className="no-review-logo">
           {store.logoUrl ? <img src={store.logoUrl} alt="Logo del negocio" /> : <span>{initialsOf(name)}</span>}

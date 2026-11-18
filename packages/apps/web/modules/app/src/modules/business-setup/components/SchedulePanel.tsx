@@ -55,7 +55,7 @@ export const SchedulePanel = observer(() => {
   };
 
   return (
-    <section className="no-panel" aria-label="Horarios de atención">
+    <section className="no-panel no-panel-enter" aria-label="Horarios de atención">
       <div className="no-card no-hours-card">
         <header className="no-card-header">
           <div>

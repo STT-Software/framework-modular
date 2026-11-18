@@ -6,6 +6,7 @@ import { inspectLogo, LOGO_MAX_BYTES } from './logo';
 const NOW = new Date('2026-03-04T15:00:00Z');
 const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
 const JPG = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+const WEBP = Uint8Array.from([0x52, 0x49, 0x46, 0x46, 4, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, 1, 2]);
 const withSize = (head: Uint8Array, size: number) => {
   const bytes = new Uint8Array(size);
   bytes.set(head);
@@ -32,6 +33,12 @@ describe('logo validation', () => {
     assert.throws(() => inspectLogo(svg, 'image/svg+xml', NOW), InvalidLogoError);
     assert.throws(() => inspectLogo(new TextEncoder().encode('GIF89a....'), 'image/jpeg', NOW), InvalidLogoError);
     assert.throws(() => inspectLogo(new Uint8Array(), 'image/png', NOW), InvalidLogoError);
+  });
+
+  it('accepts a WebP (RIFF container) and refuses a RIFF that is not WebP', () => {
+    assert.equal(inspectLogo(WEBP, 'image/webp', NOW).info.contentType, 'image/webp');
+    const wav = Uint8Array.from([0x52, 0x49, 0x46, 0x46, 4, 0, 0, 0, 0x57, 0x41, 0x56, 0x45, 1, 2]);
+    assert.throws(() => inspectLogo(wav, 'image/webp', NOW), InvalidLogoError);
   });
 
   it('refuses a file whose declared type contradicts its content', () => {

@@ -1,6 +1,3 @@
-import "@fontsource/dm-sans/300.css";
-import "@fontsource/dm-sans/400.css";
-import "@fontsource/dm-sans/700.css";
 import "../styles/onboarding.css";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
@@ -16,7 +13,7 @@ import { AFTER_ONBOARDING_PATH } from "../paths";
 import { onboardingProfileStore } from "../stores/onboardingProfile.store";
 
 /**
- * Cierre del onboarding (`/welcome/ready`): la pantalla final con el juego de formas, después de guardar el
+ * Cierre del onboarding (`/welcome/ready`): la pantalla final con las formas de marca como decoración, después de guardar el
  * teléfono y dónde nos conoció. "Comencemos juntos" abre la pantalla de carga «El cruce» (`WorkspaceLoader`), que
  * descarga el workspace mientras se anima y, al terminar, entra en él.
  *
@@ -30,8 +27,7 @@ const ReadyPage = observer(function ReadyPage() {
   const [state, setState] = useState<"pending" | "show" | { redirect: string }>(() =>
     onboardingProfileStore.currentProfile?.completed ? "show" : "pending",
   );
-  // "leaving": la pantalla de carga está entrando; "covered": ya tapa todo y lo de debajo se desmonta (el juego de
-  // formas deja de correr).
+  // "leaving": la pantalla de carga está entrando; "covered": ya tapa todo y lo de debajo se desmonta.
   const [exit, setExit] = useState<"none" | "leaving" | "covered">("none");
   useEffect(() => {
     if (state !== "pending") return;

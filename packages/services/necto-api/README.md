@@ -523,7 +523,7 @@ superadministrador (`phone` `+573001234567`, `taxId` 4 a 20 caracteres, `website
 Con `other`, `categoryOther` (2 a 60 caracteres) es obligatorio (`400` con `fields.categoryOther`); con otra categoría se descarta. La
 precarga es la categoría registrada por el superadministrador.
 
-**Logo.** `PUT /logo` es `multipart/form-data` con **un** campo de archivo llamado `logo` (nada más). PNG o JPG de **hasta 1 MB**
+**Logo.** `PUT /logo` es `multipart/form-data` con **un** campo de archivo llamado `logo` (nada más). PNG, JPG o WebP de **hasta 1 MB**
 (`1 048 576` bytes; más pesa `413`). El tipo se decide por los **bytes** del archivo (firma PNG/JPEG), no por la extensión ni por el
 `Content-Type` que declare el navegador: SVG, GIF, texto o un archivo renombrado dan `400` (`code: "invalid-logo"`, `fields.logo`). Un tipo
 declarado que contradice el contenido también da `400`. `GET /logo` devuelve la imagen con su `Content-Type`, `X-Content-Type-Options: nosniff`

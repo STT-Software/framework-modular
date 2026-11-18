@@ -1,11 +1,9 @@
-import "@fontsource/dm-sans/400.css";
-import "@fontsource/dm-sans/500.css";
-import "@fontsource/dm-sans/600.css";
 import "../styles/business-access.css";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { NectoLogo } from "@/brand/NectoLogo";
+import { Skeleton, SkeletonGroup } from "@/components/skeleton";
 import { PageMeta } from "@/shell/meta";
 import { ThemeIconButton } from "@/shell";
 import { BrandPanel } from "../components/BrandPanel";
@@ -50,9 +48,14 @@ const BusinessAccessPage = observer(() => {
         </header>
         <main className="na-main">
           {view === "loading" && (
-            <p className="na-description" role="status">
-              Un momento…
-            </p>
+            <SkeletonGroup className="sk-stack" style={{ maxWidth: 400, ["--sk-gap" as string]: "14px" }}>
+              <Skeleton width="70%" height={34} />
+              <Skeleton width="90%" height={14} />
+              <Skeleton width="55%" height={14} style={{ marginBottom: 14 }} />
+              <Skeleton width={120} height={12} />
+              <Skeleton height={48} radius={10} />
+              <Skeleton height={48} radius={10} style={{ marginTop: 6 }} />
+            </SkeletonGroup>
           )}
           {view === "acceso" && <EmailStep onHelp={() => setHelp("access")} />}
           {view === "codigo" && store.rules && <CodeStep onHelp={() => setHelp("code")} />}

@@ -68,4 +68,4 @@ business-access/
 - **Otro módulo**, solo por su puerta pública: `businesses` (`categoryLabel` y `moduleInfo`, para mostrar la categoría y los nombres de los
   módulos). `businesses` no importa a `business-access`: no hay ciclo.
 - **Elements:** `Input` y `Label` (el correo). El campo del código, el selector de negocios y las casillas son propios, como en la referencia.
-- **Base común:** `brand/NectoLogo`, `brand/InteractiveDotGrid`, `brand/DecorativeCircles`, `ThemeIconButton`, `PageMeta`. **Fuente:** DM Sans, cargada solo con este módulo.
+- **Base común:** `brand/NectoLogo`, `brand/InteractiveDotGrid`, `brand/DecorativeCircles`, `ThemeIconButton`, `PageMeta`. **Fuente:** DM Sans, cargada una sola vez en `src/app/index.tsx`.

@@ -102,7 +102,7 @@ independientes). **Hoy está construido el acceso del SuperAdmin, su bienvenida 
 | Pantallas `/super/login` y `/super/register` | `packages/apps/web/modules/app/src/modules/super-admin-auth` | Funcionan, conectadas al servicio; enlaces cruzados bidireccionales con `/business/access` (`AuthCrossLinks`) y 5 slides estáticos rotativos en registro (`RegisterScenes`). El registro verifica el correo con un código de 6 dígitos (`RegisterCodeStep`) antes de crear la cuenta y entra directo a `/welcome`; el panel fija la escena del código (`src/brand/CodeVerificationArt.tsx`, compartida con business-access). Paso del código sin probar aún en navegador con Mongo/SMTP reales |
 | Cerrar sesión | `src/app/SignOutButton.tsx` | Funciona (borra la sesión del navegador) |
 | Módulo `onboarding` del backend | `packages/services/necto-api/src/modules/onboarding` | Funciona, probado con MongoDB real: guarda teléfono (`onboarding_profiles`, único entre usuarios), dónde nos conoció y si ya vio la intro (`onboarding_intro_views`, vía `PUT /onboarding/profile/intro-seen`) |
-| Onboarding (bienvenida + perfil) | `src/modules/onboarding` (README propio) | Funciona: `/welcome` muestra la intro una sola vez por cuenta (en cualquier dispositivo, vía `introSeen`), sin botón para saltarla: cuatro actos con ilustraciones vectoriales editoriales del lenguaje de `RegisterScenes`/`BrandScenes` (clases `ob-art-*`, piezas que entran escalonadas) y el cierre con la animación del logotipo, y luego lleva a `/welcome/phone` → `/welcome/source` → `/welcome/ready` (con `GeometryPlayground`) → pantalla de carga «El cruce» (`WorkspaceLoader`) → `/workspace`. Con `introSeen` o perfil completo, `/welcome` entra directo en `WorkspaceLoader` |
+| Onboarding (bienvenida + perfil) | `src/modules/onboarding` (README propio) | Funciona: `/welcome` muestra la intro una sola vez por cuenta (en cualquier dispositivo, vía `introSeen`), sin botón para saltarla: cuatro actos con ilustraciones vectoriales editoriales del lenguaje de `RegisterScenes`/`BrandScenes` (clases `ob-art-*`, piezas que entran escalonadas) y el cierre con la animación del logotipo, y luego lleva a `/welcome/phone` → `/welcome/source` → `/welcome/ready` (formas de marca como decoración fija, `GeometryBackdrop`) → pantalla de carga «El cruce» (`WorkspaceLoader`) → `/workspace`. Con `introSeen` o perfil completo, `/welcome` entra directo en `WorkspaceLoader` |
 | Workspace de negocios | `src/modules/workspace` (solo frontend, README propio) | Funciona: `/workspace` con sidebar, barra superior y el directorio de negocios **vacío** (0 negocios, filtros apagados) con la tienda animada **en movimiento continuo**; `/workspace/profile` ("Mi perfil") muestra solo el nombre del usuario. Solo se entra con sesión **y** perfil completo |
 | Puertas de acceso | `src/app/RequireSuperAdmin.tsx` y `RequireOnboardingCompleted.tsx` | Sin sesión, `/` y URLs desconocidas llevan a `/super/login`; con sesión, a `/workspace`. Los módulos con `requiresSuperAdmin: true` quedan detrás de la primera; los que además llevan `requiresOnboardingCompleted: true` (el workspace) detrás de la segunda: sin perfil completo, `/welcome` |
 | Registro de módulos + aislamiento de fallos | `src/app/modules.ts`, `ModuleRoutes.tsx`, `ModuleBoundary.tsx` | Funciona |
@@ -400,7 +400,27 @@ Mismo README: [`packages/services/necto-api/README.md`](../packages/services/nec
 **Diseño de referencia:** `referencias html/necto-superlogin.html` (sección 11) y diseño NECTO en StockFlow. Dos columnas:
 formulario a la izquierda y panel de marca a la derecha con matriz de puntos blancos que se iluminan al pasar el cursor sin animaciones continuas de fondo (`src/brand/InteractiveDotGrid.tsx`, compartida también con `business-access` sobre panel índigo/oscuro),
 aros decorativos (`DecorativeCircles`), mensajes rotativos con transición escalonada (`RotatingBrandMessages`) y cinco ilustraciones vectoriales estáticas rotativas en `/super/register` (`RegisterScenes`, homólogas a `BrandScenes` en `/business/access`); en el paso del código del registro el panel fija la escena del código (`src/brand/CodeVerificationArt.tsx`, parametrizada por prefijo de clases `na`/`sa` y usada también por el slide "codigo" de `BrandScenes`). Hooks compartidos entre módulos en `src/hooks/` (p. ej. `useTick`, cuenta atrás que se pausa con la pestaña oculta). Ambos módulos comparten enlaces cruzados bidireccionales (`AuthCrossLinks` y `EmailStep`).
-Tema **claro** (panel naranja `#ff3f1a`) y **oscuro** (panel azul profundo `#190088`). Fuente **DM Sans** (300, 400, 700).
+Tema **claro** (panel naranja `#ff3f1a`) y **oscuro** (panel azul profundo `#190088`). Fuente **DM Sans** (300 a 700),
+cargada **una sola vez** en `src/app/index.tsx` con `@fontsource/dm-sans/latin-*.css` (sin Google Fonts ni imports por módulo).
+
+**Reglas de rendimiento** (aplicadas en todas las pantallas de acceso, configuración y bienvenida):
+- Nada de bucles continuos: `requestAnimationFrame` solo mientras hay algo que mover (`InteractiveDotGrid` se detiene
+  con el cursor quieto) y todo temporizador o rotación se pausa con la pestaña oculta (`document.hidden`) y respeta
+  `prefers-reduced-motion` (`RotatingBrandMessages`, `BrandScenes`, `useTick(active)`).
+- Animar solo `opacity` y `transform`: **no animes `filter`** (el `blur` de los mensajes rotativos se quitó por eso).
+  `will-change` solo en lo que está en pantalla (`.ob-art-scene.is-active`, no `.is-past`). En equipos modestos
+  (`isLowPowerDevice()`) `ArtStage` apaga los trazos animados.
+- En SVG, leer geometría (`getBBox`) en una pasada antes de escribir animaciones.
+- Las animaciones CSS sobre elementos SVG (`scale`, `translate`, `stroke-dashoffset`) corren en el hilo principal:
+  recalculan estilo y layout en cada cuadro. Que sean cortas: `ArtStage` las pausa tras `settleMs` (14 s por
+  defecto; 6 s en `/welcome/ready`) y en equipos modestos apaga destellos y trazos.
+- `/welcome/ready` es una página quieta, con fondo blanco en tema claro: las formas de marca son decoración fija (`GeometryBackdrop`, en `.ob-decor`
+  con `contain: strict`) que solo entra una vez con CSS. Se quitó el juego de formas (física en `requestAnimationFrame`)
+  porque hacía lenta la app.
+- Carga diferida: `LaunchSequence` solo se descarga en modo intro; los pasos de `/welcome/*` usan los loaders de
+  `onboarding/pages/loaders.ts`, que además precargan el paso siguiente.
+- Mientras se cargan datos se muestran **skeletons** (`src/components/skeleton/`, propio porque Elements no trae uno)
+  con la forma del contenido, no textos tipo "Un momento…".
 
 **Tokens de marca** (en `src/css/theme.css`): `necto` / `secondary-600` `#190088`, `necto-hover` `#17016c`,
 `necto-dark` / `brand-500` / `necto-accent` `#ff3f1a`, `necto-dark-hover` / `brand-600` `#e5351a`,
@@ -474,7 +494,7 @@ Contrato completo en el README del servicio. Rutas del administrador (token de a
 - Datos del negocio: se leen y escriben en la colección `businesses` por el contrato público `AdministeredBusinessProfiles`. El administrador **no** cambia módulos, jefe, estado, moneda ni zona horaria; eso es solo del superadmin.
 - Lo propio del módulo (`business_setups`, un documento por negocio): descripción, logo, horario base, horarios propios de módulos y progreso. Un módulo hereda el horario del negocio (se calcula al leer) o tiene el suyo (excepción que se conserva).
 - Horas `HH:mm` locales del negocio, sin cruzar medianoche, sin solapes; errores con ruta (`schedule.mon.ranges.1.end`) en `fields`. `complete` marca solo la base; cualquier cambio posterior la invalida.
-- El cliente de Vite usa el prefijo `/api/business-setup` (ya está en `vite.config.ts`). La imagen del logo necesita el `Authorization`: se descarga con `fetch` y se muestra con un `blob:` URL.
+- El cliente de Vite usa el prefijo `/api/business-setup` (ya está en `vite.config.ts`). La imagen del logo necesita el `Authorization`: se descarga con `fetch` y se muestra con un `blob:` URL. Al subir, el navegador reduce la imagen a 256×256 en WebP (se aceptan originales de hasta 10 MB; el archivo subido no pasa de 1 MB) y muestra esos mismos bytes con `URL.createObjectURL`, sin volver a descargarlos. El servicio acepta PNG, JPG y WebP.
 
 ## 12. Herramientas del entorno y trampas conocidas
 
@@ -543,7 +563,7 @@ Contrato completo en el README del servicio. Rutas del administrador (token de a
 - Los **dos logins son distintos**: el SuperAdmin ya está; el del admin de un negocio vendrá después.
 - Registro del SuperAdmin con confirmación de contraseña, tipo de documento y términos.
 - **Onboarding = módulo del mismo backend** (`modules/onboarding` en `necto-api`, mismo proceso, puerto 8080 y base): teléfono
-  único entre usuarios (E.164, índice único), orígenes y registro de intro vista (`onboarding_intro_views`, un documento por `userId`). Al empezar la intro en `/welcome` se marca vista con `PUT /onboarding/profile/intro-seen` (solo la ven usuarios nuevos, una vez por cuenta, sin botón de saltar). Se guarda el teléfono al pulsar *Continuar* (para avisar el duplicado ahí) y los orígenes al *Finalizar*, pasando luego al cierre `/welcome/ready` (`GeometryPlayground`). Al pulsar *Comencemos juntos* (y en siguientes inicios de sesión), `WorkspaceLoader` («El cruce») anima la transición mientras consulta el perfil y precarga el workspace (`preloadWorkspacePage`) antes de navegar a `/workspace` (o al paso 1 si el perfil sigue incompleto). **"Mi perfil" en `/workspace/profile` no reabre estos pasos**, solo muestra el nombre.
+  único entre usuarios (E.164, índice único), orígenes y registro de intro vista (`onboarding_intro_views`, un documento por `userId`). Al empezar la intro en `/welcome` se marca vista con `PUT /onboarding/profile/intro-seen` (solo la ven usuarios nuevos, una vez por cuenta, sin botón de saltar). Se guarda el teléfono al pulsar *Continuar* (para avisar el duplicado ahí) y los orígenes al *Finalizar*, pasando luego al cierre `/welcome/ready` (`GeometryBackdrop`). Al pulsar *Comencemos juntos* (y en siguientes inicios de sesión), `WorkspaceLoader` («El cruce») anima la transición mientras consulta el perfil y precarga el workspace (`preloadWorkspacePage`) antes de navegar a `/workspace` (o al paso 1 si el perfil sigue incompleto). **"Mi perfil" en `/workspace/profile` no reabre estos pasos**, solo muestra el nombre.
 - **Workspace = destino del onboarding** (`/workspace`, módulo de frontend `workspace`, sin backend propio por ahora). Se entra con
   sesión de superadmin **y** perfil completo (`RequireOnboardingCompleted`, que consulta al backend una vez al entrar; si la consulta
   falla, se trata como incompleto y lleva a `/welcome`). `/` redirige a `/workspace`. Fiel a la referencia `necto-workspace`

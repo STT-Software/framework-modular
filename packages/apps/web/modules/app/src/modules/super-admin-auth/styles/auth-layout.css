@@ -83,12 +83,10 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
   from {
     opacity: 0;
     transform: translateY(14px);
-    filter: blur(4px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
   }
 }
 
@@ -103,8 +101,7 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
 .sa-msg-exit {
   opacity: 0;
   transform: translateY(-10px);
-  filter: blur(4px);
-  transition: opacity 0.24s ease, transform 0.24s ease, filter 0.24s ease;
+  transition: opacity 0.24s ease, transform 0.24s ease;
 }
 
 .sa-brand-headline {

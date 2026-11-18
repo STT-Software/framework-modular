@@ -1,6 +1,6 @@
 import { useRef, type CSSProperties } from "react";
 import { LOGO_PATHS, MARK_PATH_COUNT, TAGLINE_PATH_COUNT } from "@/brand/logoPaths";
-import { GeometryPlayground } from "../components/GeometryPlayground";
+import { GeometryBackdrop } from "../components/GeometryBackdrop";
 import { useSceneMotion } from "../hooks/useSceneMotion";
 import { ReadyArt } from "./SetupArt";
 
@@ -69,9 +69,13 @@ export function ReadyScene({ onContinue }: ReadySceneProps) {
         { delay: 1450, duration: 800, easing: EASE_IN_OUT },
       );
       const letters = Array.from(root.querySelectorAll<SVGGraphicsElement>(".ob-ready-word path"));
-      letters.forEach((letter, i) => {
+      // Read every box first, then start the animations, so layout is never forced between writes.
+      const offsets = letters.map((letter) => {
         const box = letter.getBBox();
-        const dx = MARK_CENTER.x - (box.x + box.width / 2);
+        return MARK_CENTER.x - (box.x + box.width / 2);
+      });
+      letters.forEach((letter, i) => {
+        const dx = offsets[i];
         motion(
           letter,
           [
@@ -104,7 +108,7 @@ export function ReadyScene({ onContinue }: ReadySceneProps) {
 
   return (
     <section ref={ref} className="ob-scene ob-scene-ready" aria-labelledby="ob-ready-title">
-      <GeometryPlayground />
+      <GeometryBackdrop />
       <div className="ob-ready-dissolve" aria-hidden="true" />
       <div className="ob-ready-crest" aria-hidden="true">
         {/* What the person just completed arrives around the logo once it has formed */}

@@ -77,7 +77,7 @@ export class BusinessSetupController {
     return toSetupResponse(await this.setup.saveCategory(email(request), businessId, dto.category, dto.categoryOther ?? null));
   }
 
-  /** The logo as an image (PNG or JPG). */
+  /** The logo as an image (PNG, JPG or WebP). */
   @Get('logo')
   @Header('X-Content-Type-Options', 'nosniff')
   async logo(@Req() request: AdminRequest, @Param('businessId') businessId: string, @Res({ passthrough: true }) response: Response) {
@@ -87,7 +87,7 @@ export class BusinessSetupController {
     return new StreamableFile(logo.bytes);
   }
 
-  /** Uploads or replaces the logo: `multipart/form-data` with the field `logo`. PNG or JPG, at most 1 MB. */
+  /** Uploads or replaces the logo: `multipart/form-data` with the field `logo`. PNG, JPG or WebP, at most 1 MB. */
   @Put('logo')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @UseInterceptors(FileInterceptor('logo', { limits: { fileSize: LOGO_MAX_BYTES, files: 1, fields: 0 } }))

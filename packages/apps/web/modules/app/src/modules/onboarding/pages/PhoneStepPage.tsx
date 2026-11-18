@@ -15,6 +15,7 @@ import { PhoneArt } from "../scenes/SetupArt";
 import { checkPhone, COUNTRIES, PHONE_FORMAT_ERROR, splitPhone } from "../phone";
 import { isPhoneInUseError, PHONE_IN_USE_MESSAGE, serviceErrorMessage } from "../serviceErrors";
 import { onboardingProfileStore } from "../stores/onboardingProfile.store";
+import { preloadSourceStepPage } from "./loaders";
 
 const HEADING_ID = "phone-heading";
 const COUNTRY_OPTIONS = COUNTRIES.map((country) => ({ value: country.dialCode, label: country.label }));
@@ -46,6 +47,8 @@ function PhoneForm({ profile }: { profile: Profile }) {
 
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true });
+    // Step 2 comes next: download it while the person types the number.
+    preloadSourceStepPage();
   }, []);
 
   function clearErrors() {

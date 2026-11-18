@@ -13,6 +13,7 @@ import {
   type CategoryId,
 } from "@/modules/businesses";
 import { BusinessEmptyState } from "./BusinessEmptyState";
+import { Skeleton, SkeletonGroup } from "@/components/skeleton";
 
 const SEARCH_DELAY_MS = 300;
 
@@ -136,9 +137,21 @@ export const BusinessDirectory = observer(({ onCreate, onReplay, onEdit, onAnnou
         </div>
       )}
       {(store.state === "idle" || (store.state === "loading" && store.items.length === 0)) && (
-        <p className="bs-loading" role="status">
-          Cargando tus negocios…
-        </p>
+        <SkeletonGroup className="ws-business-grid" label="Cargando tus negocios">
+          {[0, 1, 2, 3].map((index) => (
+            <div key={index} className="ws-business-card" aria-hidden="true">
+              <div className="ws-business-card-top">
+                <Skeleton width={44} height={44} radius={13} />
+                <div className="sk-stack" style={{ ["--sk-gap" as string]: "7px" }}>
+                  <Skeleton width={70} height={8} />
+                  <Skeleton width="65%" height={20} />
+                </div>
+              </div>
+              <Skeleton width="80%" height={12} style={{ margin: "22px 0 24px" }} />
+              <Skeleton height={36} radius={8} />
+            </div>
+          ))}
+        </SkeletonGroup>
       )}
       {noBusinesses && <BusinessEmptyState onCreate={onCreate} onReplay={onReplay} />}
       {noMatches && (

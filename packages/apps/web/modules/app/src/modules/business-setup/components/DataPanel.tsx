@@ -73,7 +73,7 @@ export const DataPanel = observer(({ categoryPath, onOpenCategory }: { categoryP
                 className="no-file-input"
                 id="no-logo-file"
                 type="file"
-                accept="image/png,image/jpeg"
+                accept="image/png,image/jpeg,image/webp"
                 disabled={store.saving}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
@@ -87,7 +87,7 @@ export const DataPanel = observer(({ categoryPath, onOpenCategory }: { categoryP
                 </button>
               )}
             </div>
-            <p>PNG o JPG, hasta 1 MB.</p>
+            <p>PNG, JPG o WebP, hasta 10 MB.</p>
           </div>
         </div>
         <p className="no-error" role="status" hidden={!store.logoError}>

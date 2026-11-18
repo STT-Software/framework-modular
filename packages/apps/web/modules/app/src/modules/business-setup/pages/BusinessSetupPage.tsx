@@ -1,6 +1,3 @@
-import "@fontsource/dm-sans/400.css";
-import "@fontsource/dm-sans/500.css";
-import "@fontsource/dm-sans/600.css";
 import "../styles/business-setup.css";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useState } from "react";
@@ -15,6 +12,7 @@ import { SavedDialog } from "../components/SavedDialog";
 import { STEP_TITLES, Wizard } from "../components/Wizard";
 import { businessSetupStore } from "../stores/businessSetup.store";
 import { SETUP_STEPS, type SetupStep } from "../types";
+import { Skeleton, SkeletonGroup } from "@/components/skeleton";
 
 type View = SetupStep | "modules";
 const isStep = (value: string | undefined): value is SetupStep => SETUP_STEPS.includes(value as SetupStep);
@@ -146,9 +144,14 @@ const BusinessSetupPage = observer(() => {
       </header>
       <main className="no-main">
         {store.status === "loading" || store.status === "idle" ? (
-          <p className="no-field-note" role="status">
-            Un momento…
-          </p>
+          <SkeletonGroup className="sk-stack" style={{ ["--sk-gap" as string]: "16px" }}>
+            <Skeleton width="45%" height={30} />
+            <Skeleton width="70%" height={14} />
+            <Skeleton height={56} radius={12} style={{ marginTop: 8 }} />
+            <Skeleton height={56} radius={12} />
+            <Skeleton height={56} radius={12} />
+            <Skeleton width={160} height={44} radius={10} style={{ marginTop: 8 }} />
+          </SkeletonGroup>
         ) : null}
         {store.status === "unavailable" && (
           <div className="no-empty-modules">

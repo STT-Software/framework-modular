@@ -20,72 +20,15 @@ interface MouseState {
   intensity: number;
 }
 
-function drawDot(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  radius: number,
-  fillStyle: string,
-  shadowBlur: number,
-  shadowColor: string,
-) {
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.shadowBlur = shadowBlur;
-  ctx.shadowColor = shadowColor;
-  ctx.fillStyle = fillStyle;
-  ctx.fill();
-}
-
-function drawDotMatrix(
-  ctx: CanvasRenderingContext2D,
-  cols: number,
-  rows: number,
-  offsetX: number,
-  offsetY: number,
-  dotGap: number,
-  baseRadius: number,
-  activeRadius: number,
-  glowDistance: number,
-  dotRgb: string,
-  baseAlpha: number,
-  activeAlpha: number,
-  activeColor: string,
-  shadowColor: string,
-  mouse: MouseState | null,
-) {
-  for (let i = 0; i < cols; i++) {
-    for (let j = 0; j < rows; j++) {
-      const x = offsetX + i * dotGap;
-      const y = offsetY + j * dotGap;
-
-      let radius = baseRadius;
-      let alpha = baseAlpha;
-      let isHover = false;
-
-      if (mouse && mouse.intensity > 0.01) {
-        const dist = Math.hypot(x - mouse.x, y - mouse.y);
-        if (dist < glowDistance) {
-          const norm = 1 - dist / glowDistance;
-          const factor = Math.pow(norm, 2.2) * mouse.intensity;
-          radius = baseRadius + (activeRadius - baseRadius) * factor;
-          alpha = baseAlpha + (activeAlpha - baseAlpha) * factor;
-          isHover = factor > 0.3;
-        }
-      }
-
-      if (isHover) {
-        drawDot(ctx, x, y, radius, activeColor, activeRadius * 1.5, shadowColor);
-      } else {
-        drawDot(ctx, x, y, radius, `rgba(${dotRgb}, ${alpha.toFixed(3)})`, 0, "transparent");
-      }
-    }
-  }
-}
+const TWO_PI = Math.PI * 2;
+const ALPHA_STEPS = 16;
+const EASE_POSITION = 0.16;
+const EASE_INTENSITY = 0.12;
 
 /**
- * Interactive canvas dot-matrix background that illuminates smoothly under cursor proximity,
- * without background loop animations; degrades to a crisp static dot matrix under reduced motion.
+ * Interactive canvas dot-matrix background that illuminates smoothly under cursor proximity.
+ * The animation loop only runs while the cursor glow is converging, pauses when the tab is hidden,
+ * and degrades to a crisp static dot matrix under reduced motion.
  */
 export default function InteractiveDotGrid({
   dotGap = 26,
@@ -106,9 +49,19 @@ export default function InteractiveDotGrid({
     if (!canvas) return;
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
+    const parent = canvas.parentElement;
 
     const resolvedActiveColor = activeDotColor ?? `rgba(${dotRgb}, ${Math.min(1, activeAlpha + 0.03).toFixed(2)})`;
     const resolvedGlowColor = glowColor ?? `rgba(${dotRgb}, 0.75)`;
+    const baseFill = `rgba(${dotRgb}, ${baseAlpha.toFixed(3)})`;
+    const hoverShadowBlur = activeRadius * 1.5;
+    // Precomputed fill styles for quantized alpha between baseAlpha and activeAlpha.
+    const alphaTable: string[] = [];
+    for (let k = 0; k <= ALPHA_STEPS; k++) {
+      const a = baseAlpha + ((activeAlpha - baseAlpha) * k) / ALPHA_STEPS;
+      alphaTable.push(`rgba(${dotRgb}, ${a.toFixed(3)})`);
+    }
+
     const motionQuery = typeof window.matchMedia === "function"
       ? window.matchMedia("(prefers-reduced-motion: reduce)")
       : null;
@@ -120,37 +73,126 @@ export default function InteractiveDotGrid({
     let rows = 0;
     let offsetX = 0;
     let offsetY = 0;
+    let rectLeft = 0;
+    let rectTop = 0;
     let reducedMotion = motionQuery?.matches ?? false;
 
     const targetMouse = { x: -9999, y: -9999, active: false };
     const currentMouse: MouseState = { x: -9999, y: -9999, intensity: 0 };
 
-    const drawMatrixFrame = (mouse: MouseState | null) => {
+    const drawFrame = (mouse: MouseState | null) => {
       if (width === 0 || height === 0) return;
       ctx.clearRect(0, 0, width, height);
-      drawDotMatrix(
-        ctx,
-        cols,
-        rows,
-        offsetX,
-        offsetY,
-        dotGap,
-        baseRadius,
-        activeRadius,
-        glowDistance,
-        dotRgb,
-        baseAlpha,
-        activeAlpha,
-        resolvedActiveColor,
-        resolvedGlowColor,
-        mouse,
-      );
+      const lit = mouse !== null && mouse.intensity > 0.01;
+      const glowSq = glowDistance * glowDistance;
+
+      // Pass 1: every idle dot in a single path.
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
+      ctx.fillStyle = baseFill;
+      ctx.beginPath();
+      for (let i = 0; i < cols; i++) {
+        const x = offsetX + i * dotGap;
+        for (let j = 0; j < rows; j++) {
+          const y = offsetY + j * dotGap;
+          if (lit) {
+            const dx = x - mouse.x;
+            const dy = y - mouse.y;
+            if (dx * dx + dy * dy < glowSq) continue;
+          }
+          ctx.moveTo(x + baseRadius, y);
+          ctx.arc(x, y, baseRadius, 0, TWO_PI);
+        }
+      }
+      ctx.fill();
+
+      if (!lit) return;
+
+      // Pass 2: only dots inside the glow radius, drawn individually.
+      const minI = Math.max(0, Math.floor((mouse.x - glowDistance - offsetX) / dotGap));
+      const maxI = Math.min(cols - 1, Math.ceil((mouse.x + glowDistance - offsetX) / dotGap));
+      const minJ = Math.max(0, Math.floor((mouse.y - glowDistance - offsetY) / dotGap));
+      const maxJ = Math.min(rows - 1, Math.ceil((mouse.y + glowDistance - offsetY) / dotGap));
+      for (let i = minI; i <= maxI; i++) {
+        const x = offsetX + i * dotGap;
+        for (let j = minJ; j <= maxJ; j++) {
+          const y = offsetY + j * dotGap;
+          const dx = x - mouse.x;
+          const dy = y - mouse.y;
+          const distSq = dx * dx + dy * dy;
+          if (distSq >= glowSq) continue;
+          const norm = 1 - Math.sqrt(distSq) / glowDistance;
+          const factor = Math.pow(norm, 2.2) * mouse.intensity;
+          const radius = baseRadius + (activeRadius - baseRadius) * factor;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, TWO_PI);
+          if (factor > 0.3) {
+            ctx.shadowBlur = hoverShadowBlur;
+            ctx.shadowColor = resolvedGlowColor;
+            ctx.fillStyle = resolvedActiveColor;
+          } else {
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = "transparent";
+            ctx.fillStyle = alphaTable[Math.round(factor * ALPHA_STEPS)];
+          }
+          ctx.fill();
+        }
+      }
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
+    };
+
+    const updateRect = () => {
+      const rect = canvas.getBoundingClientRect();
+      rectLeft = rect.left;
+      rectTop = rect.top;
+    };
+
+    const stop = () => {
+      if (animId) cancelAnimationFrame(animId);
+      animId = 0;
+    };
+
+    const loop = () => {
+      animId = 0;
+      if (reducedMotion || document.hidden) return;
+
+      const dx = targetMouse.x - currentMouse.x;
+      const dy = targetMouse.y - currentMouse.y;
+      const targetIntensity = targetMouse.active ? 1 : 0;
+      const di = targetIntensity - currentMouse.intensity;
+      currentMouse.x += dx * EASE_POSITION;
+      currentMouse.y += dy * EASE_POSITION;
+      currentMouse.intensity += di * EASE_INTENSITY;
+
+      const settledIntensity = targetMouse.active
+        ? Math.abs(di) < 0.005
+        : currentMouse.intensity <= 0.005;
+      const converged = settledIntensity
+        && (!targetMouse.active || (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1));
+
+      if (converged) {
+        currentMouse.intensity = targetIntensity;
+        if (targetMouse.active) {
+          currentMouse.x = targetMouse.x;
+          currentMouse.y = targetMouse.y;
+        }
+        drawFrame(currentMouse.intensity > 0.01 ? currentMouse : null);
+        return;
+      }
+
+      drawFrame(currentMouse);
+      animId = requestAnimationFrame(loop);
+    };
+
+    const start = () => {
+      if (!animId && !reducedMotion && !document.hidden) {
+        animId = requestAnimationFrame(loop);
+      }
     };
 
     const handleResize = () => {
-      const parent = canvas.parentElement;
       if (!parent) return;
-
       const rect = parent.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       width = rect.width;
@@ -166,79 +208,62 @@ export default function InteractiveDotGrid({
       rows = Math.ceil(height / dotGap) + 1;
       offsetX = (width - (cols - 1) * dotGap) / 2;
       offsetY = (height - (rows - 1) * dotGap) / 2;
+      updateRect();
 
-      drawMatrixFrame(!reducedMotion && currentMouse.intensity > 0.01 ? currentMouse : null);
-    };
-
-    const loop = () => {
-      if (reducedMotion) {
-        animId = 0;
-        return;
-      }
-
-      currentMouse.x += (targetMouse.x - currentMouse.x) * 0.16;
-      currentMouse.y += (targetMouse.y - currentMouse.y) * 0.16;
-      const targetIntensity = targetMouse.active ? 1 : 0;
-      currentMouse.intensity += (targetIntensity - currentMouse.intensity) * 0.12;
-
-      if (!targetMouse.active && currentMouse.intensity <= 0.005) {
-        currentMouse.intensity = 0;
-        drawMatrixFrame(null);
-        animId = 0;
-        return;
-      }
-
-      drawMatrixFrame(currentMouse);
-      animId = requestAnimationFrame(loop);
+      drawFrame(!reducedMotion && currentMouse.intensity > 0.01 ? currentMouse : null);
+      start();
     };
 
     const handleMotionChange = (event: MediaQueryListEvent) => {
       reducedMotion = event.matches;
-      if (reducedMotion && animId) {
-        cancelAnimationFrame(animId);
-        animId = 0;
-      }
       if (reducedMotion) {
+        stop();
         currentMouse.intensity = 0;
-        drawMatrixFrame(null);
+        targetMouse.active = false;
+        drawFrame(null);
       }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) stop();
+      else start();
     };
 
     const handleMouseMove = (e: MouseEvent) => {
       if (reducedMotion) return;
-      const rect = canvas.getBoundingClientRect();
-      targetMouse.x = e.clientX - rect.left;
-      targetMouse.y = e.clientY - rect.top;
+      targetMouse.x = e.clientX - rectLeft;
+      targetMouse.y = e.clientY - rectTop;
       targetMouse.active = true;
-      if (!animId) {
-        animId = requestAnimationFrame(loop);
-      }
+      start();
     };
 
     const handleMouseLeave = () => {
       targetMouse.active = false;
+      start();
     };
 
-    const parent = canvas.parentElement;
     if (parent) {
       parent.addEventListener("mousemove", handleMouseMove, { passive: true });
       parent.addEventListener("mouseleave", handleMouseLeave, { passive: true });
     }
+    window.addEventListener("scroll", updateRect, { passive: true, capture: true });
+    window.addEventListener("resize", updateRect, { passive: true });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     motionQuery?.addEventListener("change", handleMotionChange);
 
     const resizeObserver = new ResizeObserver(handleResize);
-    if (parent) {
-      resizeObserver.observe(parent);
-    }
+    if (parent) resizeObserver.observe(parent);
     handleResize();
 
     return () => {
-      if (animId) cancelAnimationFrame(animId);
+      stop();
       motionQuery?.removeEventListener("change", handleMotionChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("scroll", updateRect, { capture: true });
+      window.removeEventListener("resize", updateRect);
       if (parent) {
         parent.removeEventListener("mousemove", handleMouseMove);
         parent.removeEventListener("mouseleave", handleMouseLeave);
-        resizeObserver.unobserve(parent);
       }
       resizeObserver.disconnect();
     };

@@ -4,7 +4,7 @@
 > (Kiro, Claude, Copilot, Codex u otra). Está pensado para retomar el trabajo en una
 > sesión nueva, sin el historial de la anterior. Léelo completo antes de tocar nada.
 >
-> **Es una foto, no la verdad absoluta.** Actualizado el **2026-11-17**, con `integration` en `c66ef6e` más las actualizaciones de bienvenida (`feature/update-welcome`). Si algo de aquí contradice el código, manda el código: verifica con `git log`, `git status` y leyendo los archivos. Y **actualízalo** cuando cambie el estado del proyecto (ver la última sección).
+> **Es una foto, no la verdad absoluta.** Actualizado el **2026-11-17**, con `integration` en `ea528f2` más las actualizaciones visuales de acceso y registro (`feature/update-login`). Si algo de aquí contradice el código, manda el código: verifica con `git log`, `git status` y leyendo los archivos. Y **actualízalo** cuando cambie el estado del proyecto (ver la última sección).
 
 ## Índice
 
@@ -99,7 +99,7 @@ independientes). **Hoy está construido el acceso del SuperAdmin, su bienvenida 
 |-------|-------|--------|
 | Backend: monolito modular `necto-api` (login/registro del SuperAdmin + onboarding) | `packages/services/necto-api` (un solo proceso, puerto 8080) | Funciona, probado con MongoDB real. `platform/` (config, database, security, errors, observability) + `modules/auth` + `modules/onboarding` |
 | MongoDB de desarrollo (Docker) | `infra/` | Funciona; una base (`super_admin_auth`) y un usuario para el backend |
-| Pantallas `/super/login` y `/super/register` | `packages/apps/web/modules/app/src/modules/super-admin-auth` | Funcionan, conectadas al servicio |
+| Pantallas `/super/login` y `/super/register` | `packages/apps/web/modules/app/src/modules/super-admin-auth` | Funcionan, conectadas al servicio; enlaces cruzados bidireccionales con `/business/access` (`AuthCrossLinks`) y 5 slides estáticos rotativos en registro (`RegisterScenes`) |
 | Cerrar sesión | `src/app/SignOutButton.tsx` | Funciona (borra la sesión del navegador) |
 | Módulo `onboarding` del backend | `packages/services/necto-api/src/modules/onboarding` | Funciona, probado con MongoDB real: guarda teléfono (`onboarding_profiles`, único entre usuarios), dónde nos conoció y si ya vio la intro (`onboarding_intro_views`, vía `PUT /onboarding/profile/intro-seen`) |
 | Onboarding (bienvenida + perfil) | `src/modules/onboarding` (README propio) | Funciona: `/welcome` muestra la intro animada una sola vez por cuenta (en cualquier dispositivo, vía `introSeen`), sin botón para saltarla, y luego lleva a `/welcome/phone` → `/welcome/source` → `/welcome/ready` (con `GeometryPlayground`) → pantalla de carga «El cruce» (`WorkspaceLoader`) → `/workspace`. Con `introSeen` o perfil completo, `/welcome` entra directo en `WorkspaceLoader` |
@@ -107,7 +107,7 @@ independientes). **Hoy está construido el acceso del SuperAdmin, su bienvenida 
 | Puertas de acceso | `src/app/RequireSuperAdmin.tsx` y `RequireOnboardingCompleted.tsx` | Sin sesión, `/` y URLs desconocidas llevan a `/super/login`; con sesión, a `/workspace`. Los módulos con `requiresSuperAdmin: true` quedan detrás de la primera; los que además llevan `requiresOnboardingCompleted: true` (el workspace) detrás de la segunda: sin perfil completo, `/welcome` |
 | Registro de módulos + aislamiento de fallos | `src/app/modules.ts`, `ModuleRoutes.tsx`, `ModuleBoundary.tsx` | Funciona |
 | **Negocios (end to end)** | Backend `modules/businesses`; frontend `src/modules/businesses` (store, asistente de 3 pasos, tarjetas y ficha) y el workspace con datos reales | Mezclado en `integration` (PR #9). Verificado con MongoDB real y el navegador |
-| **Acceso de administradores de negocio (end to end)** | Backend `modules/business-access` (OTP por correo, sesiones, permisos por negocio y módulo, código temporal del superadmin); frontend `src/modules/business-access` (`/business/access`, de la referencia `necto-login-admin`) y enlace desde `/super/login` | Rama `feature/business-admin-access` (sin commit/PR). 178 pruebas del backend y recorrido real en el navegador: correo → código → selector/listo, regreso sin código, recordar/olvidar dispositivo, cierre de sesión |
+| **Acceso de administradores de negocio (end to end)** | Backend `modules/business-access` (OTP por correo, sesiones, permisos por negocio y módulo, código temporal del superadmin); frontend `src/modules/business-access` (`/business/access`, de la referencia `necto-login-admin`) y enlace al superadmin en el formulario | Mezclado en `integration` (PR #13, `c66ef6e`; pulido en `feature/update-login` con `InteractiveDotGrid`, 5 slides en `BrandScenes` y panel limpio sin textos decorativos extra). 178 pruebas del backend y recorrido real en el navegador |
 | CI de promoción de ramas | `.github/workflows/` | Existe; `production` aún no se ha promovido nunca |
 
 El registro pide: usuario, contraseña + confirmación, correo, tipo y número de documento
@@ -369,8 +369,8 @@ Mismo README: [`packages/services/necto-api/README.md`](../packages/services/nec
 ## 10. Frontend: patrones y diseño
 
 **Diseño de referencia:** `referencias html/necto-superlogin.html` (sección 11) y diseño NECTO en StockFlow. Dos columnas:
-formulario a la izquierda y panel de marca a la derecha con fondo interactivo de geometría de marca (`BrandGeometryBackground`),
-aros decorativos (`DecorativeCircles`) y mensajes rotativos con transición escalonada (`RotatingBrandMessages`).
+formulario a la izquierda y panel de marca a la derecha con matriz de puntos blancos que se iluminan al pasar el cursor sin animaciones continuas de fondo (`src/brand/InteractiveDotGrid.tsx`, compartida también con `business-access` sobre panel índigo/oscuro),
+aros decorativos (`DecorativeCircles`), mensajes rotativos con transición escalonada (`RotatingBrandMessages`) y cinco ilustraciones vectoriales estáticas rotativas en `/super/register` (`RegisterScenes`, homólogas a `BrandScenes` en `/business/access`). Ambos módulos comparten enlaces cruzados bidireccionales (`AuthCrossLinks` y `EmailStep`).
 Tema **claro** (panel naranja `#ff3f1a`) y **oscuro** (panel azul profundo `#190088`). Fuente **DM Sans** (300, 400, 700).
 
 **Tokens de marca** (en `src/css/theme.css`): `necto` / `secondary-600` `#190088`, `necto-hover` `#17016c`,

@@ -3,12 +3,11 @@ import "@fontsource/dm-sans/500.css";
 import "@fontsource/dm-sans/600.css";
 import "../styles/business-access.css";
 import { observer } from "mobx-react-lite";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { NectoLogo } from "@/brand/NectoLogo";
 import { PageMeta } from "@/shell/meta";
 import { ThemeIconButton } from "@/shell";
-import { cn } from "@/utils";
 import { BrandPanel } from "../components/BrandPanel";
 import { BusinessPicker } from "../components/BusinessPicker";
 import { CodeStep } from "../components/CodeStep";
@@ -34,24 +33,13 @@ const TITLES: Record<Exclude<AccessView, "loading">, string> = {
 const BusinessAccessPage = observer(() => {
   const store = adminAccessStore;
   const [help, setHelp] = useState<HelpKind | null>(null);
-  const [motion, setMotion] = useState(true);
-
   useEffect(() => {
     void store.start();
   }, [store]);
 
-  // Plays the side panel's animation again: the class has to be removed and put back for CSS to restart it.
-  const replay = useCallback(() => {
-    setMotion(false);
-    requestAnimationFrame(() => requestAnimationFrame(() => setMotion(true)));
-  }, []);
-  useEffect(() => {
-    replay();
-  }, [store.view, replay]);
-
   const view = store.view;
   return (
-    <section className={cn("na-root", motion && "na-motion")} aria-label="Acceso de administradores de negocio" data-view={view}>
+    <section className="na-root" aria-label="Acceso de administradores de negocio" data-view={view}>
       <PageMeta title={TITLES[view === "loading" ? "acceso" : view]} />
       <div className="na-auth">
         <header className="na-header">
@@ -74,12 +62,9 @@ const BusinessAccessPage = observer(() => {
         </main>
         <footer className="na-auth-footer">
           <span>© 2026 Necto</span>
-          <Link to="/super/login">
-            Soy superadministrador <span aria-hidden="true">↗</span>
-          </Link>
         </footer>
       </div>
-      <BrandPanel view={view} onReplay={replay} />
+      <BrandPanel view={view} />
       <HelpDialog kind={help} onClose={() => setHelp(null)} />
     </section>
   );

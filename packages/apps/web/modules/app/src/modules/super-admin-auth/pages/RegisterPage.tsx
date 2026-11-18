@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { Alert } from "@/elements/ui/alert";
 import { PageMeta } from "@/shell/meta";
 import {
@@ -7,6 +7,7 @@ import {
   SuperAdminAuthError,
   type RegisterField,
 } from "../api/superAdminAuthApi";
+import { AuthCrossLinks } from "../components/AuthCrossLinks";
 import { DocumentField, PasswordField, TextField } from "../components/AuthFields";
 import { FormHeading } from "../components/FormHeading";
 import { SubmitButton } from "../components/SubmitButton";
@@ -170,12 +171,12 @@ export default function RegisterPage() {
         </div>
       )}
 
-      <p className="mt-6 text-[14px] font-normal text-[#212121] dark:text-[#ECECEC]">
-        ¿Ya tienes una cuenta?
-        <Link to="/super/login" className="ml-1 font-bold text-[#190088] hover:underline dark:text-[#97D6DF]">
-          Inicia sesión
-        </Link>
-      </p>
+      <AuthCrossLinks
+        prompt="¿Ya tienes una cuenta?"
+        actionLabel="Inicia sesión"
+        to="/super/login"
+        className="mt-6"
+      />
     </section>
   );
 }

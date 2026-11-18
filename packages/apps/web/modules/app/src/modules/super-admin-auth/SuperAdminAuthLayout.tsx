@@ -1,11 +1,12 @@
 import "@fontsource/dm-sans/300.css";
 import "@fontsource/dm-sans/400.css";
+import "@fontsource/dm-sans/500.css";
 import "@fontsource/dm-sans/700.css";
 import "./styles/auth-layout.css";
-import { Link, Outlet } from "react-router";
+import { Link, Outlet, useLocation } from "react-router";
 import { AuthThemeToggle } from "./components/AuthThemeToggle";
-import { BrandGeometryBackground } from "./components/BrandGeometryBackground";
 import { DecorativeCircles } from "./components/DecorativeCircles";
+import InteractiveDotGrid from "@/brand/InteractiveDotGrid";
 import { NectoLogo } from "./components/NectoLogo";
 import {
   BrandMessageDisplay,
@@ -13,6 +14,7 @@ import {
   useRotatingBrandMessages,
   type BrandMessage,
 } from "./components/RotatingBrandMessages";
+import { REGISTER_SLIDES, RegisterSlideArt } from "./components/RegisterScenes";
 
 const BRAND_MESSAGES: BrandMessage[] = [
   {
@@ -31,12 +33,17 @@ const BRAND_MESSAGES: BrandMessage[] = [
 
 /**
  * Layout de acceso del superadmin: formulario a la izquierda y panel de marca
- * (rejilla, brillo y órbitas animadas) a la derecha. Login y registro comparten
- * este layout, así el panel de marca no se reinicia al cambiar de pantalla.
+ * (puntos blancos iluminables al pasar el cursor, brillo y aros) a la derecha. Login y registro
+ * comparten este layout, así el panel de marca no se reinicia al cambiar de pantalla. En el registro, el panel muestra
+ * cinco ilustraciones estáticas (`RegisterScenes.tsx`) que rotan junto con sus mensajes.
  */
 export default function SuperAdminAuthLayout() {
-  const { index, fadeState, selectIndex } = useRotatingBrandMessages(BRAND_MESSAGES.length);
-  const currentMessage = BRAND_MESSAGES[index] ?? BRAND_MESSAGES[0];
+  const isRegister = useLocation().pathname.replace(/\/$/, "").endsWith("/register");
+  const messages = isRegister ? REGISTER_SLIDES.map((slide) => slide.message) : BRAND_MESSAGES;
+  const { index: rawIndex, fadeState, selectIndex } = useRotatingBrandMessages(messages.length);
+  // Login and register rotate different lists through the same timer: keep the index inside the current one.
+  const index = rawIndex % messages.length;
+  const currentMessage = messages[index] ?? messages[0];
 
   return (
     <main className="sa-auth grid min-h-screen lg:grid-cols-2">
@@ -63,7 +70,12 @@ export default function SuperAdminAuthLayout() {
         className="sa-brand-side relative flex items-center justify-center overflow-hidden"
         aria-label="Necto, conecta, comparte y crece"
       >
-        <BrandGeometryBackground />
+        <InteractiveDotGrid
+          dotGap={24}
+          baseRadius={1.5}
+          activeRadius={3.0}
+          glowDistance={160}
+        />
         <div className="dark:hidden">
           <DecorativeCircles variant="brand" />
         </div>
@@ -73,9 +85,17 @@ export default function SuperAdminAuthLayout() {
         <div className="sa-brand-glow" aria-hidden="true" />
 
         <div className="sa-brand-content relative z-10 text-center">
-          <div className="sa-brand-logo-large">
-            <NectoLogo tone="on-brand" />
-          </div>
+          {isRegister ? (
+            <div className="sa-register-scene" aria-hidden="true">
+              <div key={index} className={fadeState === "out" ? "sa-msg-exit" : "sa-scene-enter"}>
+                <RegisterSlideArt slide={REGISTER_SLIDES[index].id} />
+              </div>
+            </div>
+          ) : (
+            <div className="sa-brand-logo-large">
+              <NectoLogo tone="on-brand" />
+            </div>
+          )}
           <div className="sa-brand-divider" />
           <BrandMessageDisplay
             message={currentMessage}
@@ -85,7 +105,7 @@ export default function SuperAdminAuthLayout() {
         </div>
 
         <BrandMessageIndicators
-          count={BRAND_MESSAGES.length}
+          count={messages.length}
           activeIndex={index}
           onSelect={selectIndex}
         />

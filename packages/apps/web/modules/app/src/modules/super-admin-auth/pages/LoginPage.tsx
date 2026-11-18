@@ -1,16 +1,14 @@
 import { useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { Alert } from "@/elements/ui/alert";
 import { PageMeta } from "@/shell/meta";
 import { superAdminAuthApi, SuperAdminAuthError } from "../api/superAdminAuthApi";
+import { AuthCrossLinks } from "../components/AuthCrossLinks";
 import { PasswordField, TextField } from "../components/AuthFields";
 import { FormHeading } from "../components/FormHeading";
 import { SubmitButton } from "../components/SubmitButton";
 import { superAdminSessionStore } from "../stores/superAdminSession.store";
 import { validateIdentifier, validateLoginPassword } from "../validation";
-
-/** Dónde entra el administrador de un negocio (módulo business-access). Solo se conoce la ruta, no el módulo. */
-const BUSINESS_ACCESS_PATH = "/business/access";
 
 /** Texto que ve el usuario según el tipo de error del servicio. */
 function loginErrorMessage(error: unknown): string {
@@ -115,19 +113,12 @@ export default function LoginPage() {
         </div>
       )}
 
-      <p className="mt-7 text-[14px] font-normal text-[#212121] dark:text-[#ECECEC]">
-        ¿Aún no tienes una cuenta?
-        <Link to="/super/register" className="ml-1 font-bold text-[#190088] hover:underline dark:text-[#97D6DF]">
-          Regístrate
-        </Link>
-      </p>
-      {/* Otra puerta, otra persona: quien administra un negocio entra con su correo y un código, no con usuario y contraseña. */}
-      <p className="mt-3 text-[14px] font-normal text-[#212121] dark:text-[#ECECEC]">
-        ¿Administras un negocio?
-        <Link to={BUSINESS_ACCESS_PATH} className="ml-1 font-bold text-[#190088] hover:underline dark:text-[#97D6DF]">
-          Entra a tu negocio <span aria-hidden="true">↗</span>
-        </Link>
-      </p>
+      <AuthCrossLinks
+        prompt="¿Aún no tienes una cuenta?"
+        actionLabel="Regístrate"
+        to="/super/register"
+        className="mt-7"
+      />
     </section>
   );
 }

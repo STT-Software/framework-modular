@@ -4,7 +4,7 @@ Pantallas de **login** y **registro** del SuperAdmin. Consume el módulo `auth` 
 [`necto-api`](../../../../../../services/necto-api/README.md).
 
 El diseño sale de la referencia visual `necto-superlogin` (dos columnas, panel de
-marca con rejilla, brillo y órbitas animadas, tema claro/oscuro). Esa referencia
+marca con matriz de puntos blancos iluminables al pasar el cursor, brillo y aros decorativos, tema claro/oscuro; y cinco ilustraciones estáticas rotativas en el registro). Esa referencia
 vive solo en la máquina de quien la tiene (`referencias html/`, ignorada por git).
 
 ## Rutas
@@ -13,7 +13,7 @@ vive solo en la máquina de quien la tiene (`referencias html/`, ignorada por gi
 |------|----------|
 | `/super` | Redirige a `/super/login`. |
 | `/super/login` | Inicio de sesión con **usuario o correo** y contraseña. Enlaza a `/super/register` y a `/business/access` ("¿Administras un negocio? Entra a tu negocio ↗"): el administrador de un negocio entra por otra puerta, con su correo y un código. |
-| `/super/register` | Registro con usuario, contraseña (y su confirmación), correo, documento de identidad (tipo + número) y aceptación de términos. |
+| `/super/register` | Registro con usuario, contraseña (y su confirmación), correo, documento de identidad (tipo + número) y aceptación de términos. Enlaza a `/super/login` y a `/business/access` ("¿Administras un negocio? Entra a tu negocio ↗"). |
 
 Tras iniciar sesión se guarda la sesión y se navega a `/welcome` (módulo [`onboarding`](../onboarding/README.md)), que al terminar lleva a `/workspace`. Tras registrarse se navega
 a `/super/login` con un aviso de "Cuenta creada" y el usuario ya escrito.
@@ -25,7 +25,7 @@ super-admin-auth/
 ├── index.ts                    Puerta pública: definición del módulo y sesión
 ├── SuperAdminAuthLayout.tsx    Layout compartido (formulario + panel de marca)
 ├── pages/                      LoginPage, RegisterPage
-├── components/                 NectoLogo, AuthFields, TermsCheckbox, SubmitButton, AuthThemeToggle, FormHeading, BrandGeometryBackground
+├── components/                 NectoLogo, AuthFields, TermsCheckbox, SubmitButton, AuthThemeToggle, AuthCrossLinks, FormHeading, DecorativeCircles, RotatingBrandMessages, RegisterScenes
 ├── api/superAdminAuthApi.ts    Cliente HTTP del servicio (timeout y errores tipados)
 ├── stores/                     Sesión del superadmin (MobX + sessionStorage)
 ├── documentTypes.ts            Tipos de documento (CC, CE, PA, NIT)
@@ -53,7 +53,7 @@ forma de entrar.
 - **Elements:** `Button`, `Input`, `Label`, `Alert`, `Select` y `Checkbox`. El acabado Necto (altura, foco
   índigo, flecha animada) se aplica con `className` desde este módulo; los
   componentes de `src/elements/` no se modificaron.
-- **Base común:** `uiStore` (tema), `PageMeta`, `cn`, colores `necto-*` de `css/theme.css`.
+- **Base común:** `uiStore` (tema), `brand/InteractiveDotGrid`, `brand/NectoLogo`, `PageMeta`, `cn`, colores `necto-*` de `css/theme.css`.
 - **Fuente:** DM Sans (`@fontsource/dm-sans`, 400/500/600), cargada solo con este módulo.
 - No importa de ningún otro módulo.
 

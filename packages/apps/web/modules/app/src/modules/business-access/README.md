@@ -11,7 +11,7 @@ ignorada por git), **sin** sus controles de demostración (la barra "VISTA PREVI
 |------|----------|
 | `/business/access` | Acceso de administradores. Es la dirección del enlace del correo (`PUBLIC_APP_URL` en el backend); un `?business=` viejo se ignora. |
 
-Es **pública**: no pasa por la puerta del superadmin. Enlace cruzado: "Soy superadministrador ↗" lleva a `/super/login`.
+Es **pública**: no pasa por la puerta del superadmin. Enlaces cruzados: "¿Eres superadministrador? Inicia sesión o regístrate ↗" (bajo el formulario de correo) llevan a `/super/login` y `/super/register`.
 
 ## Las cinco pantallas
 
@@ -58,7 +58,7 @@ business-access/
 ├── api/businessAccessApi.ts         /api/business-access (VITE_BUSINESS_ACCESS_API_URL en otros entornos), con credenciales
 ├── stores/adminAccess.store.ts      Estado del flujo (MobX)
 ├── pages/BusinessAccessPage.tsx     Marco de dos columnas
-├── components/                      EmailStep, CodeStep, ReturnStep, BusinessPicker, ReadyStep, BrandPanel, HelpDialog
+├── components/                      EmailStep, CodeStep, ReturnStep, BusinessPicker, ReadyStep, BrandPanel (+ BrandScenes: una escena por vista), HelpDialog
 ├── hooks/                           useTick (cuentas atrás) y useFocusHeading
 └── styles/business-access.css       Prefijo `na-`, claro y oscuro (de la referencia)
 ```
@@ -68,4 +68,4 @@ business-access/
 - **Otro módulo**, solo por su puerta pública: `businesses` (`categoryLabel` y `moduleInfo`, para mostrar la categoría y los nombres de los
   módulos). `businesses` no importa a `business-access`: no hay ciclo.
 - **Elements:** `Input` y `Label` (el correo). El campo del código, el selector de negocios y las casillas son propios, como en la referencia.
-- **Base común:** `brand/NectoLogo`, `ThemeIconButton`, `PageMeta`. **Fuente:** DM Sans, cargada solo con este módulo.
+- **Base común:** `brand/NectoLogo`, `brand/InteractiveDotGrid`, `ThemeIconButton`, `PageMeta`. **Fuente:** DM Sans, cargada solo con este módulo.

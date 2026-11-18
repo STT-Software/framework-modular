@@ -50,6 +50,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api\/business-access/, ""),
       },
+      // Mismo backend; prefijo propio del módulo business-setup (configuración inicial del negocio, del administrador).
+      "/api/business-setup": {
+        target: API_URL,
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api\/business-setup/, ""),
+      },
     },
   },
 });

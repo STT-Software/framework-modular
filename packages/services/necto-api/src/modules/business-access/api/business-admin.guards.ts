@@ -3,11 +3,16 @@ import { Reflector } from '@nestjs/core';
 import type { AuthenticatedRequest } from '../../../platform/security/authenticated-user';
 import { AuthenticationGuard } from '../../../platform/security/authentication.guard';
 import { AdminSessionService } from '../application/admin-session.service';
-import { AdministeredBusinessesService } from '../application/administered-businesses.service';
+import { AdministeredBusinessesService, type AdministeredBusiness } from '../application/administered-businesses.service';
 import type { AdminSession } from '../domain/admin-session';
 
 /** A request after `BusinessAdminGuard`: who it is and the server-side session that backs the token. */
-export type AdminRequest = AuthenticatedRequest & { adminSession?: AdminSession; params: Record<string, string> };
+export type AdminRequest = AuthenticatedRequest & {
+  adminSession?: AdminSession;
+  /** Set by `BusinessAdministeredGuard`: the business in `:businessId`, once it is known to be administered by this person. */
+  administeredBusiness?: AdministeredBusiness;
+  params: Record<string, string>;
+};
 
 /**
  * Authorization of an administrator of businesses, checked against the database on EVERY request: the token alone
@@ -69,6 +74,24 @@ export class BusinessModuleGuard implements CanActivate {
   }
 }
 
+/**
+ * Lets the request through only if the business in `:businessId` is administered by the signed-in person right now (current
+ * boss, active business). Unlike `BusinessModuleGuard` it does not ask for any functionality: it is for what every business
+ * has, such as its initial setup. Unknown, paused, someone else's and "not yours" all answer the same 404.
+ */
+@Injectable()
+export class BusinessAdministeredGuard implements CanActivate {
+  constructor(private readonly businesses: AdministeredBusinessesService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<AdminRequest>();
+    const email = request.adminSession?.email;
+    if (!email) throw new UnauthorizedException();
+    request.administeredBusiness = await this.businesses.get(email, request.params.businessId);
+    return true;
+  }
+}
+
 /** Restricts a route to a signed-in administrator of businesses: authenticates the token, then checks the session. */
 export const BusinessAdminOnly = () => applyDecorators(UseGuards(AuthenticationGuard, BusinessAdminGuard));
 
@@ -82,3 +105,9 @@ export const RecentlyVerified = () => applyDecorators(UseGuards(AuthenticationGu
  */
 export const RequiresBusinessModule = (moduleId: string) =>
   applyDecorators(SetMetadata(MODULE_KEY, moduleId), UseGuards(AuthenticationGuard, BusinessAdminGuard, BusinessModuleGuard));
+
+/**
+ * Restricts a route `/…/:businessId/…` to an administrator of THAT business (current boss of an active one), whatever
+ * functionalities it has. The server decides: the business id in the URL is never trusted on its own.
+ */
+export const AdministersBusiness = () => applyDecorators(UseGuards(AuthenticationGuard, BusinessAdminGuard, BusinessAdministeredGuard));

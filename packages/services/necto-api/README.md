@@ -43,7 +43,7 @@ base de MongoDB conservan su nombre histórico `super_admin_auth`: renombrar la 
 | `npm run db:up` / `npm run db:down` | Levanta / detiene MongoDB. Los datos se conservan en el volumen. |
 | `npm run dev:api` | Backend con recarga automática. |
 | `npm run build:api` | Compila. Luego `npm start` dentro de la carpeta del backend. |
-| `npm run test:api` | Pruebas: servicios de `auth` y `onboarding`, DTOs, seguridad, reglas de arquitectura y el script de migración del teléfono. |
+| `npm run test:api` | Pruebas: servicios de los módulos, DTOs, seguridad, reglas de arquitectura y el script de migración del teléfono. |
 
 Para borrar también los datos y volver a crear las bases y usuarios:
 `docker compose -f infra/docker-compose.yml down -v`.
@@ -301,7 +301,7 @@ los negocios de quien los creó** (un negocio ajeno responde `404`, igual que un
 - **Ficha.** Resumen, módulos y equipo; `summary.hasActivity` es `false` (no se inventan métricas). Nunca expone códigos,
   hashes ni secretos.
 - **Puerta pública** (`public.ts`): `BusinessDirectory` (consulta de un negocio y su jefe vigente), el evento `BossAssigned`
-  y `BusinessModuleAccess` (para que un módulo futuro compruebe en el servidor si un módulo está habilitado).
+  y `BusinessModuleAccess` (para que un módulo futuro compruebe en el servidor si un módulo está habilitado), más `AdministeredBusinessProfiles` (lo que el administrador puede leer y corregir de su negocio: contacto y categoría; nunca módulos, jefe, estado, moneda ni zona horaria), los DTOs `BusinessContactDto` y `BusinessCategoryDto` (la misma validación en el formulario del dueño y en el del administrador) y el catálogo.
 
 Datos: colección `businesses`, índices `{ ownerId, idempotencyKey }` (único), `{ ownerId, createdAt }` y
 `{ ownerId, status, category }`.
@@ -384,7 +384,7 @@ Mientras el envío real de correo no esté listo, el **dueño** del negocio pued
   esté **activo** y, por módulo, que lo tenga **habilitado**. Pausar un negocio, reemplazar al jefe o quitar un módulo cierran la
   puerta al instante. Un negocio desconocido, pausado o ajeno responde igual (`404`).
 - Para que un módulo funcional (reservas, turnos...) proteja sus rutas `/…/:businessId/…`, importa `BusinessAccessModule` y usa los
-  decoradores de `business-access/public.ts`: `@BusinessAdminOnly()`, `@RecentlyVerified()` y `@RequiresBusinessModule('reservas')`.
+  decoradores de `business-access/public.ts`: `@BusinessAdminOnly()`, `@RecentlyVerified()`, `@RequiresBusinessModule('reservas')` y `@AdministersBusiness()` (para lo que tiene todo negocio, sin exigir ningún módulo: es el que usa `business-setup`).
 
 ### Correo
 
@@ -420,6 +420,132 @@ decidir si algo es válido). `businesses` suma el índice `{ boss.email, status 
    de un dominio verificado (SPF/DKIM) y un buzón de prueba donde confirmar la recepción. Hasta confirmar la recepción en
    un buzón real, no debe afirmarse que el correo "llegó".
 
+## Módulo business-setup
+Configuración inicial (base) de un negocio, hecha por **su administrador** (el jefe asignado que entra con OTP). Referencia visual:
+`referencias html/necto-negocios-configuracion.html`. Cubre los cuatro pasos de la base: módulos asignados, datos del negocio, horarios,
+tipo de negocio y la revisión. **No** incluye los ajustes propios de cada módulo (filas, operadores, profesionales, reglas...): siguen
+`pending`.
+
+- **Autorización.** Todas las rutas cuelgan de `/business-setup/businesses/:businessId` y llevan `@AdministersBusiness()`
+  (`business-access`): token de administrador, sesión de servidor vigente y, **en cada petición**, que esa persona sea hoy el jefe
+  vigente de ese negocio **activo**. El administrador sale de la sesión, nunca del cuerpo ni de la URL. Sin token `401`; token de
+  superadmin `403`; negocio ajeno, inexistente, pausado, id mal formado o jefe reemplazado, **el mismo `404`**. Un módulo no asignado
+  responde `403` con `code: "module-not-enabled"`.
+- **Un solo negocio como fuente.** Nombre, razón social, NIT, teléfono, correo, dirección, sitio web, categoría, moneda, zona
+  horaria y módulos se **leen y escriben en el documento del negocio** (colección `businesses`) a través del contrato público
+  `AdministeredBusinessProfiles`; no hay copia. Lo que escribe el administrador lo ve el superadministrador en la ficha. La escritura
+  comprueba en la misma operación que sigue siendo el jefe del negocio activo, y sube su `version` (si el dueño estaba editando una
+  copia vieja, recibe `409` en vez de pisar el cambio). El administrador **no puede** cambiar módulos, jefe, estado, moneda ni zona
+  horaria: no existe esa ruta y los cuerpos que traen esos campos se rechazan con `400`. Solo el superadministrador asigna módulos
+  (`POST`/`PUT /businesses`, `@SuperAdminOnly()`).
+- **Lo que guarda este módulo** (colección `business_setups`, un documento por negocio, índice único `businessId`): descripción, logo,
+  horario base, horarios propios de módulos y progreso. Se crea con la primera escritura; leer no crea nada.
+- Todas las respuestas llevan `Cache-Control: no-store`. Las escrituras devuelven el **estado completo** (el mismo de `GET`), así
+  la pantalla se repinta con lo que el servidor guardó.
+
+### Estado completo: `GET /business-setup/businesses/:businessId`
+```json
+{
+  "business": { "id": "…", "status": "active", "currency": "COP", "timezone": "America/Bogota" },
+  "modules": [
+    { "id": "reservas", "name": "Reservas", "description": "…", "schedule": { "mode": "inherited" }, "settings": { "status": "pending" } }
+  ],
+  "profile": { "name": "…", "legalName": null, "taxId": null, "phone": null, "supportEmail": null, "address": null, "website": null, "description": null },
+  "category": { "id": "gastronomy", "other": null },
+  "logo": null,
+  "schedule": {
+    "timezone": "America/Bogota",
+    "base": { "days": { "mon": { "open": true, "ranges": [{ "start": "08:00", "end": "18:00" }] }, "tue": {}, "…": "los 7 días" }, "saved": false, "openNow": true },
+    "modules": { "reservas": { "inherit": true, "days": {}, "ownDays": null, "openNow": true } }
+  },
+  "progress": { "currentStep": null, "visitedSteps": [], "baseReady": false, "baseReadyAt": null }
+}
+```
+- `modules`: **solo** los módulos habilitados para el negocio, en el orden del catálogo (`reservas`, `turnos`, `agendamiento`, `referidos`,
+  `inventario`, `pedidos`). Puede ser `[]`. `schedule.mode` es `inherited` o `custom`; `settings.status` es siempre `pending` en esta etapa.
+- `profile` y `category` son los datos del negocio tal como están ahora (precarga del formulario). `description` es de este módulo.
+- `logo`: `null` o `{ contentType, sizeBytes, updatedAt, url }`. **Los bytes nunca vienen en el JSON**: se piden a `url` (ver Logo).
+- `schedule.base.saved` es `false` mientras nadie guardó un horario: `days` muestra entonces el horario por defecto (lunes a viernes
+  08:00-18:00, sábado 09:00-13:00, domingo cerrado). `schedule.modules.<id>.days` es el horario **efectivo** (el del negocio si hereda,
+  el propio si no) y `ownDays` el propio guardado (se conserva aunque el módulo herede). `openNow` evalúa el instante actual en la zona
+  horaria del negocio (`null` si la zona no sirve).
+- `progress.currentStep` es uno de `data`, `schedule`, `category`, `review` (o `null`); `visitedSteps` no repite. `baseReady` indica que
+  la base se guardó como preparada y nadie la modificó después.
+
+### Rutas
+| Método | Ruta (tras `/business-setup/businesses/:businessId`) | Qué hace |
+|--------|------------------------------------------------------|----------|
+| `GET` | `` | Estado completo; sirve para retomar donde quedó, también en otra sesión. |
+| `GET` | `/modules` | `{ baseReady, modules[] }`: pantalla inicial. |
+| `PUT` | `/profile` | Formulario «Datos del negocio». |
+| `PUT` | `/category` | «Tipo de negocio». |
+| `PUT` | `/logo` · `DELETE /logo` · `GET /logo` | Subir o reemplazar, quitar, descargar el logo. |
+| `PUT` | `/schedule` | Horario base del negocio. |
+| `PUT` | `/schedule/modules/:moduleId` | Hereda o tiene horario propio un módulo asignado. |
+| `PUT` | `/progress` | Recuerda el paso actual. |
+| `POST` | `/complete` | «Guardar configuración base». |
+
+**`PUT /profile`** reemplaza el formulario completo: `{ name, legalName?, taxId?, phone?, supportEmail?, address?, website?, description? }`.
+`name` es obligatorio (2 a 120); un campo omitido o en blanco se **borra**. Las reglas y normalizaciones son exactamente las del formulario del
+superadministrador (`phone` `+573001234567`, `taxId` 4 a 20 caracteres, `website` sin protocolo pasa a `https://…`, correo en minúsculas).
+`description` hasta 500 caracteres. La moneda y la zona horaria **no** son editables y se muestran en solo lectura. Cualquier otro campo
+(`modules`, `boss`, `currency`, `timezone`, `category`, `status`...) responde `400`.
+
+**`PUT /category`**: `{ category, categoryOther? }` con `category` en `gastronomy`, `retail`, `professional-services`, `health-wellness`, `other`.
+Con `other`, `categoryOther` (2 a 60 caracteres) es obligatorio (`400` con `fields.categoryOther`); con otra categoría se descarta. La
+precarga es la categoría registrada por el superadministrador.
+
+**Logo.** `PUT /logo` es `multipart/form-data` con **un** campo de archivo llamado `logo` (nada más). PNG o JPG de **hasta 1 MB**
+(`1 048 576` bytes; más pesa `413`). El tipo se decide por los **bytes** del archivo (firma PNG/JPEG), no por la extensión ni por el
+`Content-Type` que declare el navegador: SVG, GIF, texto o un archivo renombrado dan `400` (`code: "invalid-logo"`, `fields.logo`). Un tipo
+declarado que contradice el contenido también da `400`. `GET /logo` devuelve la imagen con su `Content-Type`, `X-Content-Type-Options: nosniff`
+y `Cache-Control: no-store`; **necesita el `Authorization`**, así que el front la descarga con `fetch` y la muestra con un `blob:` URL (una
+etiqueta `<img src>` directa no envía el token). Sin logo, `404`. `DELETE /logo` es idempotente.
+
+**Horarios.** Cuerpo de `PUT /schedule`: `{ "schedule": { "mon": { "open": true, "ranges": [{ "start": "08:00", "end": "18:00" }] }, "tue": …, "sun": { "open": false, "ranges": [] } } }`
+(días `mon tue wed thu fri sat sun`, los siete obligatorios).
+- Horas `HH:mm` de 24 h (`00:00` a `23:59`), **hora local del negocio**: el servidor no las convierte a UTC. La zona horaria del negocio
+  (`schedule.timezone`, la registrada por el superadministrador) interviene al comparar un instante con ellas (`openNow`).
+- Un día abierto tiene de 1 a 6 franjas; cada franja necesita **apertura y cierre**; el cierre es posterior a la apertura del mismo día
+  (no hay franjas que crucen la medianoche); las franjas de un día no se solapan (una puede empezar justo cuando termina otra). Un día cerrado
+  no guarda franjas. Se guardan ordenadas por apertura.
+- Los errores llegan **todos juntos** y con la ruta del campo: `400 { "code": "invalid-schedule", "message": [...], "fields": { "schedule.mon.ranges.1.end": ["…"] } }`.
+  Nada se guarda si hay un error.
+- **Herencia.** `PUT /schedule/modules/:moduleId` con `{ "inherit": true }` hace que el módulo siga al negocio: cualquier cambio posterior del
+  horario base se refleja de inmediato (se calcula al leer, no se copia). Con `{ "inherit": false, "schedule": {…} }` el módulo usa el suyo,
+  que **no** cambia cuando cambia el del negocio (es la excepción). Con `{ "inherit": false }` sin `schedule` usa el que ya tenía o, si nunca tuvo, una copia del horario del negocio en ese
+  momento. Al volver a `inherit: true` el horario propio se **conserva** (`ownDays`), y reaparece si se vuelve a `inherit: false`. Un módulo
+  que el superadministrador retira deja de aparecer y de poder configurarse; si se vuelve a asignar, recupera su excepción.
+
+**`PUT /progress`**: `{ "step": "data" | "schedule" | "category" | "review" }`. Solo recuerda dónde está la persona; no valida el orden ni cambia
+`baseReady`. Cada paso guarda lo suyo con su ruta, así que **cerrar sesión no pierde nada**: al volver, `GET` devuelve todo.
+
+**`POST /complete`** («Guardar configuración base»): vuelve a validar lo que tiene la base (nombre, `other` con descripción, horario base y
+horarios propios) y marca **solo la base** como preparada (`progress.baseReady: true`, `baseReadyAt`, `currentStep: "review"`). Repetirlo no cambia la
+fecha. Si algo no es válido: `409 { "code": "setup-incomplete", "fields": {…} }`. **Cualquier cambio posterior** de datos, tipo, logo u horarios
+(no el de paso) la vuelve a `baseReady: false`: hay que revisarla y guardarla otra vez. Los ajustes de cada módulo no se marcan: siguen
+`settings.status: "pending"`.
+
+### Errores
+`400` validación (`message` lista de textos y `fields` por campo, como el resto de la API) · `401` sin token o sesión terminada
+(`code: "session-expired"`) · `403` token de superadmin, o módulo no asignado (`code: "module-not-enabled"`) · `404` negocio que no administras · `409`
+`setup-incomplete` · `413` logo de más de 1 MB.
+
+### Cómo conectar el HTML (`necto-negocios-configuracion`)
+| Pantalla / acción del HTML | Backend |
+|----------------------------|---------|
+| Elegir negocio (`no-business-context`) | `GET /business-access/businesses` (ya existe) y luego `GET /business-setup/businesses/:id` |
+| Pantalla de módulos (`negocio-modulos`), «Base preparada» | `modules` y `progress.baseReady` del estado |
+| Datos (`negocio-datos`): `name phone email address legal tax website about` | `profile`: `name phone supportEmail address legalName taxId website description` → `PUT /profile` |
+| Logo (`no-logo-file`, quitar) | `PUT` / `DELETE /logo`; `logo.url` para mostrarlo |
+| Horarios, pestañas Negocio / módulo, «Heredar» | `PUT /schedule`, `PUT /schedule/modules/:id` |
+| Tipo (`negocio-tipo`), «Otra» | `PUT /category` (`Otra` → `other` + `categoryOther`) |
+| Siguiente / Atrás entre pasos | `PUT /progress` |
+| «Guardar configuración base» | `POST /complete` |
+Las claves del HTML (`legal`, `tax`, `email`, `about`, categorías en español) se traducen a las del contrato en el cliente del módulo.
+Las claves de categoría: `Gastronomía`→`gastronomy`, `Retail y boutique`→`retail`, `Servicios profesionales`→`professional-services`,
+`Salud y bienestar`→`health-wellness`, `Otra`→`other`.
+
 ## Estructura
 
 ```
@@ -452,7 +578,8 @@ src/
     │   ├── domain/              Perfil, orígenes permitidos, normalización del teléfono, errores y el puerto del repositorio
     │   └── infrastructure/      Esquemas de Mongo y repositorio de `onboarding_profiles` y `onboarding_intro_views`
     ├── businesses/              Negocios, jefe vigente y módulos habilitados (colección `businesses`)
-    └── business-access/         Acceso de administradores por OTP, sesiones y permisos (`access_challenges`, `access_rate_limits`, `admin_sessions`)
+    ├── business-access/         Acceso de administradores por OTP, sesiones y permisos (`access_challenges`, `access_rate_limits`, `admin_sessions`)
+    └── business-setup/          Configuración inicial del negocio por su administrador (`business_setups`)
 ```
 
 Dentro de un módulo, las capas dependen en una sola dirección: `api` y `infrastructure` -> `application` y `domain`;
@@ -467,6 +594,7 @@ habla con un repositorio abstracto (`domain/*.repository.ts`) que implementa `in
 | `onboarding` | Teléfono (único entre usuarios), dónde conoció Necto el usuario y si ya vio la intro | Colecciones `onboarding_profiles` y `onboarding_intro_views` | `/onboarding/profile/*` |
 | `businesses` | Negocios, jefe vigente, catálogo y habilitación de módulos | Colección `businesses` | `/businesses/*` |
 | `business-access` | Invitación por correo, acceso de administradores con OTP, sesiones y permisos por negocio/módulo | `access_challenges`, `access_rate_limits`, `admin_sessions` | `/business-access/*`, `/businesses/:id/invitation*` |
+| `business-setup` | Configuración inicial del negocio por su administrador: datos, logo, horarios (propios o heredados), tipo y progreso | `business_setups` | `/business-setup/businesses/:businessId/*` |
 
 - **Puertas públicas.** `modules/<módulo>/public.ts` es lo único que otro código puede importar de un módulo. Hoy exporta
   el módulo de Nest (para que `app.module.ts` lo registre) y, si otro módulo lo necesita, contratos: `businesses` exporta
@@ -510,6 +638,12 @@ Son tres cosas distintas y viven en lugares distintos:
 - **`business-access`:** códigos por correo (un solo uso, vencimiento, intentos, límites, carrera de dos verificaciones), invitación y
   reenvío, estados de entrega del correo (sin afirmar entrega), inicio de sesión de varios negocios, sesiones (normal, recordada
   hasta 30 días, caducidad, renovación y revocación), reverificación, y los guards de permisos por negocio y módulo.
+- **`business-setup`:** permisos (otro administrador, negocio inexistente, pausado o con jefe reemplazado, módulo no asignado, nada se escribe), aislamiento
+  entre negocios (incluido un mismo jefe con dos), datos del negocio escritos en el **mismo** negocio del dueño, tipo «Otra», validación de horarios con la ruta de
+  cada error, herencia y excepciones de módulos, persistencia al cerrar y volver a abrir sesión, logo (firma real, 1 MB, tipo declarado), progreso y «base preparada»
+  (se invalida con cualquier cambio, no con el paso), DTOs y los guards declarados en los controladores. Con `NECTO_TEST_MONGODB_URI` apuntando a la base de desarrollo,
+  `mongo-business-setup.repository.spec.ts` también prueba el repositorio contra MongoDB real (usa ids propios y los borra al terminar):
+  `NECTO_TEST_MONGODB_URI="$(grep ^MONGODB_URI= .env | cut -d= -f2-)" npm test`.
 - **Arquitectura** (`src/architecture.spec.ts`): lee los imports reales y comprueba que `platform/` no depende de los
   módulos, que los módulos solo se alcanzan por `public.ts`, que las capas respetan su sentido, que Mongoose solo está en
   `infrastructure`, que `@nestjs/jwt` solo está en `platform/security` y `nodemailer` solo en `platform/mail`, y que no hay ciclos entre archivos ni entre módulos.

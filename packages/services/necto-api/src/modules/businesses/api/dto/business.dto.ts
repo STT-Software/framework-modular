@@ -8,15 +8,11 @@ import {
   IsIn,
   IsOptional,
   IsString,
-  IsUrl,
-  Matches,
   MaxLength,
   MinLength,
-  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import {
-  BUSINESS_CATEGORY_IDS,
   BUSINESS_MODULE_IDS,
   DEFAULT_CURRENCY,
   DEFAULT_TIMEZONE,
@@ -24,20 +20,9 @@ import {
   type BusinessModuleId,
 } from '../../domain/catalog';
 import type { BusinessDraft } from '../../domain/business';
-import { normalizeEmail, optionalText } from '../../../../platform/text/normalize';
+import { asEmail, trimmed } from './field-transforms';
+import { BusinessContactDto, CategoryField, CategoryOtherField } from './profile-fields.dto';
 import { canonicalTimeZone, IsCurrencyCode, IsIanaTimeZone } from './validators';
-
-/** Trimmed text; an empty string becomes null so "left blank" and "not sent" mean the same. */
-const blankToNull = ({ value }: { value: unknown }) => (typeof value === 'string' ? optionalText(value) : value);
-const trimmed = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
-const asEmail = ({ value }: { value: unknown }) => (typeof value === 'string' ? normalizeEmail(value) : value);
-
-/** Adds https:// to a website typed without a scheme, so "mishop.co" is accepted. */
-const asWebsite = ({ value }: { value: unknown }) => {
-  const text = typeof value === 'string' ? optionalText(value) : value;
-  return typeof text === 'string' && !/^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? `https://${text}` : text;
-};
-
 export class BossDto {
   @Transform(trimmed)
   @IsString()
@@ -52,60 +37,12 @@ export class BossDto {
 }
 
 /** The data of a business, for creating one and for editing it (the owner is never part of it: it comes from the session). */
-export class BusinessDto {
-  @Transform(trimmed)
-  @IsString()
-  @MinLength(2, { message: 'name must be at least 2 characters long' })
-  @MaxLength(120, { message: 'name must be at most 120 characters long' })
-  name: string;
-
-  @Transform(blankToNull)
-  @IsOptional()
-  @IsString()
-  @MaxLength(150)
-  legalName?: string | null;
-
-  /** Tax id (NIT): letters, digits, dots and hyphens; spaces are removed. */
-  @Transform(({ value }) => (typeof value === 'string' ? optionalText(value.replace(/\s+/g, '')) : value))
-  @IsOptional()
-  @Matches(/^[A-Za-z0-9][A-Za-z0-9.-]{3,19}$/, { message: 'taxId must be 4 to 20 characters: letters, digits, dots or hyphens' })
-  taxId?: string | null;
-
-  /** Dots, spaces, hyphens and parentheses are removed: "+57 (300) 123-4567" is stored as +573001234567. */
-  @Transform(({ value }) => (typeof value === 'string' ? optionalText(value.replace(/[\s().-]/g, '')) : value))
-  @IsOptional()
-  @Matches(/^\+?[0-9]{7,15}$/, { message: 'phone must have 7 to 15 digits, with an optional leading +' })
-  phone?: string | null;
-
-  @Transform(blankToNull)
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  address?: string | null;
-
-  @Transform(({ value }) => (typeof value === 'string' ? optionalText(normalizeEmail(value)) : value))
-  @IsOptional()
-  @IsEmail({}, { message: 'supportEmail must be a valid email address' })
-  @MaxLength(254)
-  supportEmail?: string | null;
-
-  @Transform(asWebsite)
-  @IsOptional()
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { message: 'website must be a valid http or https URL' })
-  @MaxLength(200)
-  website?: string | null;
-
-  @IsIn(BUSINESS_CATEGORY_IDS, { message: `category must be one of: ${BUSINESS_CATEGORY_IDS.join(', ')}` })
+export class BusinessDto extends BusinessContactDto {
+  @CategoryField()
   category: BusinessCategoryId;
-
   /** Required when the category is "other"; ignored for any other category. */
-  @Transform(blankToNull)
-  @ValidateIf((dto: BusinessDto) => dto.category === 'other')
-  @IsString({ message: 'categoryOther is required when the category is "other"' })
-  @MinLength(2, { message: 'categoryOther must be at least 2 characters long' })
-  @MaxLength(60, { message: 'categoryOther must be at most 60 characters long' })
+  @CategoryOtherField()
   categoryOther?: string | null;
-
   @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
   @IsOptional()
   @IsCurrencyCode()

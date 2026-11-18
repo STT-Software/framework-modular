@@ -19,7 +19,7 @@ módulo por cada uno.
 
 | Parte | Estado |
 |-------|--------|
-| Backend | Alineado: un **monolito modular**, `packages/services/necto-api`. Una sola aplicación (un proceso, un puerto, una conexión a MongoDB) con `platform/` (infraestructura transversal) y `modules/` (un módulo por capacidad: `auth`, `onboarding`, `businesses` y `business-access`), cada uno con sus capas y su puerta pública. |
+| Backend | Alineado: un **monolito modular**, `packages/services/necto-api`. Una sola aplicación (un proceso, un puerto, una conexión a MongoDB) con `platform/` (infraestructura transversal) y `modules/` (un módulo por capacidad: `auth`, `onboarding`, `businesses`, `business-access` y `business-setup`), cada uno con sus capas y su puerta pública. |
 | Frontend | Alineado para cinco módulos: `src/modules/super-admin-auth/` (login y registro), `src/modules/onboarding/` (bienvenida y pasos de perfil), `src/modules/workspace/` (el marco y las rutas del workspace), `src/modules/businesses/` (negocios: store, asistente, tarjetas y ficha; sin rutas propias, el workspace los monta) y `src/modules/business-access/` (acceso público del jefe con código por correo). Lo común sin reglas de negocio, como el logotipo (`src/brand/`), vive en la base común. `src/app/` registra los módulos (`modules.ts`) y renderiza sus rutas con carga diferida y `ModuleBoundary`. El resto del scaffolding de WebIAI Elements sigue organizado por tipo técnico (`pages/`, `elements/`, `shell/`...) y hace de base común. |
 
 ## Principios
@@ -108,7 +108,8 @@ packages/services/necto-api/           ← el backend (el nombre es el de la apl
         │   └── infrastructure/        ← esquemas de Mongo y repositorios
         ├── onboarding/ ...            ← misma forma
         ├── businesses/ ...            ← negocios, jefe vigente y módulos habilitados
-        └── business-access/ ...       ← acceso de administradores por OTP, sesiones y permisos (depende de businesses/public)
+        ├── business-access/ ...       ← acceso de administradores por OTP, sesiones y permisos (depende de businesses/public)
+        └── business-setup/ ...        ← configuración inicial del negocio por su administrador (depende de businesses/public y business-access/public)
 
 infra/                                 ← infraestructura de desarrollo compartida
 ├── docker-compose.yml                 ← MongoDB
@@ -280,4 +281,9 @@ export const superAdminAuthModule = {
 - **Contratos públicos entre módulos:** el primer consumidor real es `business-access`, que usa `businesses/public`
   (`BusinessDirectory`, `BusinessModuleAccess` y el evento `BossAssigned`). El sentido es único: `businesses` no importa
   a `business-access`; le avisa por el bus de eventos (`platform/events`) y así no hay ciclo. `business-access` exporta a su vez decoradores
-  (`@BusinessAdminOnly`, `@RecentlyVerified`, `@RequiresBusinessModule`) para que los módulos funcionales futuros protejan sus rutas.
+  (`@BusinessAdminOnly`, `@RecentlyVerified`, `@RequiresBusinessModule`, `@AdministersBusiness`) para que los módulos funcionales futuros protejan sus rutas.
+  `business-setup` es el segundo consumidor: usa `business-access/public` (quién es el administrador de qué negocio) y `businesses/public`
+  (`AdministeredBusinessProfiles`: leer y corregir los datos del negocio **en el documento del dueño**, sin copia y sin poder tocar módulos,
+  jefe, estado, moneda ni zona horaria). Ningún módulo importa a `business-setup`; si uno futuro necesita saber si la base está lista, se publica su contrato en `business-setup/public.ts`.
+- **Errores de dominio de validación:** `DomainError` admite `kind: 'invalid'` (`400`) con `fields` por ruta (`schedule.mon.ranges.0.end`), para reglas
+  que no caben en un DTO (horarios). El cuerpo conserva la forma de un error de DTO.

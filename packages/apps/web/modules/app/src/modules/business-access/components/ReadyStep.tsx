@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { useId } from "react";
+import { Link } from "react-router";
 import { categoryLabel, moduleInfo, type CategoryId } from "@/modules/businesses";
 import { useFocusHeading } from "../hooks/useFocusHeading";
 import { businessInitials } from "../initials";
@@ -61,6 +62,12 @@ export const ReadyStep = observer(() => {
         </svg>
         <span>{store.remember ? "Elegiste recordar este dispositivo personal durante 30 días." : "Acceso verificado para esta sesión."}</span>
       </div>
+      <Link to={`/business/setup/${business.id}`} className="na-primary">
+        Preparar mi negocio
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 12h14m-6-6 6 6-6 6" />
+        </svg>
+      </Link>
       {store.businesses.length > 1 && (
         <button type="button" className="na-secondary" onClick={() => store.backToBusinesses()}>
           Cambiar de negocio

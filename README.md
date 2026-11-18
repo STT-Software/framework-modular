@@ -39,7 +39,7 @@ sobre un mismo proyecto con flujo de Pull Requests.
                 └── app/         Aplicación React + Vite + Tailwind
                     └── src/
                         ├── app/       App, shell, sidebar y registro de módulos
-                        ├── modules/   Módulos de negocio (super-admin-auth, onboarding, workspace)
+                        ├── modules/   Módulos de negocio (super-admin-auth, onboarding, workspace, businesses, business-access, business-setup)
                         ├── pages/     Páginas del scaffolding
                         ├── elements/  Componentes UI compartidos
                         ├── layouts/   Layouts base

@@ -12,4 +12,4 @@ export { CATEGORIES, categoryLabel, moduleInfo } from "./catalog";
 export { downloadBlob } from "./download";
 export { businessErrorMessage } from "./errors";
 export { businessesStore, PAGE_SIZE } from "./stores/businesses.store";
-export type { Business, BusinessFilters, BusinessStatus, CategoryId } from "./types";
+export type { Business, BusinessFilters, BusinessStatus, CategoryId, ModuleId } from "./types";

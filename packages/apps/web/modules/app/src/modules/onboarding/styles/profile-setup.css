@@ -13,8 +13,8 @@
 }
 .dark .ob-setup {
   --ob-setup-bg:#101828;--ob-setup-ink:#f2f4f7;--ob-setup-muted:#98a2b3;--ob-setup-border:#344054;
-  --ob-setup-primary:#6250e8;--ob-setup-primary-hover:#7464f0;--ob-setup-accent:#ff805e;
-  --ob-setup-soft:#ff805e12;--ob-setup-control:#ffffff04;--ob-setup-choice-border:#344054;--ob-setup-chosen:#6250e814;
+  --ob-setup-primary:#ff3f1a;--ob-setup-primary-hover:#e5351a;--ob-setup-accent:#ff3f1a;
+  --ob-setup-soft:#ff3f1a14;--ob-setup-control:#ffffff04;--ob-setup-choice-border:#344054;--ob-setup-chosen:#ff3f1a14;
   --ob-setup-error:#fda29b;--ob-setup-success:#75e0a7;
 }
 .ob-setup * {box-sizing:border-box;}
@@ -134,13 +134,11 @@
   --ob-setup-line: #e6dece;
   --ob-setup-glyph: #190088;
   --ob-setup-glyph-soft: #f7f3ec;
-  --ob-setup-art-bg: #f5efe3;
 }
 .dark .ob-setup {
   --ob-setup-line: #ffffff1c;
   --ob-setup-glyph: #ddd6ff;
   --ob-setup-glyph-soft: #ffffff0d;
-  --ob-setup-art-bg: #100548;
 }
 
 .ob-setup-aside {
@@ -152,8 +150,6 @@
   max-width: 480px;
   margin: 0 auto 32px;
   padding: 22px 20px 20px;
-  border-radius: 28px;
-  background: var(--ob-setup-art-bg);
 }
 .ob-setup-art {
   width: 100%;

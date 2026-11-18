@@ -35,7 +35,7 @@
   --ob-paper: #1a0c5e;
   --ob-line: rgba(217, 208, 255, 0.2);
   --ob-ghost: rgba(255, 255, 255, 0.06);
-  --ob-button: #6250e8;
+  --ob-button: #ff3f1a;
   --ob-finale: #07021f;
   --ob-geo-line: rgba(217, 208, 255, 0.08);
 }
@@ -780,9 +780,9 @@
  * cortinilla naranja en el 2) y del tema. El cierre (acto 3) es la animación del logotipo, con sus propias clases.
  */
 .ob-art-scene {
-  /* Actos 0 y 1 sobre el crema (tema claro): tarjetas blancas con borde cálido, órbitas y enlaces índigo. */
+  /* Las superficies vectoriales son siempre blancas con tinta índigo; solo las órbitas, enlaces y sombras del fondo se adaptan. */
   --ob-art-paper: #ffffff;
-  --ob-art-line: #e6dece;
+  --ob-art-line: #dfe4ef;
   --ob-art-blue: #190088;
   --ob-art-cyan: #97d6df;
   --ob-art-accent: #ff3f1a;
@@ -793,19 +793,15 @@
   --ob-art-shadow: rgba(25, 0, 136, 0.07);
 }
 
-/* Actos 0 y 1 sobre el índigo profundo del tema oscuro (como el panel oscuro de /business/access). */
+/* En tema oscuro las tarjetas siguen siendo blancas; solo las órbitas, enlaces y destellos de fondo pasan a claros. */
 .dark .ob-art-scene {
-  --ob-art-paper: #21165d;
-  --ob-art-line: #ffffff15;
-  --ob-art-blue: #ddd6ff;
-  --ob-art-mark: #b7adff;
-  --ob-art-orbit: #ffffff15;
-  --ob-art-link: rgba(221, 214, 255, 0.22);
-  --ob-art-spark: rgba(221, 214, 255, 0.65);
-  --ob-art-shadow: rgba(0, 0, 0, 0.13);
+  --ob-art-orbit: rgba(255, 255, 255, 0.3);
+  --ob-art-link: rgba(255, 255, 255, 0.5);
+  --ob-art-spark: rgba(255, 255, 255, 0.85);
+  --ob-art-shadow: rgba(0, 0, 0, 0.22);
 }
 
-/* Acto 2 sobre la cortinilla naranja (como el panel claro de /super/register). */
+/* Acto 2 sobre la cortinilla naranja: tarjetas blancas y órbitas blancas tanto en claro como en oscuro. */
 .ob-art-scene[data-act="2"] {
   --ob-art-paper: #ffffff;
   --ob-art-line: #dfe4ef;
@@ -815,14 +811,6 @@
   --ob-art-link: rgba(255, 255, 255, 0.5);
   --ob-art-spark: rgba(255, 255, 255, 0.85);
   --ob-art-shadow: rgba(138, 29, 8, 0.2);
-}
-
-/* En oscuro, el naranja no cambia: las tarjetas pasan a índigo profundo y las órbitas siguen en blanco. */
-.dark .ob-art-scene[data-act="2"] {
-  --ob-art-paper: #21165d;
-  --ob-art-line: #ffffff1c;
-  --ob-art-blue: #ddd6ff;
-  --ob-art-mark: #b7adff;
 }
 
 .ob-scene-art {

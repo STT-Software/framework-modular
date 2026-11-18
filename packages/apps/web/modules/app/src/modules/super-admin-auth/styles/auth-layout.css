@@ -183,11 +183,6 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
   --sa-art-cyan: #97d6df;
   --sa-art-accent: #ff3f1a;
 }
-.dark .sa-brand-side {
-  --sa-art-paper: #2a1997;
-  --sa-art-line: #ffffff1c;
-  --sa-art-blue: #ddd6ff;
-}
 
 .sa-register-scene { position: relative; width: 100%; max-width: 460px; aspect-ratio: 460 / 350; margin: 0 auto 6px; }
 .sa-register-scene > div { position: absolute; inset: 0; }
@@ -217,8 +212,4 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
 .sa-art-check { fill: none; stroke: #190088; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .sa-art-on-accent { fill: #fff; stroke: none; }
 .sa-art-dash-accent { stroke: var(--sa-art-accent); stroke-width: 1.3; stroke-dasharray: 4 4; }
-.dark .sa-art-orbit, .dark .sa-art-orbit-solid { stroke: var(--sa-art-line); }
-.dark .sa-art-link { stroke: var(--sa-art-blue); stroke-opacity: 0.22; }
-.dark .sa-art-spark { fill: var(--sa-art-blue); opacity: 0.65; }
 .dark .sa-art-shadow { fill: #0003; }
-.dark .sa-art-mark path[fill="#190088"] { fill: #b7adff; }

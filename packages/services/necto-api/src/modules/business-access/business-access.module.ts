@@ -8,7 +8,7 @@ import { TimeModule } from '../../platform/time/time.module';
 import { BusinessesModule } from '../businesses/public';
 import { accessPolicyFromConfig } from './access-policy.provider';
 import { AdminAccessController } from './api/admin-access.controller';
-import { BusinessAdminGuard, BusinessModuleGuard, RecentVerificationGuard } from './api/business-admin.guards';
+import { BusinessAdminGuard, BusinessAdministeredGuard, BusinessModuleGuard, RecentVerificationGuard } from './api/business-admin.guards';
 import { InvitationsController } from './api/invitations.controller';
 import { AccessCodeService } from './application/access-code.service';
 import { AccessMailer } from './application/access-mailer';
@@ -62,9 +62,10 @@ import { RateLimitRecord, RateLimitSchema } from './infrastructure/rate-limit.sc
     BusinessAdminGuard,
     RecentVerificationGuard,
     BusinessModuleGuard,
+    BusinessAdministeredGuard,
     BusinessEventsSubscriber,
   ],
   // What a module that serves a functionality needs to use `@BusinessAdminOnly()` / `@RequiresBusinessModule()` on its routes.
-  exports: [AdminSessionService, AdministeredBusinessesService, BusinessAdminGuard, RecentVerificationGuard, BusinessModuleGuard],
+  exports: [AdminSessionService, AdministeredBusinessesService, BusinessAdminGuard, RecentVerificationGuard, BusinessModuleGuard, BusinessAdministeredGuard],
 })
 export class BusinessAccessModule {}

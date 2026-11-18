@@ -176,8 +176,23 @@ class AdminAccessStore {
     }
   }
 
+  /**
+   * For the pages of an administrator that come after signing in (the business setup): is there a usable session? Without a
+   * token in memory (the page was reloaded) it asks the server, by the HttpOnly cookie, for a new one. False when the session
+   * ended: the caller sends the person to the access page.
+   */
+  async ensureSession(): Promise<boolean> {
+    if (this.accessToken) return true;
+    try {
+      this.applyGrant(await businessAccessApi.refresh());
+      return true;
+    } catch (error) {
+      if (error instanceof AccessError && error.kind === "session-expired") return false;
+      throw error;
+    }
+  }
   /** Runs a call with the access token; if it expired, renews it once from the session cookie and tries again. */
-  private async withToken<T>(call: (token: string) => Promise<T>): Promise<T> {
+  async withToken<T>(call: (token: string) => Promise<T>): Promise<T> {
     if (!this.accessToken) throw new AccessError("session-expired", 401, "No session");
     try {
       return await call(this.accessToken);

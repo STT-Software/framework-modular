@@ -5,7 +5,7 @@ import { Reflector } from '@nestjs/core';
 import type { AuthenticatedUser } from '../../../platform/security/authenticated-user';
 import { ModuleNotEnabledError, ReverificationRequiredError, SessionExpiredError, BusinessNotAdministeredError } from '../domain/errors';
 import { aBusiness, setupAdminAccess } from '../fakes.spec';
-import { BusinessAdminGuard, BusinessModuleGuard, RecentVerificationGuard, RequiresBusinessModule, type AdminRequest } from './business-admin.guards';
+import { BusinessAdministeredGuard, BusinessAdminGuard, BusinessModuleGuard, RecentVerificationGuard, RequiresBusinessModule, type AdminRequest } from './business-admin.guards';
 
 function contextFor(request: Partial<AdminRequest>, handler: () => void = () => undefined): ExecutionContext {
   return { switchToHttp: () => ({ getRequest: () => request }), getHandler: () => handler, getClass: () => class {} } as unknown as ExecutionContext;
@@ -125,5 +125,52 @@ describe('BusinessModuleGuard (does this business have the functionality, and is
   it('answers 401 when no session was checked before it', async () => {
     const setup = setupAdminAccess();
     await assert.rejects(guardFor(setup).canActivate(contextFor({ params: { businessId: setup.business.id } }, handlerFor('reservas'))), UnauthorizedException);
+  });
+});
+
+describe('BusinessAdministeredGuard (is this business yours, whatever functionalities it has?)', () => {
+  /** Signs in first (the person was the boss then); what changes afterwards is what the guard must notice. */
+  async function run(setup: ReturnType<typeof setupAdminAccess>, businessId: string, email = setup.business.boss.email, change?: () => void) {
+    const { started } = await setup.signIn();
+    change?.();
+    const request: Partial<AdminRequest> = { adminSession: { ...started.session, email }, params: { businessId } };
+    const allowed = await new BusinessAdministeredGuard(setup.administered).canActivate(contextFor(request));
+    return { allowed, request };
+  }
+
+  it('lets through the current boss of an active business and leaves the business on the request', async () => {
+    const setup = setupAdminAccess();
+    const { allowed, request } = await run(setup, setup.business.id);
+    assert.equal(allowed, true);
+    assert.equal(request.administeredBusiness?.id, setup.business.id);
+  });
+
+  it('does not ask for any functionality: a business with none enabled is still administered', async () => {
+    const setup = setupAdminAccess();
+    assert.equal((await run(setup, setup.business.id, undefined, () => setup.directory.set({ ...setup.business, modules: [] }))).allowed, true);
+  });
+
+  it('answers the same not-found for a business of someone else, an unknown one and a paused one', async () => {
+    const someoneElses = setupAdminAccess();
+    someoneElses.directory.set(aBusiness({ id: 'e'.repeat(24), boss: { assignmentId: 'assignment-5', name: 'Luis', email: 'luis@otro.co' } }));
+    await assert.rejects(run(someoneElses, 'e'.repeat(24)), BusinessNotAdministeredError);
+    const unknown = setupAdminAccess();
+    await assert.rejects(run(unknown, 'f'.repeat(24)), BusinessNotAdministeredError);
+    const paused = setupAdminAccess();
+    await assert.rejects(
+      run(paused, paused.business.id, undefined, () => paused.directory.set({ ...paused.business, status: 'paused' })),
+      BusinessNotAdministeredError,
+    );
+  });
+
+  it('stops working when the boss is replaced', async () => {
+    const setup = setupAdminAccess();
+    const replaced = () => setup.directory.set({ ...setup.business, boss: { assignmentId: 'assignment-2', name: 'Luis', email: 'luis@cafecentral.co' } });
+    await assert.rejects(run(setup, setup.business.id, undefined, replaced), BusinessNotAdministeredError);
+  });
+
+  it('answers 401 when no session was checked before it', async () => {
+    const setup = setupAdminAccess();
+    await assert.rejects(new BusinessAdministeredGuard(setup.administered).canActivate(contextFor({ params: { businessId: setup.business.id } })), UnauthorizedException);
   });
 });

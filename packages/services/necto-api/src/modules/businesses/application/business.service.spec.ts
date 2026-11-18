@@ -6,6 +6,7 @@ import type { BusinessDraft } from '../domain/business';
 import { BusinessNotFoundError, ConcurrentModificationError, IdempotencyKeyReusedError } from '../domain/errors';
 import { BossAssigned } from '../domain/events';
 import { InMemoryBusinessRepository } from '../fakes.spec';
+import { AdministeredBusinessProfilesService } from './administered-business-profiles.service';
 import { BusinessDirectoryService, BusinessModuleAccessService } from './business-directory.service';
 import { BusinessService } from './business.service';
 
@@ -236,5 +237,77 @@ describe('public contracts of the businesses module', () => {
     await service.pause(OWNER, business.id);
     assert.equal(await access.isEnabled(business.id, 'reservas'), false, 'a paused business blocks its functionalities');
     assert.equal(await access.isEnabled('missing', 'reservas'), false);
+  });
+});
+
+describe('what the administrator of a business may change of it', () => {
+  const contact = {
+    name: 'Café Central Chapinero',
+    legalName: null,
+    taxId: '900999888-1',
+    phone: null,
+    address: 'Carrera 13 # 60-10',
+    supportEmail: null,
+    website: null,
+  };
+
+  async function created() {
+    const { service, repository } = setup();
+    const { business } = await service.create(OWNER, draft({ modules: ['reservas', 'pedidos'] }), 'key-0000001');
+    return { service, repository, business, profiles: new AdministeredBusinessProfilesService(repository) };
+  }
+
+  it('is visible and editable only for the current boss of an active business', async () => {
+    const { service, business, profiles } = await created();
+    assert.equal((await profiles.find('ana@cafecentral.co', business.id))?.name, 'Café Central');
+    assert.equal(await profiles.find('luis@otro.co', business.id), null);
+    assert.equal(await profiles.find('ana@cafecentral.co', 'missing'), null);
+    assert.equal(await profiles.updateContact('luis@otro.co', business.id, contact), null);
+    assert.equal(await profiles.updateCategory('luis@otro.co', business.id, { category: 'retail', categoryOther: null }), null);
+
+    await service.pause(OWNER, business.id);
+    assert.equal(await profiles.find('ana@cafecentral.co', business.id), null, 'a paused business closes the door');
+    assert.equal(await profiles.updateContact('ana@cafecentral.co', business.id, contact), null);
+  });
+
+  it('loses access the moment the owner replaces the boss', async () => {
+    const { service, business, profiles } = await created();
+    await service.update(OWNER, business.id, draft({ modules: ['reservas', 'pedidos'] }, { name: 'Luis', email: 'luis@cafecentral.co' }));
+    assert.equal(await profiles.find('ana@cafecentral.co', business.id), null);
+    assert.equal(await profiles.updateContact('ana@cafecentral.co', business.id, contact), null);
+    assert.equal((await profiles.find('luis@cafecentral.co', business.id))?.id, business.id);
+  });
+
+  it('changes the contact data on the owner\'s own business, and the owner sees it', async () => {
+    const { service, business, profiles } = await created();
+    const updated = await profiles.updateContact('ana@cafecentral.co', business.id, contact);
+    assert.equal(updated?.name, 'Café Central Chapinero');
+    assert.equal(updated?.phone, null);
+    const seenByOwner = await service.get(OWNER, business.id);
+    assert.equal(seenByOwner.name, 'Café Central Chapinero');
+    assert.equal(seenByOwner.address, 'Carrera 13 # 60-10');
+    assert.equal(seenByOwner.version, business.version + 1, 'it counts as a change, so an owner editing a stale copy gets a conflict instead of overwriting it');
+  });
+
+  it('cannot change the modules, the boss, the status, the currency or the time zone', async () => {
+    const { service, business, profiles } = await created();
+    await profiles.updateContact('ana@cafecentral.co', business.id, contact);
+    await profiles.updateCategory('ana@cafecentral.co', business.id, { category: 'retail', categoryOther: null });
+    const after = await service.get(OWNER, business.id);
+    assert.deepEqual(after.modules, ['reservas', 'pedidos']);
+    assert.equal(after.boss.email, 'ana@cafecentral.co');
+    assert.equal(after.boss.assignmentId, business.boss.assignmentId);
+    assert.equal(after.status, 'active');
+    assert.equal(after.currency, 'COP');
+    assert.equal(after.timezone, 'America/Bogota');
+    assert.equal(after.ownerId, OWNER);
+  });
+
+  it('keeps the text of the category only for "other"', async () => {
+    const { business, profiles } = await created();
+    const other = await profiles.updateCategory('ana@cafecentral.co', business.id, { category: 'other', categoryOther: 'Coworking' });
+    assert.equal(other?.categoryOther, 'Coworking');
+    const retail = await profiles.updateCategory('ana@cafecentral.co', business.id, { category: 'retail', categoryOther: 'Coworking' });
+    assert.equal(retail?.categoryOther, null);
   });
 });

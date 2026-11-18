@@ -185,7 +185,7 @@ describe('backend architecture', () => {
   it('sees the real code (the checks below are not vacuous)', () => {
     assert.ok(files.length > 20, `only ${files.length} files found`);
     assert.ok(edges.some((edge) => edge.to !== null));
-    assert.deepEqual([...modules].sort(), ['auth', 'business-access', 'businesses', 'onboarding']);
+    assert.deepEqual([...modules].sort(), ['auth', 'business-access', 'business-setup', 'businesses', 'onboarding']);
   });
 
   it('every module has an explicit public door and a module file', () => {

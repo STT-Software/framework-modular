@@ -32,14 +32,14 @@ sobre un mismo proyecto con flujo de Pull Requests.
 ├── infra/                       MongoDB de desarrollo (Docker)
 └── packages/
     ├── services/
-    │   └── necto-api/           El backend: monolito modular NestJS + MongoDB con los módulos auth, onboarding, businesses y business-access (ver su README)
+    │   └── necto-api/           El backend: monolito modular NestJS + MongoDB con los módulos auth, onboarding, businesses, business-access y business-setup (ver su README)
     └── apps/
         └── web/                 Bundle app.web
             └── modules/
                 └── app/         Aplicación React + Vite + Tailwind
                     └── src/
                         ├── app/       App, shell, sidebar y registro de módulos
-                        ├── modules/   Módulos de negocio (super-admin-auth, onboarding, workspace)
+                        ├── modules/   Módulos de negocio (super-admin-auth, onboarding, workspace, businesses, business-access, business-setup)
                         ├── pages/     Páginas del scaffolding
                         ├── elements/  Componentes UI compartidos
                         ├── layouts/   Layouts base

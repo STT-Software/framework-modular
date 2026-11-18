@@ -1,0 +1,163 @@
+import { observer } from "mobx-react-lite";
+import { useEffect, useRef, type FormEvent } from "react";
+import { initialsOf } from "../initials";
+import { businessSetupStore } from "../stores/businessSetup.store";
+import { SETUP_STEPS, type SetupStep } from "../types";
+import { categoryLabel } from "@/modules/businesses";
+import { CategoryPanel } from "./CategoryPanel";
+import { DataPanel } from "./DataPanel";
+import { MiniMark } from "./MiniMark";
+import { ReviewPanel } from "./ReviewPanel";
+import { SchedulePanel } from "./SchedulePanel";
+
+const STEP_COPY: Record<SetupStep, { nav: string; hint: string; title: string; description: string; document: string }> = {
+  data: {
+    nav: "Datos del negocio",
+    hint: "Tu identidad en Necto",
+    title: "La identidad de tu negocio",
+    description: "Tus datos ya están aquí. Revísalos y completa lo que haga falta.",
+    document: "Datos del negocio",
+  },
+  schedule: {
+    nav: "Horarios",
+    hint: "Cuándo estás disponible",
+    title: "Cada conexión, a su tiempo",
+    description: "Define el horario del negocio y las excepciones que necesite cada módulo.",
+    document: "Horarios",
+  },
+  category: {
+    nav: "Tipo de negocio",
+    hint: "Una base a tu medida",
+    title: "Un negocio con identidad propia",
+    description: "Confirma el tipo de negocio que registraste desde superadministración.",
+    document: "Tipo de negocio",
+  },
+  review: {
+    nav: "Revisión",
+    hint: "Conecta todos los detalles",
+    title: "Conecta todos los detalles",
+    description: "Revisa la base de tu negocio antes de preparar sus módulos.",
+    document: "Revisión de la base",
+  },
+};
+
+interface WizardProps {
+  step: SetupStep;
+  onGo: (target: SetupStep | "modules") => void;
+  onSubmit: () => void;
+  onViewModule: (moduleId: string) => void;
+  categoryPath: string;
+}
+
+/** El asistente de la base: pasos a la izquierda, el paso actual a la derecha y los botones de avance. */
+export const Wizard = observer(({ step, onGo, onSubmit, onViewModule, categoryPath }: WizardProps) => {
+  const store = businessSetupStore;
+  const state = store.state;
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => titleRef.current?.focus({ preventScroll: true }), [step]);
+  if (!state) return null;
+  const index = SETUP_STEPS.indexOf(step);
+  const visited = new Set(state.progress.visitedSteps);
+  const copy = STEP_COPY[step];
+  const name = store.form.name || state.profile.name;
+  const category = store.categoryDraft ? categoryLabel(store.categoryDraft, store.categoryDraft === "other" ? store.categoryOther.trim() : null) : "";
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    onSubmit();
+  };
+
+  return (
+    <div className="no-wizard">
+      <aside className="no-sidebar">
+        <a
+          href="#modules"
+          className="no-back"
+          onClick={(event) => {
+            event.preventDefault();
+            onGo("modules");
+          }}
+        >
+          ← Mis módulos
+        </a>
+        <div className="no-sidebar-business">
+          <span className="no-avatar">{initialsOf(name)}</span>
+          <div>
+            <strong>{name}</strong>
+            <span>{category}</span>
+          </div>
+        </div>
+        <nav className="no-step-nav" aria-label="Pasos de configuración">
+          {SETUP_STEPS.map((id, i) => {
+            const done = i !== index && visited.has(id) && i < index;
+            return (
+              <button
+                key={id}
+                type="button"
+                className={done ? "is-complete" : undefined}
+                aria-current={i === index ? "step" : undefined}
+                disabled={store.saving}
+                onClick={() => onGo(id)}
+              >
+                <span>{done ? "✓" : `0${i + 1}`}</span>
+                <div>
+                  <strong>{STEP_COPY[id].nav}</strong>
+                  <small>{STEP_COPY[id].hint}</small>
+                </div>
+              </button>
+            );
+          })}
+        </nav>
+        <div className="no-sidebar-bottom">
+          <MiniMark />
+          <p>
+            Unos pocos detalles.
+            <br />
+            Muchas posibilidades.
+          </p>
+          <span>Después: ajustes de cada módulo</span>
+        </div>
+      </aside>
+      <div className="no-stage">
+        <div className="no-stage-heading">
+          <span className="no-eyebrow">PASO 0{index + 1} DE 04 · CONFIGURACIÓN BASE</span>
+          <h1 ref={titleRef} tabIndex={-1}>
+            {copy.title}
+          </h1>
+          <p>{copy.description}</p>
+        </div>
+        <form onSubmit={submit} noValidate>
+          {step === "data" && <DataPanel categoryPath={categoryPath} onOpenCategory={() => onGo("category")} />}
+          {step === "schedule" && <SchedulePanel />}
+          {step === "category" && <CategoryPanel />}
+          {step === "review" && <ReviewPanel onEdit={(target) => onGo(target)} onViewModule={onViewModule} />}
+          {store.error && (
+            <p className="no-error" role="alert">
+              {store.error}
+            </p>
+          )}
+          <footer className="no-form-footer">
+            <span>Paso {index + 1} de 4</span>
+            <div>
+              <button type="button" className="no-secondary" disabled={store.saving} onClick={() => onGo(index === 0 ? "modules" : SETUP_STEPS[index - 1])}>
+                {index === 0 ? "Volver a módulos" : "← Atrás"}
+              </button>
+              <button type="submit" className="no-primary" disabled={store.saving}>
+                {store.saving ? "Guardando…" : index === 3 ? "Guardar configuración base " : "Siguiente "}
+                {!store.saving && <span aria-hidden="true">{index === 3 ? "✓" : "→"}</span>}
+              </button>
+            </div>
+          </footer>
+        </form>
+      </div>
+    </div>
+  );
+});
+
+export const STEP_TITLES: Record<SetupStep | "modules", string> = {
+  modules: "Los módulos de tu negocio",
+  data: STEP_COPY.data.document,
+  schedule: STEP_COPY.schedule.document,
+  category: STEP_COPY.category.document,
+  review: STEP_COPY.review.document,
+};

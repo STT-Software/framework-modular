@@ -51,5 +51,15 @@ export abstract class BusinessRepository {
   /** Saves the change only if the business still has `expectedVersion`. Returns null if it does not match. */
   abstract updateOwned(ownerId: string, id: string, expectedVersion: number, change: BusinessChange): Promise<Business | null>;
 
+  /**
+   * The business only if `bossEmail` (already normalized) is its current boss and it is active. Any owner: this is what the
+   * administrator of a business is allowed to see.
+   */
+  abstract findAdministered(bossEmail: string, id: string): Promise<Business | null>;
+  /**
+   * Changes some fields of the profile, but only if `bossEmail` is the current boss of the active business: the condition and
+   * the write are one operation. Returns null if it does not match.
+   */
+  abstract updateAdministered(bossEmail: string, id: string, patch: Partial<BusinessProfile>): Promise<Business | null>;
   abstract setStatus(ownerId: string, id: string, status: BusinessStatus): Promise<Business | null>;
 }

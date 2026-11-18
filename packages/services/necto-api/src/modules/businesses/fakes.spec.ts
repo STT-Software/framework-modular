@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Business, BusinessStatus } from './domain/business';
+import type { Business, BusinessProfile, BusinessStatus } from './domain/business';
 import {
   BusinessRepository,
   type BusinessChange,
@@ -83,6 +83,18 @@ export class InMemoryBusinessRepository extends BusinessRepository {
     if (item.version !== expectedVersion) return null;
     Object.assign(item, change.profile, { boss: change.boss, version: item.version + 1, updatedAt: new Date() });
     if (change.revokedBoss) item.bossHistory.push({ assignmentId: change.revokedBoss.assignmentId, email: change.revokedBoss.email });
+    return this.copy(item);
+  }
+
+  async findAdministered(bossEmail: string, id: string) {
+    const item = this.items.get(id);
+    return item && item.status === 'active' && item.boss.email === bossEmail ? this.copy(item) : null;
+  }
+
+  async updateAdministered(bossEmail: string, id: string, patch: Partial<BusinessProfile>) {
+    const item = this.items.get(id);
+    if (!item || item.status !== 'active' || item.boss.email !== bossEmail) return null;
+    Object.assign(item, patch, { version: item.version + 1, updatedAt: new Date() });
     return this.copy(item);
   }
 

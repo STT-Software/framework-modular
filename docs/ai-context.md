@@ -108,6 +108,7 @@ independientes). **Hoy está construido el acceso del SuperAdmin, su bienvenida 
 | Registro de módulos + aislamiento de fallos | `src/app/modules.ts`, `ModuleRoutes.tsx`, `ModuleBoundary.tsx` | Funciona |
 | **Negocios (end to end)** | Backend `modules/businesses`; frontend `src/modules/businesses` (store, asistente de 3 pasos, tarjetas y ficha) y el workspace con datos reales | Mezclado en `integration` (PR #9). Verificado con MongoDB real y el navegador |
 | **Acceso de administradores de negocio (end to end)** | Backend `modules/business-access` (OTP por correo, sesiones, permisos por negocio y módulo, código temporal del superadmin); frontend `src/modules/business-access` (`/business/access`, de la referencia `necto-login-admin`) y enlace al superadmin en el formulario | Mezclado en `integration` (PR #13, `c66ef6e`; pulido con `InteractiveDotGrid`, `DecorativeCircles`, fondo naranja en claro / `#190088` en oscuro y 5 slides rotativos cada `2.8 s` en `BrandScenes`). 178 pruebas del backend y recorrido real en el navegador |
+| **Configuración inicial del negocio (end to end)** | Frontend `src/modules/business-setup` (`/business/setup/:businessId/:step`, README propio) y backend `modules/business-setup` (`/business-setup/businesses/:businessId/*`): módulos asignados, datos del negocio (se escriben en el documento del negocio, sin copia), descripción, logo PNG/JPG ≤ 1 MB, horarios con herencia, tipo «Otra», progreso recuperable y «base preparada». Referencia visual: `referencias html/necto-negocios-configuracion.html` | Backend: 275 pruebas (282 con MongoDB real, opcional) y recorrido HTTP real. Frontend: verificado a mano en el navegador contra el backend real (acceso con código, guardado por paso, herencia de horarios, «Otra», guardar base y reingreso); sin pruebas automáticas del frontend. En la rama `feature/business-setup` |
 | CI de promoción de ramas | `.github/workflows/` | Existe; `production` aún no se ha promovido nunca |
 
 El registro pide: usuario, contraseña + confirmación, correo, tipo y número de documento
@@ -115,7 +116,7 @@ El registro pide: usuario, contraseña + confirmación, correo, tipo y número d
 
 ### Lo que NO existe (no lo des por hecho)
 
-- **Operación de los seis módulos** para el administrador: tras entrar, `/business/access` solo muestra el negocio y sus módulos habilitados. Existen los guards (`@BusinessAdminOnly`, `@RecentlyVerified`, `@RequiresBusinessModule`) para que cada módulo futuro proteja sus rutas, pero no hay ninguna ruta de módulo todavía.
+- **Operación de los seis módulos** para el administrador: tras entrar, `/business/access` solo muestra el negocio y sus módulos habilitados. Solo existe la configuración **base** del negocio (`business-setup`), sin pantalla todavía; los ajustes propios de cada módulo (filas, operadores, profesionales, reglas) siguen pendientes y el backend los marca `pending`. Existen los guards (`@BusinessAdminOnly`, `@RecentlyVerified`, `@RequiresBusinessModule`) para que cada módulo futuro proteja sus rutas, pero no hay ninguna ruta de módulo todavía.
 - **Envío real de correo (el OTP real)**: el código se genera, protege y valida de verdad, pero no hay credenciales SMTP ni dominio remitente, así que solo se verificó contra Mailpit (local). Para enviarlo a un buzón real hacen falta `MAIL_SMTP_HOST/PORT/USER/PASS`, `MAIL_FROM` con dominio verificado (SPF/DKIM) y un buzón de prueba. Nunca afirmes que un correo "llegó": solo hay `accepted` por el proveedor.
 - **Pruebas automáticas contra MongoDB y del frontend** del acceso de administradores (sí hay 164 del backend con repositorios en memoria; las sesiones y los índices reales se verificaron a mano).
 - Los seis **módulos funcionales** (reservas, turnos, agendamiento, referidos, inventario, pedidos) como sistemas: solo existen el catálogo y la habilitación por negocio.
@@ -172,6 +173,7 @@ framework-modular/
             ├── modules/super-admin-auth/   Primer módulo (README propio)
             ├── modules/onboarding/         Bienvenida + pasos de perfil (teléfono, dónde nos conoció) (README propio)
             ├── modules/workspace/          Workspace de negocios: sidebar, barra superior y directorio vacío (README propio)
+            ├── modules/business-setup/     Configuración inicial del negocio por su administrador (README propio)
             ├── brand/             NectoLogo (logotipo vectorial completo o solo la marca): lo usan onboarding y workspace
             ├── elements/          Componentes de Elements instalados (no se modifican)
             ├── css/theme.css      Tema y tokens (incluye los colores `necto-*`)
@@ -407,7 +409,7 @@ Son **solo para consultar**. No se versionan en este repo.
 
 | Ubicación | Qué es | Cómo usarla |
 |-----------|--------|-------------|
-| `/workspaces/framework-modular/referencias html/` | Diseños HTML de referencia. Hoy: `necto-superlogin.html` (login + registro), `necto-onboardingBienvenida.html` (animación de bienvenida), `necto-telefono.html` y `necto-origen` (este último **sin extensión**; los dos son el mismo documento con otra vista inicial: pasos de teléfono y origen). Está en `.gitignore`: solo existe en la máquina de quien la tiene. | Fuente de verdad del **diseño** del login/registro. Para ver su CSS propio, extráelo del `<style>` (trae fuentes en base64 que conviene saltarse). Ábrelo en el navegador para comparar. |
+| `/workspaces/framework-modular/referencias html/` | Diseños HTML de referencia. Hoy: `necto-superlogin.html` (login + registro), `necto-negocios-configuracion.html` (configuración inicial del negocio), `necto-onboardingBienvenida.html` (animación de bienvenida), `necto-telefono.html` y `necto-origen` (este último **sin extensión**; los dos son el mismo documento con otra vista inicial: pasos de teléfono y origen). Está en `.gitignore`: solo existe en la máquina de quien la tiene. | Fuente de verdad del **diseño** del login/registro. Para ver su CSS propio, extráelo del `<style>` (trae fuentes en base64 que conviene saltarse). Ábrelo en el navegador para comparar. |
 | `/workspaces/Repo-prueba` | Repo de la persona: **Turnos** y **Agendamiento**. Remoto `STT-Software/STT-Necto-Turnos-Agendamiento`, rama `master`. Backend Express + Bun + DynamoDB con el SDK de WebIAI; frontend React con stores *mock* (localStorage). Tiene también un SuperAdmin/negocios/OTP *mock* y el backend de Referidos ya portado (`ReferidosDAO`) con su dominio de frontend, **sin pantallas de referidos**. | Referencia de **qué hacen** Turnos y Agendamiento. Docs útiles en `docs/`: `flujo-modulo-turnos.md`, `flujo-modulo-agendamiento.md`, `flujo-superadmin.md`, `correr-local.md`, `arquitectura-infraestructura.md`. **Su arquitectura es distinta** (WebIAI/DynamoDB); no la copies, tradúcela a la de este repo. |
 | `/workspaces/_necto_referidos_src` | Clon superficial (`--depth 1`) y **solo lectura** de `STT-Software/necto_reservas_y_referidos` (rama `main`), repo del compañero: **Reservas** y **Referidos**. Backend: Lambda única con DynamoDB y JWT de Cognito. | Documentación de producto en `Docs/`: `Modulo-Referidos.md`, `Modulo-Reservas.md`, `Producto-Necto-MVP.md`. Referidos: backend en `packages/services/core/src/referrals/`, frontend en `packages/web/app/src/{domain,pages}/referrals/`. **No lo modifiques.** |
 
@@ -438,6 +440,14 @@ Contrato completo en el README del servicio. Resumen:
 - Correo: sin `MAIL_SMTP_HOST` el envío queda `failed: not-configured`; `deliveryConfirmed` siempre `false`.
 - Variables (en `.env.example`): `OTP_SECRET` (obligatoria, ≥32 caracteres y distinta de `JWT_SECRET`), `PUBLIC_APP_URL`, `OTP_*`, `MAIL_*` y `ADMIN_*`.
 - Módulos: `reservas, turnos, agendamiento, referidos, inventario, pedidos` (0 a 6).
+### Módulo business-setup (configuración inicial del negocio)
+Contrato completo en el README del servicio. Rutas del administrador (token de administrador; el negocio de la URL se verifica en cada petición con `@AdministersBusiness()`; ajeno, inexistente, pausado o con jefe reemplazado = `404`; token de superadmin = `403`):
+`GET /business-setup/businesses/:id` (estado completo, para retomar), `GET …/modules`, `PUT …/profile`, `PUT …/category`, `PUT|DELETE|GET …/logo` (multipart, campo `logo`),
+`PUT …/schedule`, `PUT …/schedule/modules/:moduleId`, `PUT …/progress`, `POST …/complete`.
+- Datos del negocio: se leen y escriben en la colección `businesses` por el contrato público `AdministeredBusinessProfiles`. El administrador **no** cambia módulos, jefe, estado, moneda ni zona horaria; eso es solo del superadmin.
+- Lo propio del módulo (`business_setups`, un documento por negocio): descripción, logo, horario base, horarios propios de módulos y progreso. Un módulo hereda el horario del negocio (se calcula al leer) o tiene el suyo (excepción que se conserva).
+- Horas `HH:mm` locales del negocio, sin cruzar medianoche, sin solapes; errores con ruta (`schedule.mon.ranges.1.end`) en `fields`. `complete` marca solo la base; cualquier cambio posterior la invalida.
+- El cliente de Vite usa el prefijo `/api/business-setup` (ya está en `vite.config.ts`). La imagen del logo necesita el `Authorization`: se descarga con `fetch` y se muestra con un `blob:` URL.
 
 ## 12. Herramientas del entorno y trampas conocidas
 
@@ -481,7 +491,7 @@ Contrato completo en el README del servicio. Resumen:
 - **Puerto 6020:** puede estar ocupado por el Vite de `Repo-prueba` ("WebForge Elements"). Comprueba el título de la página: el de este repo es "Framework Modular".
 - **Límites que confunden al probar:** el login y el registro permiten 5 por minuto (`429` del throttler) y el OTP limita por IP (30 intentos / 15 min). Tras muchas pruebas seguidas desde `127.0.0.1` verás `429`: espera o vacía `access_rate_limits` (solo contadores de prueba).
 - Las pruebas con `node --test` se corren **desde `packages/services/necto-api`** (no desde la raíz) y con el glob entre comillas; los scripts que importan paquetes del proyecto deben estar dentro del proyecto, no en `/tmp`.
-- El dev server de Vite redirige `/api/<módulo>` al backend; `businesses` y `business-access` tienen su prefijo en `vite.config.ts` (si añades otro módulo con API, añade el suyo).
+- El dev server de Vite redirige `/api/<módulo>` al backend; `businesses`, `business-access` y `business-setup` tienen su prefijo en `vite.config.ts` (si añades otro módulo con API, añade el suyo).
 - **Correo local de desarrollo:** `npm run db:up` también levanta Mailpit (SMTP 1025, web `http://127.0.0.1:8025`, imagen fijada en `infra/docker-compose.yml`). El `.env` del backend apunta a él (`MAIL_SMTP_HOST=127.0.0.1`, `MAIL_SMTP_PORT=1025`, `MAIL_SMTP_REQUIRE_TLS=false`); tras cambiar el `.env`, reinicia el backend. Ahí se lee el código del jefe. **No es entrega real.**
 - **El proxy de Vite quita su prefijo**: el cliente llama a `/api/business-access` + `/business-access/otp/request`; si olvidas el segundo prefijo, el backend responde 404 y la pantalla muestra un error falso.
 - **Pruebas de límites en local**: los envíos están limitados por correo (5/hora) y por IP (20/hora); todas las peticiones locales llevan la misma IP. Si una prueba da `429`, vacía `access_rate_limits` (solo contadores).
@@ -519,6 +529,7 @@ Contrato completo en el README del servicio. Resumen:
 - **Decisión del dueño del producto:** al pedir el código, un correo sin negocio recibe `404 email-not-assigned` (antes el acceso respondía igual para todos). Revela qué correos están asignados; lo frenan los límites por correo (5/h) y por IP (20/h). Para volver a la respuesta genérica basta con dejar de lanzar `EmailNotAssignedError` en `AdminLoginService.requestCode`. La verificación del código sigue sin decir por qué falla.
 - **Qué NO se implementó del acceso, a propósito:** rotación del secreto de la cookie en cada renovación (la sesión se puede revocar al instante, así que se priorizó no romper dos pestañas); lista de dispositivos; reconocimiento de IP.
 - **Frontend de negocios:** `businesses` no tiene rutas propias; el workspace (layout) las monta e importa de `businesses` por su `index.ts`, así no hay ciclo. La sesión del jefe es **otra** (`business-access:session`), separada de la del superadmin. No se muestra ningún código en la interfaz del superadmin: el prototipo enseñaba uno "de ejemplo" y se descartó por no ser real.
+- **Configuración inicial del negocio (`business-setup`, solo backend por ahora):** módulo nuevo, no un servicio. Escribe los datos del negocio en el documento del dueño por un contrato público de `businesses` (condición de jefe vigente y negocio activo dentro de la misma escritura, que sube `version`) y guarda aparte solo lo nuevo. El horario de un módulo que hereda no se copia: se calcula al leer, así los cambios del negocio se reflejan solos y las excepciones se conservan. Se añadió `kind: 'invalid'` (`400` con `fields`) a `DomainError` para validar horarios con la ruta de cada campo. La moneda y la zona horaria son de solo lectura para el administrador (las fija el superadmin y la zona define cómo se leen los horarios). Límites propios, no pedidos por producto: descripción ≤ 500 caracteres y ≤ 6 franjas por día.
 - **Negocios y acceso del jefe** (PR #9, ya en `integration`): `business-access` depende de `businesses/public`, y `businesses` avisa con el evento `BossAssigned` por `platform/events` (sin ciclos). El jefe vive **dentro** del documento del negocio (Mongo standalone sin transacciones: una escritura atómica garantiza un jefe vigente). Creación idempotente con `Idempotency-Key`. El correo se envía en segundo plano y nunca se declara "entregado" (solo `sending`/`accepted`/`failed`). El acceso por negocio que traía ese PR se reemplazó después por el acceso por correo (ver la decisión de `feature/business-admin-access`).
 - La sesión vive en `platform/security` (emitir/verificar el token, autenticar, autorizar por rol) para que ningún módulo dependa de otro ni toque el secreto JWT.
 - El nombre de la aplicación (`necto-api`) es independiente del de la base de datos (`super_admin_auth`, histórico): renombrar el código no obligó a migrar datos.
@@ -531,6 +542,7 @@ Contrato completo en el README del servicio. Resumen:
 - Cualquier módulo de negocio (Turnos, Agendamiento, Reservas, Referidos).
 
 **Abiertas / sin responder**
+- **`business-setup`**: preguntas de producto abiertas: ¿la moneda y la zona horaria deben poder editarlas los administradores? (hoy no); ¿hace falta un tope de franjas por día y de descripción distinto de 6 y 500?
 - ¿El login debe abrir en tema **oscuro** por defecto, como la referencia? Hoy sigue el tema único de la
   app (claro).
 - Validar la sesión contra el servidor (`GET /auth/super/me`) al cargar y proteger rutas del backend con

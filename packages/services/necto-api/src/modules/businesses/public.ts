@@ -7,6 +7,10 @@
  * - `BusinessModuleAccess`: ask whether a business has a functionality enabled. A module that serves a
  *   functionality (reservas, turnos...) must check this on the server; hiding the option in the UI is not authorization.
  * - `BossAssigned`: published when a boss is assigned (business created or boss replaced).
+ * - `AdministeredBusinessProfiles`: what the administrator of a business may read and correct of it (contact data and
+ *   category), always on the owner's business document. It cannot touch modules, boss, status, currency or time zone.
+ * - `BusinessContactDto` / `BusinessCategoryDto`: the validation of those fields, so the owner's form and the administrator's
+ *   form accept exactly the same values. `BUSINESS_MODULES` / `BUSINESS_CATEGORIES`: the catalog (names shown to people).
  *
  * Never the repository, the schema or the controller of `businesses`.
  */
@@ -15,3 +19,11 @@ export { BusinessDirectory, BusinessModuleAccess, type BusinessAccessView } from
 export { BossAssigned } from './domain/events';
 export type { BusinessModuleId } from './domain/catalog';
 export type { BusinessStatus } from './domain/business';
+export {
+  AdministeredBusinessProfiles,
+  type AdministeredBusinessProfile,
+  type CategoryChange,
+  type ContactChange,
+} from './domain/business-profile-editing';
+export { BusinessContactDto, BusinessCategoryDto } from './api/dto/profile-fields.dto';
+export { BUSINESS_MODULES, BUSINESS_CATEGORIES, type BusinessCategoryId } from './domain/catalog';

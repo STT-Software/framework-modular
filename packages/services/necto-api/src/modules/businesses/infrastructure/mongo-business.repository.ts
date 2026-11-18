@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model, QueryFilter } from 'mongoose';
-import type { Business, BusinessStatus } from '../domain/business';
+import type { Business, BusinessProfile, BusinessStatus } from '../domain/business';
 import {
   BusinessRepository,
   type BusinessChange,
@@ -135,6 +135,21 @@ export class MongoBusinessRepository extends BusinessRepository {
     if (change.revokedBoss) update.$push = { bossHistory: change.revokedBoss };
     const record = await this.model
       .findOneAndUpdate({ _id: id, ownerId, version: expectedVersion }, update, { returnDocument: 'after' })
+      .lean<Lean>();
+    return record ? toDomain(record) : null;
+  }
+
+  async findAdministered(bossEmail: string, id: string): Promise<Business | null> {
+    if (!OBJECT_ID.test(id)) return null;
+    const record = await this.model.findOne({ _id: id, 'boss.email': bossEmail, status: 'active' }).lean<Lean>();
+    return record ? toDomain(record) : null;
+  }
+
+  async updateAdministered(bossEmail: string, id: string, patch: Partial<BusinessProfile>): Promise<Business | null> {
+    if (!OBJECT_ID.test(id)) return null;
+    // The boss and the status are part of the filter: if the boss was replaced or the business paused a moment ago, nothing is written.
+    const record = await this.model
+      .findOneAndUpdate({ _id: id, 'boss.email': bossEmail, status: 'active' }, { $set: patch, $inc: { version: 1 } }, { returnDocument: 'after' })
       .lean<Lean>();
     return record ? toDomain(record) : null;
   }

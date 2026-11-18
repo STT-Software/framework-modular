@@ -1,7 +1,6 @@
 /**
  * Presupuesto de movimiento según el equipo. En equipos modestos (pocos núcleos o poca memoria) o con ahorro de
- * datos activado, la bienvenida quita los adornos en bucle y el juego de formas corre a menos fotogramas y se
- * detiene antes. La historia y los tiempos son los mismos.
+ * datos activado, la bienvenida y las ilustraciones quitan los adornos en bucle. La historia y los tiempos son los mismos.
  */
 interface NavigatorHints {
   hardwareConcurrency?: number;

@@ -11,6 +11,7 @@ import { PHONE_STEP_PATH, READY_STEP_PATH, SOURCE_STEP_PATH } from "../paths";
 import { SOURCE_OPTIONS, SourceIcon, type SourceId } from "../sources";
 import { SourceArt } from "../scenes/SetupArt";
 import { onboardingProfileStore } from "../stores/onboardingProfile.store";
+import { preloadReadyPage } from "./loaders";
 
 const HEADING_ID = "source-heading";
 /** Cuánto se ve el "¡Listo!" antes de pasar a la pantalla final. */
@@ -40,6 +41,8 @@ function SourceForm({ initialSources }: { initialSources: SourceId[] }) {
   // Con el perfil guardado se muestra "¡Listo!" un momento y se pasa a la pantalla final (que lleva al workspace).
   useEffect(() => {
     if (phase !== "done") return;
+    // The final screen is downloaded while "¡Listo!" is shown.
+    preloadReadyPage();
     const timer = window.setTimeout(() => navigate(READY_STEP_PATH, { replace: true }), ENTER_READY_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [phase, navigate]);

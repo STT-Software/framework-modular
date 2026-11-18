@@ -7,15 +7,21 @@ export interface BrandMessage {
 
 const EXIT_DURATION_MS = 240;
 
+function prefersReducedMotion() {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Rotates brand messages; paused while the tab is hidden and off with reduced motion (same as BrandScenes). */
 export function useRotatingBrandMessages(count: number, intervalMs = 2800) {
   const [index, setIndex] = useState(0);
   const [fadeState, setFadeState] = useState<"in" | "out">("in");
   const timeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (count <= 1) return;
+    if (count <= 1 || prefersReducedMotion()) return;
 
     const timer = window.setInterval(() => {
+      if (document.hidden) return;
       setFadeState("out");
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
       timeoutRef.current = window.setTimeout(() => {

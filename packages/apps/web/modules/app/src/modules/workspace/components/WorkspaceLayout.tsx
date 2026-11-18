@@ -1,6 +1,3 @@
-import "@fontsource/dm-sans/400.css";
-import "@fontsource/dm-sans/500.css";
-import "@fontsource/dm-sans/600.css";
 import "../styles/workspace.css";
 import { observer } from "mobx-react-lite";
 import { useEffect, type ReactNode } from "react";

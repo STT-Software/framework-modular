@@ -1,9 +1,6 @@
-import "@fontsource/dm-sans/300.css";
-import "@fontsource/dm-sans/400.css";
-import "@fontsource/dm-sans/700.css";
 import "../styles/onboarding.css";
 import { observer } from "mobx-react-lite";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { superAdminSessionStore } from "@/modules/super-admin-auth";
 import { preloadWorkspacePage } from "@/modules/workspace";
@@ -14,7 +11,6 @@ import { WorkspaceLoader } from "../components/WorkspaceLoader";
 import { useReducedMotion } from "../hooks/useReducedMotion";
 import { useWelcomeSequence } from "../hooks/useWelcomeSequence";
 import { hasSeenIntro, markIntroSeen } from "../introSeen";
-import { LaunchSequence } from "../scenes/LaunchSequence";
 import { SEQUENCE } from "../sequence";
 import { nextOnboardingPath, resolveWelcomeMode } from "../flow";
 import { PHONE_STEP_PATH } from "../paths";
@@ -31,6 +27,9 @@ import { onboardingProfileStore } from "../stores/onboardingProfile.store";
  */
 /** Antigüedad aceptable del perfil que pidió la página al abrirse, para que la pantalla de carga no lo repita. */
 const LOADER_PROFILE_MAX_AGE_MS = 10_000;
+
+/** The intro is only for new accounts: its scenes are downloaded only when `mode === "intro"` renders them. */
+const LaunchSequence = lazy(() => import("../scenes/LaunchSequence").then((m) => ({ default: m.LaunchSequence })));
 
 const OnboardingPage = observer(function OnboardingPage() {
   const navigate = useNavigate();
@@ -80,7 +79,13 @@ const OnboardingPage = observer(function OnboardingPage() {
     <main className="ob" data-scene={playing ? SEQUENCE[index].id : "done"} aria-label="Bienvenida a Necto">
       <PageMeta title="Necto · Tu primera conexión" />
       <OnboardingHeader />
-      <div className="ob-stage">{playing ? <LaunchSequence sceneIndex={index} /> : null}</div>
+      <div className="ob-stage">
+        {playing ? (
+          <Suspense fallback={null}>
+            <LaunchSequence sceneIndex={index} />
+          </Suspense>
+        ) : null}
+      </div>
       {playing ? (
         <footer className="ob-footer">
           <StoryProgress index={index} />

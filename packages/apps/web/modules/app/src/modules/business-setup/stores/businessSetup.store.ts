@@ -9,8 +9,14 @@ export type SetupStatus = "idle" | "loading" | "ready" | "unavailable" | "signed
 export type HoursScope = "business" | ModuleId;
 type FormField = keyof ProfileForm;
 
+/** Limit of the service for the uploaded file (after shrinking). */
 const LOGO_MAX_BYTES = 1_048_576;
+/** The picked file is shrunk in the browser first, so a bigger original is accepted. */
+const LOGO_MAX_SOURCE_BYTES = 10 * 1_048_576;
 const EMPTY_FORM: ProfileForm = { name: "", phone: "", supportEmail: "", address: "", legalName: "", taxId: "", website: "", description: "" };
+const LOGO_MAX_SIDE = 256;
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const LOGO_HINT = "Selecciona una imagen PNG, JPG o WebP de hasta 10 MB.";
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function setupErrorMessage(error: unknown): string {
@@ -48,6 +54,48 @@ function formFrom(state: SetupState): ProfileForm {
     website: blank(p.website),
     description: blank(p.description),
   };
+}
+
+/**
+ * Reduce el logo a un máximo de 256×256 (manteniendo la proporción) antes de subirlo y lo exporta a WebP (PNG si el
+ * navegador no sabe codificar WebP). Un SVG no se toca. Si algo falla, o el resultado no es más pequeño, se sube el original.
+ */
+async function shrinkLogo(file: File): Promise<File> {
+  if (file.type === "image/svg+xml" || typeof createImageBitmap !== "function") return file;
+  let bitmap: ImageBitmap | null = null;
+  try {
+    bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, LOGO_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const blob = await drawToBlob(bitmap, width, height);
+    if (!blob || blob.size >= file.size) return file;
+    const ext = blob.type === "image/webp" ? "webp" : "png";
+    return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "logo"}.${ext}`, { type: blob.type });
+  } catch {
+    return file;
+  } finally {
+    bitmap?.close();
+  }
+}
+
+async function drawToBlob(bitmap: ImageBitmap, width: number, height: number): Promise<Blob | null> {
+  const encode = async (type: string): Promise<Blob | null> => {
+    if (typeof OffscreenCanvas === "function") {
+      const canvas = new OffscreenCanvas(width, height);
+      canvas.getContext("2d")?.drawImage(bitmap, 0, 0, width, height);
+      return canvas.convertToBlob({ type, quality: 0.85 });
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, width, height);
+    return new Promise((resolve) => canvas.toBlob(resolve, type, 0.85));
+  };
+  const webp = await encode("image/webp");
+  // Un navegador sin codificador WebP devuelve PNG en su lugar.
+  if (webp && webp.type === "image/webp") return webp;
+  return encode("image/png");
 }
 
 /**
@@ -230,18 +278,34 @@ class BusinessSetupStore {
 
   async chooseLogo(file: File): Promise<void> {
     this.logoError = null;
-    if (!["image/png", "image/jpeg"].includes(file.type) || file.size > LOGO_MAX_BYTES) {
-      this.logoError = "Selecciona una imagen PNG o JPG de hasta 1 MB.";
+    if (!LOGO_TYPES.includes(file.type) || file.size > LOGO_MAX_SOURCE_BYTES) {
+      this.logoError = LOGO_HINT;
+      return;
+    }
+    const businessId = this.businessId;
+    const upload = await shrinkLogo(file);
+    if (this.businessId !== businessId) return;
+    if (upload.size > LOGO_MAX_BYTES) {
+      runInAction(() => (this.logoError = LOGO_HINT));
       return;
     }
     const ok = await this.write(
-      (token, id) => businessSetupApi.uploadLogo(token, id, file),
+      (token, id) => businessSetupApi.uploadLogo(token, id, upload),
       undefined,
       (error) => {
-        this.logoError = error.code === "invalid-logo" || error.status === 413 ? "Selecciona una imagen PNG o JPG de hasta 1 MB." : null;
+        this.logoError = error.code === "invalid-logo" || error.status === 413 ? LOGO_HINT : null;
       },
     );
-    if (ok) await this.refreshLogo();
+    // Si la página se desmontó (reset) o cambió de negocio mientras se subía, no se crea una URL que nadie revocaría.
+    if (!ok || this.businessId !== businessId) return;
+    // Ya tenemos los bytes subidos: se muestran tal cual, sin volver a descargarlos.
+    const logo = this.state?.logo;
+    if (!logo) return;
+    runInAction(() => {
+      this.dropLogoUrl();
+      this.logoUrl = URL.createObjectURL(upload);
+      this.logoStamp = `${logo.updatedAt}:${logo.sizeBytes}`;
+    });
   }
 
   async removeLogo(): Promise<void> {

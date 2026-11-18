@@ -54,7 +54,7 @@ forma de entrar.
   índigo, flecha animada) se aplica con `className` desde este módulo; los
   componentes de `src/elements/` no se modificaron.
 - **Base común:** `uiStore` (tema), `brand/InteractiveDotGrid`, `brand/DecorativeCircles`, `brand/NectoLogo`, `PageMeta`, `cn`, colores `necto-*` de `css/theme.css`.
-- **Fuente:** DM Sans (`@fontsource/dm-sans`, 400/500/600), cargada solo con este módulo.
+- **Fuente:** DM Sans (`@fontsource/dm-sans`, subset latin), cargada una sola vez en `src/app/index.tsx`.
 - No importa de ningún otro módulo.
 
 ## Configuración

@@ -17,7 +17,9 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
-  html {
+  /* Only the workspace reserves the scrollbar space (its width does not jump when a page starts to scroll). On the
+     full-screen pages (sign-in, register, welcome, profile steps) that reserved strip showed the gray body behind. */
+  html:has(.ws-shell-inner) {
     scrollbar-gutter: stable;
   }
   body {

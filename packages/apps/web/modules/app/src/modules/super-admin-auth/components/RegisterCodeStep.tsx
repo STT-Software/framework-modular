@@ -1,4 +1,5 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
+import { CodeVerificationArt } from "@/brand/CodeVerificationArt";
 import { Alert } from "@/elements/ui/alert";
 import { formatClock, useTick } from "@/hooks/useTick";
 import {
@@ -24,6 +25,9 @@ interface RegisterCodeStepProps {
 }
 
 type Blocked = "none" | "attempts" | "expired";
+
+/** Length of the "sealed" motion of the code art (card in, flap down, seal), see auth-layout.css. */
+const SEAL_MS = 1200;
 
 /** Spanish message for a failed verify / resend. */
 export function codeErrorMessage(error: unknown): string {
@@ -73,6 +77,8 @@ export function RegisterCodeStep({
   const [blocked, setBlocked] = useState<Blocked>("none");
   const [verifying, setVerifying] = useState(false);
   const [sending, setSending] = useState(false);
+  /** Right code: the envelope closes before entering (skipped with reduced motion). */
+  const [sealed, setSealed] = useState(false);
   const now = useTick();
 
   const expiresAt = Date.parse(pending.expiresAt);
@@ -104,6 +110,11 @@ export function RegisterCodeStep({
     setStatus("");
     try {
       const result = await superAdminAuthApi.verifyRegistration({ registrationId: pending.registrationId, code });
+      if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+        setSealed(true);
+        setStatus("¡Código verificado! Creando tu cuenta…");
+        await new Promise((resolve) => window.setTimeout(resolve, SEAL_MS));
+      }
       onVerified(result);
     } catch (failure) {
       if (failure instanceof SuperAdminAuthError && failure.kind === "conflict") {
@@ -145,10 +156,13 @@ export function RegisterCodeStep({
   }
 
   return (
-    <section className="sa-fade-in" aria-labelledby={`${baseId}-title`}>
+    <section className="sa-fade-in sa-code-focus" aria-labelledby={`${baseId}-title`}>
       <button type="button" className="sa-back" onClick={onChangeEmail} disabled={verifying || sending}>
         <span aria-hidden="true">←</span> Cambiar correo
       </button>
+      <div className="sa-code-hero sa-scene-enter" aria-hidden="true">
+        <CodeVerificationArt classPrefix="sa" state={sealed ? "sealed" : "intro"} />
+      </div>
       <FormHeading
         id={`${baseId}-title`}
         eyebrow="UN PASO MÁS"

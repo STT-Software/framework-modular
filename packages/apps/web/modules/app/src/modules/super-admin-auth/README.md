@@ -33,9 +33,12 @@ registro la cuenta queda creada, se guarda la sesión igual que en el login y ta
   (se bloquea y pide un código nuevo con `resendRegistrationCode`), `code-expired` (el pendiente ya no existe:
   "Reenviar código" vuelve a llamar a `register` con los mismos datos), `resend-too-soon`, `too-many-codes` (5 códigos por correo cada 30 min, contando registros y reenvíos), `429` genérico, red.
   Un `409` en `verify` vuelve al formulario y marca el campo en conflicto.
-- Panel de marca: mientras se ve el paso del código, `SuperAdminAuthLayout` muestra fija la escena del código
-  (`src/brand/CodeVerificationArt.tsx`, la misma del slide "codigo" de business-access, con clases `sa-art-*`) y el
-  mensaje "Verifica tu correo." La página avisa al layout con `useOutletContext<AuthLayoutContext>().setCodeStep`.
+- Pantalla enfocada: en el paso del código `SuperAdminAuthLayout` quita el panel de marca y queda una sola columna
+  (la página avisa con `useOutletContext<AuthLayoutContext>().setCodeStep`). La ilustración del código
+  (`src/brand/CodeVerificationArt.tsx`, la misma del slide "codigo" de business-access) va centrada sobre el título,
+  animada con CSS (`sa-cv-*` en `auth-layout.css`): entra el sobre, sube la carta, entran las fichas y se estampa el
+  sello; se mece unos ciclos y queda quieta. Con el código correcto (`state="sealed"`) la carta entra al sobre, la
+  solapa se cierra y se estampa el sello (~1.2 s) antes de ir a `/welcome`. Sin animación con movimiento reducido.
 
 ## Estructura
 

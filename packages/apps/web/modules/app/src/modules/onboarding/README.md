@@ -56,7 +56,7 @@ cierre siguen una línea de tiempo con la Web Animations API, derivada de `SEQUE
 (`--ob-art-paper`, `--ob-art-line`, `--ob-art-blue`, `--ob-art-cyan`, `--ob-art-accent`…): tarjetas blancas
 sobre el crema y órbitas índigo (actos 0 y 1, claro), tarjetas índigo profundo sobre `#100548` (oscuro), y sobre la
 cortinilla naranja tarjetas blancas (claro) o índigo profundo (oscuro) con órbitas blancas.
-5. **Perfil**: `/welcome/phone` (teléfono) y `/welcome/source` (dónde nos conociste). Cada paso lleva su ilustración (`SetupArt`: `PhoneArt` y `SourceArt`) en un panel crema (índigo profundo
+5. **Perfil**: `/welcome/phone` (teléfono) y `/welcome/source` (dónde nos conociste; opcional: "Omitir" guarda la lista vacía, que también completa el perfil). Cada paso lleva su ilustración (`SetupArt`: `PhoneArt` y `SourceArt`) en un panel crema (índigo profundo
    en oscuro) junto al formulario, o debajo en pantallas angostas, con el mismo lenguaje y las mismas primitivas que la
    intro (`scenes/artPrimitives.tsx`): un teléfono con el campo de número y satélites de mensaje, privacidad y llamada;
    y el núcleo N con los canales a su alrededor. Las tarjetas de opciones usan ese lenguaje: borde 1.3, esquinas 14,
@@ -75,7 +75,7 @@ recompone; cada acto suma formas de su parte de la historia: onda de voz y tres 
 un arco que barre como un radar y un + (la IA lee), un cuadrado redondeado que releva a la cápsula y un cuarto de
 círculo en la esquina (módulos, sobre naranja en blanco rebajado), y en el cierre el cuadrado se vuelve círculo, el aro
 pequeño toma el naranja y entran barras con el ángulo de la diagonal de la N. En Ready las formas quedan como decoración fija en los márgenes
-(`GeometryBackdrop`): entran una vez, escalonadas, con CSS (opacidad y escala), y no se mueven ni responden al puntero. Cada pieza se mueve con su propio peso; todas pintan con `currentColor` y solo
+(`GeometryBackdrop`): entran una vez, escalonadas, con CSS (opacidad y escala), y tienen parallax con el puntero (cada forma se desplaza según su tamaño; Web Animations de `translate`, sin bucle; no en táctil ni con movimiento reducido). Cada pieza se mueve con su propio peso; todas pintan con `currentColor` y solo
 se animan transform, opacidad y color.
 
 Reglas de diseño: plano 2D, sin grillas de fondo ni adornos fuera de la geometría de marca; DM Sans 300/400/700; paleta `#FF3F1A`,

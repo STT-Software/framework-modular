@@ -60,22 +60,44 @@ export function ArtOrbits({ p, cx = 230, cy = 174 }: P & { cx?: number; cy?: num
 const CODE_DIGITS = ["4", "8", "2", "1", "9", "5"];
 const CELL_X = [172, 191, 210, 234, 253, 272];
 
-export function CodeVerificationArt({ classPrefix }: { classPrefix: ArtClassPrefix }) {
+interface CodeVerificationArtProps {
+  classPrefix: ArtClassPrefix;
+  /**
+   * Optional motion hooks for the module that animates the art (today the /super/register code step): `"intro"` lets
+   * its CSS play the entrance, `"sealed"` closes the envelope (card in, flap down, seal stamped). Without it the art is
+   * static, as in business-access. Each piece is wrapped in a `<prefix>-cv-*` group so CSS can move it without
+   * touching the drawing.
+   */
+  state?: "intro" | "sealed";
+}
+
+export function CodeVerificationArt({ classPrefix, state }: CodeVerificationArtProps) {
   const sealArcId = `${classPrefix}-code-seal-arc`;
+  const cv = (name: string) => `${classPrefix}-cv-${name}`;
+  const flap = "M150 166 230 120l80 46";
   return (
-    <svg className={`${classPrefix}-slide-art`} viewBox="0 0 460 350" fill="none">
+    <svg className={`${classPrefix}-slide-art`} viewBox="0 0 460 350" fill="none" data-state={state}>
       {/* Background: orbits, dotted links, sparks and base shadow */}
-      <ArtOrbits p={classPrefix} />
-      <path className={`${classPrefix}-art-link`} strokeDasharray="1 4" d="M118 112Q140 150 132 186M354 126Q394 178 340 214" />
-      <ArtSpark p={classPrefix} cx={148} cy={46} size={14} />
-      <ArtSpark p={classPrefix} cx={386} cy={252} size={10} />
-      <ellipse className={`${classPrefix}-art-shadow`} cx="232" cy="300" rx="122" ry="10" />
+      <g className={cv("orbits")}>
+        <ArtOrbits p={classPrefix} />
+        <path className={`${classPrefix}-art-link`} strokeDasharray="1 4" d="M118 112Q140 150 132 186M354 126Q394 178 340 214" />
+      </g>
+      <g className={cv("spark")}>
+        <ArtSpark p={classPrefix} cx={148} cy={46} size={14} />
+      </g>
+      <g className={cv("spark")}>
+        <ArtSpark p={classPrefix} cx={386} cy={252} size={10} />
+      </g>
+      <ellipse className={`${classPrefix}-art-shadow ${cv("shadow")}`} cx="232" cy="300" rx="122" ry="10" />
 
       {/* Envelope back and open flap (behind the card) */}
-      <rect className={`${classPrefix}-art-card`} x="148" y="162" width="164" height="124" rx="10" />
-      <path className={`${classPrefix}-art-card`} strokeLinejoin="round" d="M150 166 230 120l80 46" />
+      <g className={cv("envelope")}>
+        <rect className={`${classPrefix}-art-card`} x="148" y="162" width="164" height="124" rx="10" />
+        <path className={`${classPrefix}-art-card ${cv("flap-open")}`} strokeLinejoin="round" d={flap} />
+      </g>
 
       {/* Code card rising out of the envelope */}
+      <g className={cv("card")}>
       <g transform="rotate(-4 230 156)">
         <rect className={`${classPrefix}-art-card`} x="162" y="66" width="136" height="150" rx="14" />
         <rect className={`${classPrefix}-art-orange-tint`} x="174" y="78" width="26" height="26" rx="8" />
@@ -98,12 +120,18 @@ export function CodeVerificationArt({ classPrefix }: { classPrefix: ArtClassPref
         {/* Quiet expiry line: kept neutral so the orange mark and the clock carry the accent */}
         <rect className={`${classPrefix}-art-soft`} x="176" y="150" width="108" height="4" rx="2" />
       </g>
+      </g>
 
       {/* Envelope front pocket with its folds */}
-      <path className={`${classPrefix}-art-card`} strokeLinejoin="round" d="M148 170 230 214l82-44v106a10 10 0 0 1-10 10H158a10 10 0 0 1-10-10Z" />
-      <path className={`${classPrefix}-art-rule`} d="m154 281 58-40m94 40-58-40" />
+      <g className={cv("envelope")}>
+        <path className={`${classPrefix}-art-card`} strokeLinejoin="round" d="M148 170 230 214l82-44v106a10 10 0 0 1-10 10H158a10 10 0 0 1-10-10Z" />
+        <path className={`${classPrefix}-art-rule`} d="m154 281 58-40m94 40-58-40" />
+        {/* The flap that folds down over the card when the envelope is sealed (hidden until then) */}
+        {state ? <path className={`${classPrefix}-art-card ${cv("flap-close")}`} strokeLinejoin="round" d={flap} /> : null}
+      </g>
 
       {/* Verification seal stamped on the envelope */}
+      <g className={cv("seal")}>
       <g transform="translate(304 240) rotate(-6)">
         <circle className={`${classPrefix}-art-card`} r="30" />
         <path id={sealArcId} d="M-19.9 11.5a23 23 0 1 1 39.8 0" fill="none" />
@@ -114,8 +142,10 @@ export function CodeVerificationArt({ classPrefix }: { classPrefix: ArtClassPref
         </text>
         <ArtCheckBadge p={classPrefix} cx={0} cy={4} r={11} />
       </g>
+      </g>
 
       {/* Satellite: clock token (validity) */}
+      <g className={cv("clock")}>
       <g transform="translate(96 222) rotate(-12)">
         <rect className={`${classPrefix}-art-card`} x="-29" y="-29" width="58" height="58" rx="18" />
         <circle className={`${classPrefix}-art-icon-accent`} cy="-6" r="10" />
@@ -124,17 +154,22 @@ export function CodeVerificationArt({ classPrefix }: { classPrefix: ArtClassPref
           10 min
         </text>
       </g>
+      </g>
 
       {/* Satellite: shield token (secure access) */}
+      <g className={cv("shield")}>
       <g transform="translate(356 88) rotate(9)">
         <rect className={`${classPrefix}-art-card`} x="-27.5" y="-27.5" width="55" height="55" rx="18" />
         <path className={`${classPrefix}-art-icon`} d="M0-12 10-8v7c0 6.5-4.3 11-10 13-5.7-2-10-6.5-10-13v-7Z" />
         <path className={`${classPrefix}-art-icon`} d="m-4 0 3 3 5.5-5.5" />
       </g>
+      </g>
 
       {/* Cyan orb */}
-      <circle className={`${classPrefix}-art-cyan-halo`} cx="112" cy="104" r="11.5" />
-      <circle className={`${classPrefix}-art-cyan`} cx="112" cy="104" r="5.5" />
+      <g className={cv("orb")}>
+        <circle className={`${classPrefix}-art-cyan-halo`} cx="112" cy="104" r="11.5" />
+        <circle className={`${classPrefix}-art-cyan`} cx="112" cy="104" r="5.5" />
+      </g>
     </svg>
   );
 }

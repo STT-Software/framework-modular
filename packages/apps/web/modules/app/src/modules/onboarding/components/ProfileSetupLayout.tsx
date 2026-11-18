@@ -1,6 +1,3 @@
-import "@fontsource/dm-sans/400.css";
-import "@fontsource/dm-sans/500.css";
-import "@fontsource/dm-sans/600.css";
 import "../styles/onboarding.css";
 import "../styles/profile-setup.css";
 import type { ReactNode } from "react";

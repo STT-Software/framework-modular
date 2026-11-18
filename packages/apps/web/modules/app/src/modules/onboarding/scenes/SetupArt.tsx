@@ -234,9 +234,13 @@ export function SourceArt() {
  * completed arrive as cards (the phone and where we met) and the workspace waits, ready, joined to the logo by dotted
  * links. The pieces enter once the logo has formed.
  */
+/** Entrance of the closing art (starts at 2.5 s) plus a short moment of life. */
+const READY_SETTLE_MS = 6_000;
+
 export function ReadyArt() {
   return (
-    <ArtStage start={2.5} className="ob-ready-art">
+    // A closing screen should settle: the loops only accompany the entrance, then rest.
+    <ArtStage start={2.5} settleMs={READY_SETTLE_MS} className="ob-ready-art">
       <svg className="ob-scene-art" viewBox="0 0 760 240" fill="none">
         <path
           className="ob-art-link ob-flow-dots"

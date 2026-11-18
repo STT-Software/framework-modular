@@ -12,7 +12,7 @@ ejemplo. Todo lo que decide el acceso, qué módulos tiene el negocio y qué hor
 Son rutas **sin** la puerta del superadmin: la sesión es la del administrador (`business-access`). Sin sesión vigente, la página lleva a `/business/access`.
 Desde la pantalla «Ya estás en tu negocio» de `business-access` hay un botón «Preparar mi negocio» que llega aquí.
 ## Los pasos
-1. **Datos del negocio**: nombre, teléfono, correo, dirección, razón social, NIT, sitio web, descripción y logo (PNG o JPG, hasta 1 MB). Se cargan los datos que
+1. **Datos del negocio**: nombre, teléfono, correo, dirección, razón social, NIT, sitio web, descripción y logo (PNG, JPG o WebP de hasta 10 MB; se reduce a 256×256 en el navegador y el archivo subido no pasa de 1 MB, el límite del servicio). Se cargan los datos que
    registró el superadmin (el mismo documento del negocio, no una copia). Moneda y zona horaria se muestran, pero no se editan.
 2. **Horarios**: pestaña «Negocio» y una por módulo asignado. Un módulo puede **usar el horario del negocio** (hereda: lo que cambie el negocio se ve en él) o tener
    el suyo (excepción que se conserva aunque el negocio cambie). Varias franjas por día; apertura y cierre obligatorios, cierre posterior y sin solapes.

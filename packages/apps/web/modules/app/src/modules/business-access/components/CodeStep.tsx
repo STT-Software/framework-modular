@@ -26,7 +26,6 @@ export const CodeStep = observer(({ onHelp }: { onHelp: () => void }) => {
   const [status, setStatus] = useState("");
   const [remember, setRemember] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const now = useTick();
 
   // A new code was requested: the page starts over for it.
   useEffect(() => {
@@ -38,6 +37,8 @@ export const CodeStep = observer(({ onHelp }: { onHelp: () => void }) => {
 
   const expiresAt = store.codeRequestedAt + rules.expiresInMinutes * 60_000;
   const resendAt = store.codeRequestedAt + rules.resendAfterSeconds * 1000;
+  // Only tick while some countdown (expiry or resend wait) is still running.
+  const now = useTick(1000, Date.now() < Math.max(expiresAt, resendAt));
   const triesSpent = failures >= rules.maxAttempts;
   const locked = triesSpent && now < resendAt;
   const timeExpired = now >= expiresAt;

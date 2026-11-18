@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { isLowPowerDevice } from "../hooks/motionBudget";
 import { LOGO_PATHS, MARK_PATH_COUNT, TAGLINE_PATH_COUNT } from "@/brand/logoPaths";
 
 /*
@@ -70,6 +71,8 @@ interface ArtStageProps {
   /** Seconds before the first piece enters (the screen's own entrance comes first). */
   start: number;
   className?: string;
+  /** Milliseconds before the loops rest (default `SETTLE_MS`). */
+  settleMs?: number;
   children: ReactNode;
 }
 
@@ -81,15 +84,16 @@ const SETTLE_MS = 14_000;
  * (pieces enter, small loops run) and, after `SETTLE_MS`, pauses its loops so an idle form never keeps the main
  * thread busy repainting the SVG.
  */
-export function ArtStage({ start, className, children }: ArtStageProps) {
+export function ArtStage({ start, className, settleMs = SETTLE_MS, children }: ArtStageProps) {
   const [settled, setSettled] = useState(false);
+  const [lite] = useState(isLowPowerDevice);
   useEffect(() => {
-    const timer = window.setTimeout(() => setSettled(true), SETTLE_MS);
+    const timer = window.setTimeout(() => setSettled(true), settleMs);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [settleMs]);
   return (
     <div
-      className={`ob-art-scene is-active ob-art-stage${settled ? " is-settled" : ""}${className ? ` ${className}` : ""}`}
+      className={`ob-art-scene is-active ob-art-stage${settled ? " is-settled" : ""}${lite ? " is-lite" : ""}${className ? ` ${className}` : ""}`}
       style={{ "--pop-start": `${start}s` } as CSSProperties}
       aria-hidden="true"
     >

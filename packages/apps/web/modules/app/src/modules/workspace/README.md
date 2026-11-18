@@ -80,4 +80,4 @@ workspace/
   consulta su perfil antes de abrir el workspace.
 - **Elements:** `Button`, `Input`, `Select` y `Breadcrumb`, con el acabado del diseño por `className` o composición; no se tocó `src/elements/`.
 - **Base común (`@/shell` y `@/brand`):** `BaseAppShell`, `BaseAppSidebar`, `BaseAppHeader`, `ToggleAppSidebar`, `ThemeToggleButton`, `ShellDropdown`, `MenuSectionHeader`, `MenuItem`, `PanelToggleIcon`, `NectoLogo`, `uiStore`, `PageMeta` y `cn`.
-- **Fuente:** DM Sans 400/500/600 (`@fontsource/dm-sans`), cargada solo con este módulo.
+- **Fuente:** DM Sans (`@fontsource/dm-sans`, subset latin), cargada una sola vez en `src/app/index.tsx`.

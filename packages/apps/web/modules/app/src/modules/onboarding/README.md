@@ -74,10 +74,8 @@ y con mucho aire, y un solo acento de color por acto. Una capa a pantalla comple
 recompone; cada acto suma formas de su parte de la historia: onda de voz y tres puntos de "escribiendo" (mensajes),
 un arco que barre como un radar y un + (la IA lee), un cuadrado redondeado que releva a la cápsula y un cuarto de
 círculo en la esquina (módulos, sobre naranja en blanco rebajado), y en el cierre el cuadrado se vuelve círculo, el aro
-pequeño toma el naranja y entran barras con el ángulo de la diagonal de la N. En Ready las formas se vuelven un juego
-(`GeometryPlayground`): flotan por la pantalla y rebotan en los bordes; al hacerles clic salen disparadas girando
-con una ráfaga de chispas, y solo la forma disparada elimina: si golpea a otra, la golpeada estalla (y vuelve a entrar, escalonada, desde algún borde) y la disparada rebota y se desvía; a la deriva solo rebotan (física propia en `requestAnimationFrame`, solo
-`transform`; quietas con movimiento reducido). Cada pieza se mueve con su propio peso; todas pintan con `currentColor` y solo
+pequeño toma el naranja y entran barras con el ángulo de la diagonal de la N. En Ready las formas quedan como decoración fija en los márgenes
+(`GeometryBackdrop`): entran una vez, escalonadas, con CSS (opacidad y escala), y no se mueven ni responden al puntero. Cada pieza se mueve con su propio peso; todas pintan con `currentColor` y solo
 se animan transform, opacidad y color.
 
 Reglas de diseño: plano 2D, sin grillas de fondo ni adornos fuera de la geometría de marca; DM Sans 300/400/700; paleta `#FF3F1A`,
@@ -102,7 +100,7 @@ campaña, un paso de cebra visto desde arriba:
    (`preloadWorkspacePage`, del módulo workspace).
 
 Dura un mínimo de unos 3 s (y como mucho espera 8 s la descarga). Sale con una cortinilla del color del workspace,
-así que no se ve un corte al entrar. Cuando la cortinilla tapa la pantalla final, el juego de formas se desmonta.
+así que no se ve un corte al entrar. Cuando la cortinilla tapa la pantalla final, la escena se desmonta.
 Solo anima transform y opacidad de elementos HTML. Con movimiento reducido se ve la marca quieta y se entra en cuanto
 el workspace está listo.
 
@@ -129,7 +127,7 @@ La bienvenida debe ir fluida en teléfonos modestos y no calentar el equipo:
   los actos con un solo tirón por cambio de acto, y de 9.9 s a ~7.5 s de hilo principal ocupado en los 15 s.
 - Las cortinillas miden lo justo para cubrir la pantalla inclinada (100vw + 40vh), sin `will-change` permanente, y
   la naranja se oculta cuando la marina ya la cubre.
-- `GeometryPlayground` usa ~30 fps mientras las formas solo flotan. Tras unos segundos sin interacción frenan y el
-  bucle se detiene hasta la próxima interacción, y con la pestaña oculta también se detiene.
+- La pantalla Ready no tiene JavaScript en marcha: el fondo (`GeometryBackdrop`) es estático y la ilustración del
+  logotipo pausa sus bucles a los 6 s (`ArtStage` con `settleMs`).
 - `isLowPowerDevice()` (`hooks/motionBudget.ts`) detecta equipos modestos o con ahorro de datos: sin adornos en
-  bucle ni brillo final, el juego siempre a ~30 fps, con reposo más temprano y menos chispas.
+  bucle ni brillo final.

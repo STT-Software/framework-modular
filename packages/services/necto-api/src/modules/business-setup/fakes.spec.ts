@@ -133,7 +133,7 @@ export class FakeTurnosBaseSetup extends TurnosBaseSetup {
     super();
   }
   options(): readonly TurnosProfileOption[] {
-    return TURNOS_PROFILE_IDS.map((id) => ({ id, name: id, description: '', suggestedQueues: id === 'custom' ? [] : [{ name: `Cola ${id}`, mode: 'auto' as const, averageMinutes: 10 }] }));
+    return TURNOS_PROFILE_IDS.map((id) => ({ id, name: id, description: '', suggestedQueues: [{ name: `Cola ${id}`, mode: 'auto' as const, averageMinutes: 10 }] }));
   }
   suggestedFor(category: string): TurnosProfileId {
     return category === 'gastronomy' ? 'restaurant' : 'custom';

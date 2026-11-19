@@ -37,11 +37,11 @@ describe('opening the configuration', () => {
     assert.equal(repository.items.get(BUSINESS_ID)!.version, 2, 'one write for the seeding, none for reading');
   });
 
-  it('starts a business of another category with no suggestions', async () => {
+  it('starts a business of another category with the queues of its own profile', async () => {
     const { service } = twoBusinesses();
     const state = await service.get(OTHER_BUSINESS_ID);
-    assert.deepEqual(names(state), []);
-    assert.equal(state.suggestedProfile, 'custom');
+    assert.equal(state.suggestedProfile, 'clinic');
+    assert.ok(names(state).length > 0, 'every category starts with default queues');
   });
 
   it('answers not-found for a business that does not exist or is paused, and 403 module-not-enabled when it lacks Turnos', async () => {
@@ -70,7 +70,7 @@ describe('isolation between businesses', () => {
     await service.createQueue(BUSINESS_ID, queueInput('Solo de A'));
     await service.saveRules(BUSINESS_ID, { ...rules, urgentMinutes: 30 });
     const b = await service.get(OTHER_BUSINESS_ID);
-    assert.deepEqual(names(b), []);
+    assert.ok(!names(b).includes('Solo de A'));
     assert.equal(b.configuration.rules.urgentMinutes, 10);
     assert.equal(b.configuration.businessId, OTHER_BUSINESS_ID);
   });

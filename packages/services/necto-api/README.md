@@ -616,8 +616,9 @@ Colección propia: `turnos_configurations` (un documento por negocio, índices `
   escritura condicionada a la `version` leída**; si alguien escribió en medio, el cambio se recalcula sobre lo que escribió (hasta 5
   intentos) y, si no se logra, `409 concurrent-change`. Un negocio nunca muestra un operador sin fila.
 - **Primera apertura.** `GET` genera **una vez** las filas sugeridas por el perfil y las guarda (así tienen `id` estables). Abrir de nuevo no
-  genera nada. El perfil es el elegido en la configuración base o, si nadie eligió, el que sugiere la categoría (`gastronomy` → `restaurant`;
-  el resto → `custom`, sin filas).
+  genera nada. El perfil es el elegido en la configuración base o, si nadie eligió, el que sugiere la categoría (`gastronomy` → `restaurant`,
+  `health-wellness` → `clinic`, `retail` y `professional-services` → `bank`, `other` → `custom`). Todos los perfiles, incluido `custom`
+  («Atención general»), parten con al menos una fila.
 - Todas las respuestas llevan `Cache-Control: no-store`. **Cada escritura devuelve el estado completo** (el mismo del `GET`); `POST /queues` y
   `POST /operators` añaden `created: { id }` con el id de lo creado.
 

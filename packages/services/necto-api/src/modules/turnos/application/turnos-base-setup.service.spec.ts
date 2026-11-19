@@ -7,7 +7,7 @@ describe('the attention profile chosen in the base setup', () => {
   it('shows the profile the category suggests until one is chosen, and creates nothing by looking', async () => {
     const { baseSetup, repository } = setupTurnos();
     assert.equal(await baseSetup.current(BUSINESS_ID, 'gastronomy'), 'restaurant');
-    assert.equal(await baseSetup.current(BUSINESS_ID, 'retail'), 'custom');
+    assert.equal(await baseSetup.current(BUSINESS_ID, 'retail'), 'bank');
     assert.equal(baseSetup.suggestedFor('gastronomy'), 'restaurant');
     assert.equal(repository.items.size, 0);
     assert.deepEqual(await baseSetup.statusOf(BUSINESS_ID), { ready: false, queueCount: 0, operatorCount: 0 });
@@ -15,7 +15,7 @@ describe('the attention profile chosen in the base setup', () => {
 
   it('lists the five profiles with the queues each one suggests', () => {
     const { baseSetup } = setupTurnos();
-    assert.deepEqual(baseSetup.options().map((option) => [option.id, option.suggestedQueues.length]), [['clinic', 2], ['restaurant', 2], ['bank', 2], ['salon', 3], ['custom', 0]]);
+    assert.deepEqual(baseSetup.options().map((option) => [option.id, option.suggestedQueues.length]), [['clinic', 2], ['restaurant', 2], ['bank', 2], ['salon', 3], ['custom', 1]]);
   });
 
   it('stores the choice before Turnos was ever opened, and the first opening generates the queues of THAT profile', async () => {

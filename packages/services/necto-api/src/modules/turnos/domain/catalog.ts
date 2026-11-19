@@ -82,8 +82,8 @@ export const TURNOS_PROFILES = [
   {
     id: 'custom',
     name: 'Otro / Personalizado',
-    description: 'Empieza sin filas y crea tu propia forma de atender.',
-    queues: [],
+    description: 'Empieza con una fila general y crea tu propia forma de atender.',
+    queues: [{ name: 'Atención general', mode: 'auto', averageMinutes: 10 }],
   },
 ] as const satisfies ReadonlyArray<{ id: string; name: string; description: string; queues: readonly SuggestedQueue[] }>;
 
@@ -94,7 +94,13 @@ export function profileById(id: TurnosProfileId) {
   return TURNOS_PROFILES.find((profile) => profile.id === id) ?? TURNOS_PROFILES[TURNOS_PROFILES.length - 1];
 }
 
-/** The profile suggested for a business from its category (only gastronomy has its own; the rest start free). */
+const PROFILE_BY_CATEGORY: Readonly<Record<string, TurnosProfileId>> = {
+  gastronomy: 'restaurant',
+  'health-wellness': 'clinic',
+  retail: 'bank',
+  'professional-services': 'bank',
+};
+/** The profile suggested for a business from its category; every profile starts with default queues. */
 export function suggestedProfileFor(category: string): TurnosProfileId {
-  return category === 'gastronomy' ? 'restaurant' : 'custom';
+  return PROFILE_BY_CATEGORY[category] ?? 'custom';
 }

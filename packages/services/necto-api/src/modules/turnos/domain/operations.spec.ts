@@ -31,6 +31,7 @@ let counter = 0;
 const ids = () => `id-${++counter}`;
 const rules = { prefixMode: 'initial', dailyReset: true, urgentMinutes: 10, busyLimit: 4, fullLimit: 8 };
 
+const emptied = () => ({ ...seeded('custom'), queues: [] as ReturnType<typeof seeded>['queues'] });
 const seeded = (profile: 'clinic' | 'restaurant' | 'custom' = 'clinic') => ensureSeeded(newConfiguration('b1', NOW), profile, NOW, ids);
 const queueNamed = (config: TurnosConfiguration, name: string) => config.queues.find((queue) => queue.name === name)!;
 const operator = (name: string, email: string, queueIds: string[]) => ({ name, email, queueIds });
@@ -56,10 +57,10 @@ describe('suggested queues and the attention profile', () => {
     assert.equal(ensureSeeded(config, 'bank', NOW, ids), config, 'a second call changes nothing and generates nothing');
   });
 
-  it('uses the profile already chosen over the suggested one, and the custom profile starts without queues', () => {
+  it('uses the profile already chosen over the suggested one, and the custom profile starts with one general queue', () => {
     const chosen = { ...newConfiguration('b1', NOW), profile: 'salon' as const };
     assert.deepEqual(ensureSeeded(chosen, 'restaurant', NOW, ids).queues.map((queue) => queue.name), ['Corte', 'Color', 'Uñas']);
-    assert.deepEqual(seeded('custom').queues, []);
+    assert.deepEqual(seeded('custom').queues.map((queue) => queue.name), ['Atención general']);
   });
 
   it('replaces untouched suggestions when the profile changes', () => {
@@ -133,7 +134,7 @@ describe('queues', () => {
   });
 
   it('going back to the general value is just leaving the own value empty', () => {
-    let config = addQueue(seeded('custom'), { name: 'Caja', mode: 'auto', averageMinutes: 5, overrides: { prefix: 'Z', urgentMinutes: 3 } }, NOW, ids);
+    let config = addQueue(emptied(), { name: 'Caja', mode: 'auto', averageMinutes: 5, overrides: { prefix: 'Z', urgentMinutes: 3 } }, NOW, ids);
     config = updateQueue(config, config.queues[0].id, { name: 'Caja', mode: 'auto', averageMinutes: 5, overrides: { urgentMinutes: 3 } }, NOW);
     assert.deepEqual(config.queues[0].overrides, { prefix: null, urgentMinutes: 3, busyLimit: null, fullLimit: null });
   });
@@ -143,7 +144,7 @@ describe('queues', () => {
     assert.ok(failure(() => addQueue(config, { name: 'laboratorio', mode: 'auto', averageMinutes: 5 }, NOW, ids)) instanceof TurnosInvalidError);
     assert.ok(failure(() => updateQueue(config, 'nope', { name: 'X1', mode: 'auto', averageMinutes: 5 }, NOW)) instanceof QueueNotFoundError);
     assert.ok(failure(() => updateQueue(config, config.queues[0].id, { name: 'laboratorio', mode: 'auto', averageMinutes: 5 }, NOW)) instanceof TurnosInvalidError);
-    let full = seeded('custom');
+    let full = emptied();
     for (let i = 0; i < 30; i++) full = addQueue(full, { name: `Fila ${i}`, mode: 'auto', averageMinutes: 5 }, NOW, ids);
     assert.ok(failure(() => addQueue(full, { name: 'Una más', mode: 'auto', averageMinutes: 5 }, NOW, ids)) instanceof TurnosInvalidError);
   });
@@ -175,7 +176,7 @@ describe('general rules and inheritance', () => {
   });
 
   it('refuses full not above busy even when nothing is inherited from a queue', () => {
-    const error = failure(() => setRules(seeded('custom'), { ...rules, busyLimit: 8, fullLimit: 8 }, NOW));
+    const error = failure(() => setRules(emptied(), { ...rules, busyLimit: 8, fullLimit: 8 }, NOW));
     assert.ok(error instanceof TurnosInvalidError && error.fields.fullLimit);
   });
 
@@ -218,7 +219,7 @@ describe('operators', () => {
   });
 
   it('cannot add an operator while there are no queues', () => {
-    assert.ok(failure(() => addOperator(seeded('custom'), operator('Laura', 'laura@x.co', ['x']), NOW, ids)) instanceof TurnosInvalidError);
+    assert.ok(failure(() => addOperator(emptied(), operator('Laura', 'laura@x.co', ['x']), NOW, ids)) instanceof TurnosInvalidError);
   });
 
   it('cannot leave an operator without queues by editing it, and removes only the assignment when deleted', () => {
@@ -292,7 +293,7 @@ describe('deleting a queue with reassignment', () => {
   });
 
   it('refuses to delete the only queue while it has operators, and allows it when nobody depends on it', () => {
-    let config = addQueue(seeded('custom'), { name: 'Única', mode: 'auto', averageMinutes: 5 }, NOW, ids);
+    let config = addQueue(emptied(), { name: 'Única', mode: 'auto', averageMinutes: 5 }, NOW, ids);
     const only = config.queues[0].id;
     const free = removeQueue(config, only, [], LATER);
     assert.deepEqual(free.queues, []);
@@ -307,7 +308,7 @@ describe('deleting a queue with reassignment', () => {
 
 describe('progress and saving as ready', () => {
   it('needs at least one queue and valid rules; operators are optional', () => {
-    const empty = seeded('custom');
+    const empty = emptied();
     const error = failure(() => markReady(empty, NOW));
     assert.ok(error instanceof TurnosIncompleteError && error.fields.queues);
     const ready = markReady(addQueue(empty, { name: 'Caja', mode: 'auto', averageMinutes: 5 }, NOW, ids), NOW);

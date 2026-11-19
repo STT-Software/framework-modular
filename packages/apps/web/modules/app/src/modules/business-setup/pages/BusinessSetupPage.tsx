@@ -175,6 +175,11 @@ const BusinessSetupPage = observer(() => {
           <ModulesView
             onStart={() => void go(startStep)}
             onConfigure={(moduleId) => {
+              // Turnos se configura en su propio módulo; los demás empiezan por la base, en el horario de ese módulo.
+              if (moduleId === "turnos" && businessId) {
+                navigate(`/business/turnos/${businessId}/profile`);
+                return;
+              }
               store.setHoursScope(moduleId as ModuleId);
               void go("data");
             }}
@@ -207,6 +212,7 @@ const BusinessSetupPage = observer(() => {
         </button>
       </footer>
       <SavedDialog
+        hasTurnos={state?.turnos != null}
         open={saved}
         onClose={() => {
           setSaved(false);

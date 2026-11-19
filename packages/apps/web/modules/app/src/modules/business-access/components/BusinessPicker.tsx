@@ -5,7 +5,10 @@ import { useFocusHeading } from "../hooks/useFocusHeading";
 import { businessInitials } from "../initials";
 import { adminAccessStore } from "../stores/adminAccess.store";
 
-/** Step 4, only for people who administer more than one business: just the ones the server authorized. */
+/**
+ * Step 4, only for people with more than one access: a business in a role, just the ones the server authorized. The same email
+ * can be the administrator of one business and an operator of another (or both in the same one), so the role is part of the choice.
+ */
 export const BusinessPicker = observer(() => {
   const store = adminAccessStore;
   const headingRef = useFocusHeading();
@@ -20,21 +23,23 @@ export const BusinessPicker = observer(() => {
       <h1 id={`${baseId}-title`} ref={headingRef} tabIndex={-1}>
         ¿Dónde comenzamos<span>?</span>
       </h1>
-      <p className="na-description">Tu correo tiene acceso a estos negocios. Elige a cuál quieres entrar.</p>
+      <p className="na-description">Tu correo tiene acceso a estos negocios. Elige a cuál quieres entrar y con qué rol.</p>
       <div className="na-business-picker">
-        {store.businesses.map((business) => (
+        {store.accesses.map((access) => (
           <button
-            key={business.id}
+            key={access.key}
             type="button"
             className="na-business-choice"
-            aria-label={`Entrar a ${business.name}`}
+            aria-label={`Entrar a ${access.businessName}${access.role === "operator" ? " como operador" : " como administrador"}`}
             disabled={store.busy}
-            onClick={() => void store.openBusiness(business.id)}
+            onClick={() => void store.openAccess(access.key)}
           >
-            <span className="na-business-avatar">{businessInitials(business.name)}</span>
+            <span className="na-business-avatar">{businessInitials(access.businessName)}</span>
             <div>
-              <strong>{business.name}</strong>
-              <span>{categoryLabel(business.category as CategoryId, business.categoryOther)}</span>
+              <strong>{access.businessName}</strong>
+              <span>
+                {categoryLabel(access.category as CategoryId, access.categoryOther)} · {access.role === "operator" ? "Operador" : "Administrador"}
+              </span>
             </div>
             <span aria-hidden="true">→</span>
           </button>
@@ -45,7 +50,7 @@ export const BusinessPicker = observer(() => {
           {store.error}
         </p>
       )}
-      <p className="na-picker-note">Esta selección solo aparece cuando administras más de un negocio.</p>
+      <p className="na-picker-note">Esta selección solo aparece cuando tienes más de un acceso (por negocio o por rol).</p>
       <button
         className="na-help-link"
         type="button"

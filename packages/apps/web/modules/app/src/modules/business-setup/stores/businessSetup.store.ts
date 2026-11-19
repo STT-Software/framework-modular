@@ -121,6 +121,8 @@ class BusinessSetupStore {
 
   categoryDraft: CategoryId | null = null;
   categoryOther = "";
+  /** El perfil de atención de Turnos que se está eligiendo (solo para un negocio con Turnos). */
+  turnosProfileDraft: string | null = null;
   categoryError = "";
   private categoryDirty = false;
 
@@ -203,6 +205,7 @@ class BusinessSetupStore {
   private hydrateCategory(state: SetupState): void {
     this.categoryDraft = state.category.id;
     this.categoryOther = blank(state.category.other);
+    this.turnosProfileDraft = state.turnos?.profile ?? null;
     this.categoryError = "";
     this.categoryDirty = false;
   }
@@ -489,6 +492,11 @@ class BusinessSetupStore {
     this.categoryDirty = true;
   }
 
+  chooseTurnosProfile(profile: string): void {
+    this.turnosProfileDraft = profile;
+    this.categoryDirty = true;
+  }
+
   setCategoryOther(value: string): void {
     this.categoryOther = value;
     this.categoryError = "";
@@ -506,8 +514,11 @@ class BusinessSetupStore {
     if (!this.validateCategory() || !this.categoryDraft) return false;
     const category = this.categoryDraft;
     const other = category === "other" ? this.categoryOther.trim() : null;
+    // El perfil de Turnos solo se envía si la persona lo cambió: elegirlo es de Turnos, que no pierde lo que ya configuró.
+    const turnos = this.state?.turnos;
+    const profile = turnos && this.turnosProfileDraft && this.turnosProfileDraft !== turnos.profile ? this.turnosProfileDraft : null;
     return this.write(
-      (token, id) => businessSetupApi.saveCategory(token, id, category, other),
+      (token, id) => businessSetupApi.saveCategory(token, id, category, other, profile),
       (state) => this.hydrateCategory(state),
       (error) => {
         if (error.fields.categoryOther) this.categoryError = "Escribe el tipo de negocio personalizado.";

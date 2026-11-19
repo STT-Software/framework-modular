@@ -625,7 +625,7 @@ Colección propia: `turnos_configurations` (un documento por negocio, índices `
 ```json
 {
   "business": { "id": "…", "name": "Casa Oliva", "category": "gastronomy", "categoryOther": null },
-  "profile": { "id": "restaurant", "suggested": "restaurant" },
+  "profile": { "id": "restaurant", "suggested": "restaurant", "suggestionsUntouched": true },
   "queues": [
     {
       "id": "…", "name": "Pedidos en caja", "color": "orange", "mode": "auto", "averageMinutes": 8, "source": "restaurant",
@@ -640,6 +640,8 @@ Colección propia: `turnos_configurations` (un documento por negocio, índices `
   "catalog": { "profiles": [{ "id": "clinic", "name": "Clínica / Salud", "description": "…", "suggestedQueues": [{ "name": "Consulta general", "mode": "auto", "averageMinutes": 14 }] }], "colors": ["orange", "purple", "blue", "green", "pink", "amber"], "modes": ["auto", "manual"], "prefixModes": ["initial", "fixed", "none"], "steps": ["profile", "queues", "rules", "operators", "review"], "limits": { "…": "…" } }
 }
 ```
+- `profile.suggestionsUntouched`: `true` mientras las filas siguen siendo las sugeridas sin tocar y no hay operadores (cambiar el perfil las **reemplaza**); `false`
+  cuando hay trabajo de la persona (cambiar el perfil lo conserva): la pantalla debe ofrecer «Solo cambiar perfil» o «Añadir sugerencias».
 - `queues[].source`: `"custom"` (la creó la persona) o el id del perfil que la sugirió («Sugerida · Clínica / Salud» en la pantalla).
 - `queues[].overrides`: lo que la fila fija **por su cuenta**; `null` es «usa la regla general», **campo por campo**. `effective` es lo que la fila usa de
   verdad (propio o heredado) y `ticketExample` el número de ejemplo (`C-001`, `T-001`, `001`): la pantalla no necesita recalcular la herencia.

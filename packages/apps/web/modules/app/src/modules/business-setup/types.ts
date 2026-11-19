@@ -33,7 +33,8 @@ export interface SetupState {
     name: string;
     description: string;
     schedule: { mode: "inherited" | "custom" };
-    settings: { status: "pending" };
+    /** Lo dice el propio módulo: hoy solo Turnos llega a `ready` (con `summary`). */
+    settings: { status: "pending" | "ready"; summary?: { queueCount: number; operatorCount: number } };
   }>;
   profile: {
     name: string;
@@ -46,6 +47,12 @@ export interface SetupState {
     description: string | null;
   };
   category: { id: CategoryId; other: string | null };
+  /** Solo para un negocio con Turnos: el perfil de atención que sugiere sus primeras filas (lo guarda Turnos). */
+  turnos: {
+    profile: string;
+    suggested: string;
+    profiles: Array<{ id: string; name: string; description: string; suggestedQueues: string[] }>;
+  } | null;
   logo: { contentType: string; sizeBytes: number; updatedAt: string; url: string } | null;
   schedule: {
     timezone: string;

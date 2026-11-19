@@ -48,11 +48,32 @@ export interface AdministeredBusiness {
   modules: string[];
 }
 
+/** Un rol de la persona en un negocio: administrador (jefe) u operador de un módulo. */
+export type AccessRole = "admin" | "operator";
+/**
+ * Algo que la persona puede abrir ahora mismo: un negocio en un rol. Un mismo correo puede tener varios (jefe de un negocio,
+ * operador de otro, o ambos en el mismo). Lo decide el servidor en cada petición; esto solo lo muestra.
+ */
+export interface AccessGrant {
+  /** `<businessId>:<role>` */
+  key: string;
+  businessId: string;
+  businessName: string;
+  category: string;
+  categoryOther: string | null;
+  role: AccessRole;
+  /** Administrador: los módulos habilitados del negocio. Operador: solo el módulo al que está asignado. */
+  modules: string[];
+  personName: string;
+}
 /** Lo que recibe el navegador al abrir o renovar una sesión. */
 export interface SessionGrant {
   accessToken: string;
   expiresInSeconds: number;
   admin: { email: string; remember: boolean };
+  /** Todo lo que puede abrir, en cualquier rol. */
+  accesses: AccessGrant[];
+  /** Solo los negocios que administra (los mismos accesos con rol `admin`). */
   businesses: AdministeredBusiness[];
 }
 

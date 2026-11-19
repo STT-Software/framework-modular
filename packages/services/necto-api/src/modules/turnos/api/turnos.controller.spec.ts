@@ -73,7 +73,7 @@ describe('what the API shows', () => {
   it('describes the progress, the profile and the catalog the interface needs', async () => {
     const { service } = setupTurnos();
     const response = toTurnosResponse(await service.get(BUSINESS_ID));
-    assert.deepEqual(response.profile, { id: 'restaurant', suggested: 'restaurant' });
+    assert.deepEqual(response.profile, { id: 'restaurant', suggested: 'restaurant', suggestionsUntouched: true });
     assert.deepEqual(response.progress, { currentStep: null, visitedSteps: [], ready: false, readyAt: null });
     assert.deepEqual(response.catalog.profiles.map((profile) => profile.id), ['clinic', 'restaurant', 'bank', 'salon', 'custom']);
     assert.deepEqual(response.catalog.colors, ['orange', 'purple', 'blue', 'green', 'pink', 'amber']);
@@ -82,13 +82,23 @@ describe('what the API shows', () => {
     assert.ok(!('created' in response));
   });
 
+  it('tells the interface whether changing the profile would replace the suggestions or keep everything', async () => {
+    const { service } = setupTurnos();
+    const untouched = toTurnosResponse(await service.get(BUSINESS_ID));
+    assert.equal(untouched.profile.suggestionsUntouched, true);
+    const edited = toTurnosResponse(await service.createQueue(BUSINESS_ID, { name: 'Propia', mode: 'auto', averageMinutes: 5 }));
+    assert.equal(edited.profile.suggestionsUntouched, false);
+    const state = await service.changeProfile(BUSINESS_ID, 'bank', false);
+    assert.equal(toTurnosResponse(state).profile.suggestionsUntouched, false, 'it stays false: the work is kept');
+  });
+
   it('lists the operators with their queues and never anything internal of the document', async () => {
     const { service } = setupTurnos();
     const state = await service.get(BUSINESS_ID);
     const response = toTurnosResponse(await service.createOperator(BUSINESS_ID, { name: 'Laura', email: 'laura@x.co', queueIds: [state.configuration.queues[0].id] }));
     assert.deepEqual(Object.keys(response.operators[0]).sort(), ['createdAt', 'email', 'id', 'name', 'phone', 'queueIds']);
     const json = JSON.stringify(response);
-    assert.ok(!json.includes('version') && !json.includes('touched') && !json.includes('seeded'));
+    for (const internal of ['version', 'touched', 'seeded']) assert.ok(!json.includes(`"${internal}"`), `${internal} is internal to the document`);
   });
 
   it('shows an operator only themselves and their queues', async () => {

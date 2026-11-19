@@ -26,7 +26,15 @@ export function toTurnosResponse(state: TurnosState) {
   const { configuration: config } = state;
   return {
     business: state.business,
-    profile: { id: config.profile, suggested: state.suggestedProfile },
+    profile: {
+      id: config.profile,
+      suggested: state.suggestedProfile,
+      /**
+       * True while the queues are still the untouched suggestions and there are no operators: changing the profile then REPLACES
+       * them. False: changing it keeps everything, and the interface should offer to add the new suggestions (`addSuggestedQueues`).
+       */
+      suggestionsUntouched: !config.touched && config.operators.length === 0,
+    },
     queues: config.queues.map((queue) => queueResponse(queue, config)),
     rules: { ...config.rules },
     operators: config.operators.map((operator) => ({

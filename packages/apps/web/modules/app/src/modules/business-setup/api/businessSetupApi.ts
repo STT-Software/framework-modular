@@ -82,8 +82,11 @@ export const businessSetupApi = {
   get: (token: string, businessId: string) => json(root(businessId), token),
   saveProfile: (token: string, businessId: string, body: Record<string, string | null>) =>
     json(`${root(businessId)}/profile`, token, { method: "PUT", json: body }),
-  saveCategory: (token: string, businessId: string, category: string, categoryOther: string | null) =>
-    json(`${root(businessId)}/category`, token, { method: "PUT", json: categoryOther === null ? { category } : { category, categoryOther } }),
+  saveCategory: (token: string, businessId: string, category: string, categoryOther: string | null, turnosProfile: string | null) =>
+    json(`${root(businessId)}/category`, token, {
+      method: "PUT",
+      json: { category, ...(categoryOther === null ? {} : { categoryOther }), ...(turnosProfile === null ? {} : { turnosProfile }) },
+    }),
   saveSchedule: (token: string, businessId: string, schedule: WeekSchedule) =>
     json(`${root(businessId)}/schedule`, token, { method: "PUT", json: { schedule } }),
   saveModuleSchedule: (token: string, businessId: string, moduleId: ModuleId, body: { inherit: boolean; schedule?: WeekSchedule }) =>

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 /** Aviso de que la base quedó preparada. Dice con claridad que los ajustes de cada módulo siguen pendientes. */
-export function SavedDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function SavedDialog({ open, hasTurnos, onClose }: { open: boolean; hasTurnos: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;
@@ -22,7 +22,9 @@ export function SavedDialog({ open, onClose }: { open: boolean; onClose: () => v
         La base de tu negocio está lista<span>.</span>
       </h2>
       <p>
-        Revisaste los datos, el tipo de negocio y sus horarios. Los ajustes específicos de cada módulo quedan para la siguiente etapa.
+        {hasTurnos
+          ? "Revisaste los datos, el tipo de negocio y sus horarios. Puedes continuar con las filas, reglas y operadores desde la tarjeta de Turnos. Los demás módulos se incorporarán después."
+          : "Revisaste los datos, el tipo de negocio y sus horarios. Los ajustes específicos de cada módulo quedan para la siguiente etapa."}
       </p>
       <button className="no-primary" type="button" onClick={onClose}>
         Ver mis módulos <span aria-hidden="true">→</span>

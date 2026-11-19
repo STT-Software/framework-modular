@@ -11,12 +11,12 @@ No registra rutas propias: sus piezas se montan dentro del layout del [workspace
 
 | Pieza | Para qué |
 |-------|----------|
-| `businessesStore` | Página actual de negocios con filtros aplicados **por el servidor**, el conteo total (lateral) y el aviso tras guardar. Se vacía al cerrar sesión. |
+| `businessesStore`, `PAGE_SIZE`, `SWITCHER_PAGE_SIZE` | Página actual de negocios con filtros aplicados **por el servidor**, porción sin filtros (`switcherItems` + `loadSwitcher()`, hasta `SWITCHER_PAGE_SIZE = 50`) para el selector superior y avisos, conteo total (lateral) y aviso tras guardar. Se vacía al cerrar sesión. |
 | `BusinessCard` | Tarjeta del directorio. |
 | `BusinessDetailDialog` | Ficha con pestañas **Resumen**, **Módulos** y **Equipo** (teclado: flechas, Inicio y Fin). Pausar/reanudar y *Editar configuración*. |
 | `BusinessWizard` | Los 3 pasos: Identidad, Módulos y Jefe de negocio, con el panel lateral de avance. Sirve para crear y para editar. |
 | `businessesApi`, `BusinessesError` | Cliente HTTP (`/api/businesses`, que Vite redirige al backend; `VITE_BUSINESSES_API_URL` en otros entornos). |
-| `downloadBlob`, `businessErrorMessage`, `CATEGORIES` | Utilidades. |
+| `downloadBlob`, `businessErrorMessage`, `CATEGORIES`, `categoryLabel`, `initialsOf`, `moduleInfo` | Utilidades y catálogo visual (incluye cálculo de iniciales `initialsOf`). |
 
 ## Comportamientos a tener en cuenta
 
@@ -46,7 +46,9 @@ businesses/
 ├── index.ts            Puerta pública
 ├── types.ts · catalog.ts · draft.ts · errors.ts · download.ts   Tipos, catálogo visual, borrador y validación del formulario, textos de error
 ├── api/businessesApi.ts
-├── stores/businesses.store.ts
+├── stores/
+│   ├── businesses.store.ts         Estado del directorio, conteo total y porción sin filtros (`switcherItems` / `loadSwitcher`)
+│   └── businesses.store.test.ts    Pruebas unitarias (Vitest) de la porción del selector, concurrencia, invalidación y reinicio
 ├── components/         BusinessCard, BusinessDetailDialog, InvitationPanel, BusinessWizard, BossDialog, SummaryPanel, ModuleIcon, StatusBadge
 └── styles/businesses.css   Prefijos `bs-` y `ws-business-*`; usa las variables `--ws-*` del workspace (por eso vive dentro de su layout)
 ```

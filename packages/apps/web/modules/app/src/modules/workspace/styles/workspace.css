@@ -189,3 +189,76 @@
 .ws .ws-filter-select svg { right: 8px; color: var(--ws-soft-text); }
 
 .ws-brand { text-decoration: none; }
+
+/*
+ * Popovers de la barra superior (notificaciones y ayuda), con el lenguaje de las escenas de Necto. Las ilustraciones
+ * (`components/workspaceArt.tsx`) se pintan solo con estas clases `ws-art-*`, así siguen el tema claro/oscuro.
+ */
+.ws-art-scope {
+  --ws-art-paper:#fff;--ws-art-line:#dfe4ef;--ws-art-ink:#190088;--ws-art-accent:#ff3f1a;--ws-art-cyan:#97d6df;
+  --ws-pop-soft:#f7f8fb;--ws-pop-tint:#fff4f0;
+}
+.dark .ws-art-scope {
+  --ws-art-paper:#1b2740;--ws-art-line:rgba(255,255,255,.14);--ws-art-ink:#d9d0ff;--ws-art-accent:#ff3f1a;--ws-art-cyan:#97d6df;
+  --ws-pop-soft:rgba(255,255,255,.04);--ws-pop-tint:rgba(255,106,77,.1);
+}
+.ws-art {display:block;width:100%;height:auto;}
+.ws-art-card {fill:var(--ws-art-paper);stroke:var(--ws-art-line);stroke-width:1.3;}
+.ws-art-soft {fill:color-mix(in srgb,var(--ws-art-line) 45%,var(--ws-art-paper));}
+.ws-art-orbit {fill:none;stroke:var(--ws-art-line);stroke-dasharray:3 6;}
+.ws-art-link {fill:none;stroke:var(--ws-art-ink);stroke-opacity:.35;stroke-width:1.2;stroke-linecap:round;}
+.ws-art-icon {fill:none;stroke:var(--ws-art-ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.ws-art-icon-accent {fill:none;stroke:var(--ws-art-accent);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+.ws-art-orange {fill:var(--ws-art-accent);}
+.ws-art-orange-tint {fill:color-mix(in srgb,var(--ws-art-accent) 10%,var(--ws-art-paper));}
+.ws-art-on-accent {fill:#fff;}
+.ws-art-cyan {fill:var(--ws-art-cyan);}
+.ws-art-check {fill:none;stroke:#190088;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.ws-art-spark {fill:var(--ws-art-accent);opacity:.85;}
+.dark .ws-art-scope .ws-art-mark path[fill="#190088"] {fill:#fff;}
+
+/* Cabecera y piezas comunes: misma línea que el menú de ayuda (minimalista, naranja solo como acento) */
+.ws-pop-head {display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.ws-pop-title {display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;letter-spacing:-.01em;color:#101828;margin:0;}
+.dark .ws-pop-title {color:#fff;}
+.ws-pop-count {min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--ws-art-accent);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
+.ws-pop-link {white-space:nowrap;font-size:12px;font-weight:500;color:#667085;background:none;border:0;cursor:pointer;padding:4px 2px;}
+.ws-pop-link:hover {color:#101828;}
+.dark .ws-pop-link {color:#98a2b3;}
+.dark .ws-pop-link:hover {color:#fff;}
+.ws-pop-link:disabled {color:#98a2b3;cursor:default;}
+.ws-pop-close {display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:999px;color:#667085;background:none;border:0;cursor:pointer;}
+.ws-pop-close:hover {background:#f2f4f7;color:#101828;}
+.dark .ws-pop-close:hover {background:rgba(255,255,255,.06);color:#fff;}
+
+/* Avisos: filas separadas por una línea fina, sin caja; el no leído solo lleva el punto */
+.ws-note {position:relative;display:flex;gap:12px;padding:12px 8px;border-radius:12px;transition:background 140ms ease;}
+.ws-note + .ws-note::before {content:"";position:absolute;left:8px;right:8px;top:0;height:1px;background:#f2f4f7;}
+.dark .ws-note + .ws-note::before {background:rgba(255,255,255,.06);}
+.ws-note:hover {background:#f9fafb;}
+.dark .ws-note:hover {background:rgba(255,255,255,.03);}
+.ws-note-dot {position:absolute;top:16px;right:10px;width:7px;height:7px;border-radius:999px;background:var(--ws-art-accent);}
+.ws-note-token {flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:999px;background:#f2f4f7;color:#344054;}
+.dark .ws-note-token {background:rgba(255,255,255,.06);color:#d0d5dd;}
+.ws-note-token svg {width:18px;height:18px;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.dark .ws-note-token.is-necto path[fill="#190088"] {fill:#fff;}
+.ws-note-body {min-width:0;flex:1;text-align:left;background:none;border:0;padding:0;cursor:pointer;color:inherit;}
+.ws-note-eyebrow {display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:#98a2b3;padding-right:16px;}
+.ws-note-eyebrow b {color:#667085;font-weight:600;}
+.dark .ws-note-eyebrow b {color:#98a2b3;}
+.ws-note-title {display:block;margin-top:2px;font-size:13px;font-weight:600;color:#101828;line-height:1.4;}
+.dark .ws-note-title {color:#f2f4f7;}
+.ws-note-detail {display:block;margin-top:2px;font-size:12px;line-height:1.55;color:#667085;}
+.dark .ws-note-detail {color:#98a2b3;}
+.ws-note-art {display:block;margin-top:10px;padding:8px 6px 4px;border-radius:16px;background:#f6f6f8;border:1px solid rgba(228,231,236,.6);}
+.dark .ws-note-art {background:rgba(31,41,55,.6);border-color:#1f2937;}
+.ws-note-dismiss {position:absolute;right:4px;bottom:8px;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;color:#98a2b3;background:none;border:0;cursor:pointer;opacity:0;transition:opacity 140ms ease,background 140ms ease;}
+.ws-note:hover .ws-note-dismiss,.ws-note-dismiss:focus-visible {opacity:1;}
+.ws-note-dismiss:hover {background:#f2f4f7;color:#101828;}
+.dark .ws-note-dismiss:hover {background:rgba(255,255,255,.06);color:#fff;}
+@media (hover:none) {.ws-note-dismiss {opacity:1;}}
+.ws-pop-empty {text-align:center;padding:6px 8px 4px;}
+.ws-pop-empty .ws-art {max-width:170px;margin:0 auto;}
+.ws-pop-empty strong {display:block;margin-top:6px;font-size:14px;color:#101828;}
+.dark .ws-pop-empty strong {color:#fff;}
+.ws-pop-empty p {margin:4px 0 0;font-size:12px;color:#667085;}

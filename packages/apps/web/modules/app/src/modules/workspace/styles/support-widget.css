@@ -1,0 +1,295 @@
+/*
+ * Floating Support Widget — Motion and visual helpers (prefix `ws-support-`).
+ *
+ * All animations only touch `opacity` and `transform` (zero `filter` animations)
+ * and degrade gracefully to subtle opacity fades under `prefers-reduced-motion`.
+ */
+
+/* ── Floating Panel ──────────────────────────────────────────────────────── */
+
+.ws-support-panel {
+  transform-origin: bottom right;
+  transition:
+    opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@starting-style {
+  .ws-support-panel {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+}
+
+/* Closing runs faster than opening so dismissal feels crisp and responsive. */
+.ws-support-panel[data-state="closed"] {
+  opacity: 0;
+  transform: translateY(12px) scale(0.95);
+  transition-duration: 170ms;
+  pointer-events: none;
+}
+
+/* ── Brand Mark on Dark Indigo Avatar ────────────────────────────────────── */
+
+/* Keeps the orange N intact while recoloring the indigo corner path to white. */
+.ws-support-mark-on-indigo path[fill="#190088"] {
+  fill: #ffffff;
+}
+
+/* ── Draggable Launcher Button ───────────────────────────────────────────── */
+
+@keyframes ws-support-launcher-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+  }
+}
+
+.ws-support-launcher {
+  transition:
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ws-support-launcher:not(.is-entered):not(.is-repositioned) {
+  animation: ws-support-launcher-enter 400ms cubic-bezier(0.22, 1, 0.36, 1) 600ms backwards;
+}
+
+.ws-support-launcher:active {
+  cursor: grabbing;
+}
+
+.ws-support-launcher.is-entered,
+.ws-support-launcher.is-repositioned {
+  animation: none !important;
+}
+
+.ws-support-launcher.is-dragging {
+  cursor: grabbing !important;
+  transition: none !important;
+  animation: none !important;
+  box-shadow: 0 18px 36px -4px rgba(255, 63, 26, 0.5) !important;
+}
+
+.ws-support-launcher__grip {
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ws-support-launcher:not(.is-dragging):hover {
+    transform: scale(1.05);
+  }
+
+  .ws-support-launcher:not(.is-dragging):hover:active {
+    transform: scale(0.97);
+  }
+}
+
+.ws-support-launcher__icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    opacity 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Opposing rotations morph the chat bubble smoothly into the close X and back. */
+.ws-support-launcher__icon--chat.is-hidden {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.6);
+}
+
+.ws-support-launcher__icon--close.is-hidden {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.6);
+}
+
+/* ── Home Hero & Avatar Cluster Entrance ─────────────────────────────────── */
+
+@keyframes ws-support-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes ws-support-avatar-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-6px) scale(0.85);
+  }
+}
+
+.ws-support-hero > * {
+  animation: ws-support-rise 300ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.ws-support-hero > *:nth-child(2) { animation-delay: 60ms; }
+.ws-support-hero > *:nth-child(3) { animation-delay: 100ms; }
+.ws-support-hero > *:nth-child(4) { animation-delay: 140ms; }
+
+.ws-support-avatars > * {
+  animation: ws-support-avatar-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.ws-support-avatars > *:nth-child(1) { animation-delay: 80ms; }
+.ws-support-avatars > *:nth-child(2) { animation-delay: 120ms; }
+.ws-support-avatars > *:nth-child(3) { animation-delay: 160ms; }
+.ws-support-avatars > *:nth-child(4) { animation-delay: 200ms; }
+
+/* ── Staggered List Entrance ─────────────────────────────────────────────── */
+
+@keyframes ws-support-list-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.ws-support-stagger > * {
+  animation: ws-support-list-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.ws-support-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.ws-support-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.ws-support-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.ws-support-stagger > *:nth-child(4) { animation-delay: 120ms; }
+.ws-support-stagger > *:nth-child(5) { animation-delay: 160ms; }
+.ws-support-stagger > *:nth-child(6) { animation-delay: 200ms; }
+.ws-support-stagger > *:nth-child(7) { animation-delay: 240ms; }
+.ws-support-stagger > *:nth-child(n + 8) { animation-delay: 280ms; }
+
+/* ── Directional View Transitions ────────────────────────────────────────── */
+
+@keyframes ws-support-view-forward {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes ws-support-view-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+.ws-support-view--forward {
+  animation: ws-support-view-forward 240ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.ws-support-view--backward {
+  animation: ws-support-view-backward 240ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+/* ── Chat Message Entrances ──────────────────────────────────────────────── */
+
+@keyframes ws-support-message-user {
+  from {
+    opacity: 0;
+    transform: translate(8px, 8px) scale(0.97);
+  }
+}
+
+@keyframes ws-support-message-assistant {
+  from {
+    opacity: 0;
+    transform: translate(-8px, 8px) scale(0.97);
+  }
+}
+
+.ws-support-message--user {
+  transform-origin: bottom right;
+  animation: ws-support-message-user 240ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.ws-support-message--assistant {
+  transform-origin: bottom left;
+  animation: ws-support-message-assistant 240ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+/* ── Three-Dot Necto Wave Typing Indicator ───────────────────────────────── */
+
+@keyframes ws-support-typing-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.ws-support-typing > span {
+  animation: ws-support-typing-dot 1100ms ease-in-out infinite;
+}
+.ws-support-typing > span:nth-child(2) { animation-delay: 140ms; }
+.ws-support-typing > span:nth-child(3) { animation-delay: 280ms; }
+
+/* ── Reduced Motion ──────────────────────────────────────────────────────── */
+
+@keyframes ws-support-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ws-support-typing-dot-soft {
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-support-panel,
+  .ws-support-panel[data-state="closed"] {
+    transform: none;
+    transition: opacity 150ms ease-out;
+  }
+
+  @starting-style {
+    .ws-support-panel {
+      transform: none;
+    }
+  }
+
+  .ws-support-launcher:not(.is-entered):not(.is-repositioned),
+  .ws-support-hero > *,
+  .ws-support-avatars > *,
+  .ws-support-stagger > *,
+  .ws-support-view--forward,
+  .ws-support-view--backward,
+  .ws-support-message--user,
+  .ws-support-message--assistant {
+    animation: ws-support-fade 150ms ease-out backwards;
+  }
+
+  .ws-support-launcher:active,
+  .ws-support-launcher:hover,
+  .ws-support-launcher__icon--chat.is-hidden,
+  .ws-support-launcher__icon--close.is-hidden {
+    transform: none;
+  }
+
+  .ws-support-typing > span {
+    opacity: 0.4;
+    animation: ws-support-typing-dot-soft 1100ms ease-in-out infinite;
+  }
+}

@@ -7,7 +7,7 @@ import { PageMeta } from "@/shell/meta";
 import { cn } from "@/utils";
 import { BusinessDirectory } from "../components/BusinessDirectory";
 import { WorkspaceLayout } from "../components/WorkspaceLayout";
-import { editBusinessPath, NEW_BUSINESS_PATH } from "../paths";
+import { NEW_BUSINESS_PATH } from "../paths";
 
 /**
  * The workspace: where a super admin lands after logging in and completing the profile. It shows the directory
@@ -92,8 +92,6 @@ const WorkspacePage = observer(() => {
       <BusinessDirectory
         onCreate={() => navigate(NEW_BUSINESS_PATH)}
         onReplay={replay}
-        onEdit={(business) => navigate(editBusinessPath(business.id))}
-        onAnnounce={setAnnouncement}
       />
     </WorkspaceLayout>
   );

@@ -5,15 +5,21 @@ import { businessErrorMessage } from "../errors";
 import type { Business, BusinessFilters } from "../types";
 
 export const PAGE_SIZE = 12;
+export const SWITCHER_PAGE_SIZE = 50;
 const NO_FILTERS: BusinessFilters = { q: "", category: "", status: "" };
 
-type LoadState = "idle" | "loading" | "ready" | "error";
+export type LoadState = "idle" | "loading" | "ready" | "error";
+
+/** Minimal API contract required by BusinessesStore (injectable in unit tests). */
+export type BusinessesListApi = Pick<typeof businessesApi, "list">;
 
 /**
- * The businesses of the signed-in super admin, as the directory shows them: one page, with the filters
- * applied by the service. `count` is how many businesses exist without filters (the number in the sidebar).
+ * The businesses of the signed-in super admin.
+ * - `items` / `total` / `page` / `filters`: current filtered/paginated directory view.
+ * - `switcherItems` / `switcherTotal`: dedicated unfiltered slice for the top-bar business switcher.
+ * - `count`: total number of businesses without filters (shown in the sidebar badge).
  */
-class BusinessesStore {
+export class BusinessesStore {
   items: Business[] = [];
   /** How many businesses match the current filters. */
   total = 0;
@@ -25,10 +31,29 @@ class BusinessesStore {
   count: number | null = null;
   /** A message to show once on the directory (for example after creating a business). */
   notice: string | null = null;
-  private requestId = 0;
 
-  constructor() {
-    makeAutoObservable(this);
+  /** Unfiltered businesses slice for the top-bar portfolio switcher. */
+  switcherItems: Business[] = [];
+  switcherTotal = 0;
+  switcherState: LoadState = "idle";
+  switcherError = "";
+
+  private requestId = 0;
+  private countRequestId = 0;
+  private switcherLoaded = false;
+  private switcherRequestId = 0;
+
+  constructor(private readonly api: BusinessesListApi = businessesApi) {
+    makeAutoObservable<
+      this,
+      "api" | "requestId" | "countRequestId" | "switcherLoaded" | "switcherRequestId"
+    >(this, {
+      api: false,
+      requestId: false,
+      countRequestId: false,
+      switcherLoaded: false,
+      switcherRequestId: false,
+    });
   }
 
   get hasFilters(): boolean {
@@ -44,7 +69,7 @@ class BusinessesStore {
     this.state = "loading";
     this.error = null;
     try {
-      const result = await businessesApi.list(this.filters, this.page, PAGE_SIZE);
+      const result = await this.api.list(this.filters, this.page, PAGE_SIZE);
       if (request !== this.requestId) return;
       runInAction(() => {
         this.items = result.items;
@@ -61,13 +86,41 @@ class BusinessesStore {
     }
   }
 
+  /** Loads the unfiltered business list for the top-bar switcher without affecting directory filters/paging. */
+  async loadSwitcher(force = false): Promise<void> {
+    if (!force && (this.switcherLoaded || this.switcherState === "loading")) return;
+    const request = ++this.switcherRequestId;
+    this.switcherState = "loading";
+    this.switcherError = "";
+    try {
+      const result = await this.api.list(NO_FILTERS, 1, SWITCHER_PAGE_SIZE);
+      if (request !== this.switcherRequestId) return;
+      runInAction(() => {
+        this.switcherItems = result.items;
+        this.switcherTotal = result.total;
+        this.count = result.total;
+        this.switcherState = "ready";
+        this.switcherLoaded = true;
+        this.switcherError = "";
+      });
+    } catch (error) {
+      if (request !== this.switcherRequestId) return;
+      runInAction(() => {
+        this.switcherState = "error";
+        this.switcherError = businessErrorMessage(error, "No pudimos cargar tus negocios.");
+      });
+    }
+  }
+
   /** Makes sure the sidebar number is known, without touching the list. */
   async ensureCount(): Promise<void> {
     if (this.count !== null) return;
+    const request = ++this.countRequestId;
     try {
-      const result = await businessesApi.list(NO_FILTERS, 1, 1);
+      const result = await this.api.list(NO_FILTERS, 1, 1);
+      if (request !== this.countRequestId) return;
       runInAction(() => {
-        this.count = result.total;
+        if (this.count === null) this.count = result.total;
       });
     } catch {
       /* The sidebar shows nothing until it is known; the directory reports the error on its own. */
@@ -91,15 +144,20 @@ class BusinessesStore {
     void this.load();
   }
 
-  /** Replaces a business that changed (paused, resumed...) in the list on screen. */
-  replace(business: Business): void {
-    this.items = this.items.map((item) => (item.id === business.id ? business : item));
+  /** Replaces a business that changed (paused, resumed...) in both the directory list and switcher slice. */
+  replace(updated: Business): void {
+    this.items = this.items.map((item) => (item.id === updated.id ? updated : item));
+    this.switcherItems = this.switcherItems.map((item) => (item.id === updated.id ? updated : item));
   }
 
-  /** After creating or deleting from outside the list: the numbers and the page are no longer right. */
+  /** After creating, editing or deleting from outside the list: counts, paging and switcher cache are stale. */
   invalidate(): void {
     this.count = null;
     this.page = 1;
+    this.switcherLoaded = false;
+    this.switcherRequestId++;
+    this.countRequestId++;
+    if (this.switcherState === "loading") this.switcherState = "idle";
   }
 
   setNotice(message: string | null): void {
@@ -108,6 +166,8 @@ class BusinessesStore {
 
   reset(): void {
     this.requestId++;
+    this.countRequestId++;
+    this.switcherRequestId++;
     this.items = [];
     this.total = 0;
     this.page = 1;
@@ -116,6 +176,11 @@ class BusinessesStore {
     this.error = null;
     this.count = null;
     this.notice = null;
+    this.switcherItems = [];
+    this.switcherTotal = 0;
+    this.switcherState = "idle";
+    this.switcherError = "";
+    this.switcherLoaded = false;
   }
 }
 

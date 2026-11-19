@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react-lite";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { NectoLogo } from "@/brand/NectoLogo";
 import { Breadcrumb, HomeIcon, type BreadcrumbItem } from "@/elements/ui/breadcrumb";
 import { superAdminSessionStore } from "@/modules/super-admin-auth";
@@ -12,6 +12,10 @@ import {
   ToggleAppSidebar,
 } from "@/shell";
 import { initialsOf } from "../initials";
+import { WorkspaceBusinessSwitcher } from "./WorkspaceBusinessSwitcher";
+import { WorkspaceNotificationsDropdown } from "./WorkspaceNotificationsDropdown";
+import { WorkspaceRailMark } from "./WorkspaceSidebar";
+import { WorkspaceSupportDropdown } from "./WorkspaceSupportDropdown";
 import { NEW_BUSINESS_PATH, PROFILE_PATH, WORKSPACE_PATH } from "../paths";
 
 /**
@@ -38,26 +42,9 @@ export const WorkspaceTopbar = observer(({ section }: { section: string }) => {
     <BaseAppHeader
       leftContent={
         <div className="flex items-center gap-3 min-w-0">
-          <ToggleAppSidebar />
+          <ToggleAppSidebar collapsedSlot={<WorkspaceRailMark />} />
 
-          {/* Context pill matching StockFlow's header selector framing */}
-          <Link
-            to={WORKSPACE_PATH}
-            className="hidden sm:flex items-center gap-2.5 rounded-xl border border-gray-200/80 bg-gray-50/70 px-3 py-1.5 transition-colors hover:bg-gray-100/80 dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] shrink-0"
-            aria-label="Inicio del workspace"
-          >
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg border border-gray-200/70 bg-white dark:border-white/10 dark:bg-gray-800 shrink-0">
-              <NectoLogo variant="mark" width={14} height={14} />
-            </span>
-            <span className="leading-tight">
-              <span className="block text-xs font-semibold text-gray-900 dark:text-white">
-                Mi workspace
-              </span>
-              <span className="block text-[10px] text-gray-500 dark:text-gray-400">
-                Administración
-              </span>
-            </span>
-          </Link>
+          <WorkspaceBusinessSwitcher />
 
           <span
             className="hidden md:block h-5 w-px bg-gray-200/80 dark:bg-white/10 shrink-0"
@@ -82,7 +69,7 @@ export const WorkspaceTopbar = observer(({ section }: { section: string }) => {
       }
     >
       <div className="flex items-center gap-2.5 sm:gap-3">
-        <span className="hidden lg:inline-flex items-center gap-1.5 rounded-full border border-gray-200/80 bg-gray-50/80 px-3 py-1.5 text-xs font-medium text-gray-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-300 shrink-0">
+        <span className="hidden xl:inline-flex items-center gap-1.5 rounded-full border border-gray-200/80 bg-gray-50/80 px-3 py-1.5 text-xs font-medium text-gray-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-300 shrink-0">
           <svg
             width="14"
             height="14"
@@ -97,7 +84,11 @@ export const WorkspaceTopbar = observer(({ section }: { section: string }) => {
           Superadministrador
         </span>
 
-        <ThemeToggleButton />
+        <ThemeToggleButton className="h-11 w-11" />
+
+        <WorkspaceSupportDropdown />
+
+        <WorkspaceNotificationsDropdown />
 
         <WorkspaceUserDropdown
           username={username}
@@ -123,11 +114,18 @@ function WorkspaceUserDropdown({
   initials,
   onSignOut,
 }: WorkspaceUserDropdownProps) {
+  const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
 
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         className="flex items-center gap-2 text-gray-800 dark:text-gray-100 hover:opacity-85 transition-opacity cursor-pointer select-none"
@@ -168,6 +166,7 @@ function WorkspaceUserDropdown({
       <ShellDropdown
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
+        triggerRef={triggerRef}
         className="absolute right-0 mt-3.5 flex w-[256px] flex-col rounded-2xl border border-gray-200/90 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900 z-50 font-sans animate-entrada-menu"
       >
         <div className="px-2 pt-1 pb-2.5 border-b border-gray-100 dark:border-gray-800">

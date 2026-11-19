@@ -2,7 +2,7 @@ import { observer } from "mobx-react-lite";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { AccessError } from "../api/businessAccessApi";
 import { useFocusHeading } from "../hooks/useFocusHeading";
-import { formatClock, useTick } from "../hooks/useTick";
+import { formatClock, useTick } from "@/hooks/useTick";
 import { accessErrorMessage, adminAccessStore } from "../stores/adminAccess.store";
 
 const INVALID_CODE = "El código no es válido o ya venció. Revisa los seis dígitos.";

@@ -68,7 +68,9 @@ Si falta una variable obligatoria o el secreto es débil, el servicio no arranca
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `POST` | `/auth/super/register` | Crea un superadmin. |
+| `POST` | `/auth/super/register` | Inicia el registro de un superadmin: guarda los datos como pendientes y envía un código de 6 dígitos al correo (`202`). |
+| `POST` | `/auth/super/register/verify` | Confirma el código: crea la cuenta y devuelve `{ accessToken, superAdmin }`. |
+| `POST` | `/auth/super/register/resend` | Envía un código nuevo para un registro pendiente. |
 | `POST` | `/auth/super/login` | Inicia sesión con username o email. Devuelve un JWT. |
 | `GET` | `/auth/super/me` | Perfil del superadmin autenticado (requiere `Authorization: Bearer <token>`). |
 | `GET` | `/onboarding/profile/me` | Perfil de bienvenida de quien tiene el token (requiere token). |
@@ -142,9 +144,35 @@ y tiempo aunque el usuario no exista.
 
 El token lleva `sub` (id) y `role: "superadmin"`.
 
+### Registro con código por correo
+
+Registro con verificación por correo (el registro **no** crea la cuenta hasta confirmar el código):
+
+| Método | Ruta | Body | Respuesta |
+|--------|------|------|-----------|
+| `POST` | `/auth/super/register` | `username`, `email`, `password`, `identityDocumentType`, `identityDocument`, `acceptTerms` | `202 { registrationId, email, expiresAt, resendAvailableAt }` y envía el código al correo |
+| `POST` | `/auth/super/register/verify` | `registrationId`, `code` (6 dígitos) | `200 { accessToken, superAdmin }` (igual que login): crea la cuenta |
+| `POST` | `/auth/super/register/resend` | `registrationId` | `202` con la misma forma que `register`: código nuevo, intentos a cero |
+
+Errores con `code` estable (cuerpo `{ message, error, statusCode, code }`):
+
+| Status | `code` | Cuándo |
+|--------|--------|--------|
+| `400` | `invalid-code` | Código incorrecto; suma un intento. |
+| `400` | `code-expired` | Código vencido, o el registro pendiente ya no existe (id desconocido o ya usado): hay que registrarse de nuevo. |
+| `429` | `too-many-attempts` | Se agotaron los intentos de ese código (`OTP_MAX_ATTEMPTS`, 5); sirve pedir uno nuevo con `resend`. |
+| `429` | `resend-too-soon` | `resend` antes de `resendAvailableAt` (cabecera `Retry-After`). |
+| `429` | `too-many-codes` | Ya se enviaron 5 códigos a ese correo en los últimos 30 min, contando `register` y `resend` (registrarse de nuevo no reinicia la cuenta). Cabecera `Retry-After`. |
+| `409` | — | Usuario, correo o documento ya registrados (en `register` y, si alguien los tomó entre medias, en `verify`). Mismo mensaje que antes: `A super admin with that <campo> already exists`. |
+
+- El registro pendiente vive en la colección `pending_registrations` (TTL sobre `purgeAt`: lo que dure más entre el código y la ventana de envíos, para que el límite por correo sobreviva a un código vencido). Cada verificación reserva su intento en la base antes de comparar (atómico), así que las peticiones en paralelo no pasan del máximo. Guarda el hash bcrypt de la contraseña y el **HMAC** del código (ligado al id del pendiente, el correo y el propósito `super-admin-registration`); el código nunca se guarda ni se registra en claro.
+- Un nuevo `register` con el mismo correo o usuario reemplaza al pendiente anterior.
+- Usa la misma configuración que los códigos de acceso: `OTP_SECRET`, `OTP_TTL_MINUTES` (10), `OTP_MAX_ATTEMPTS` (5), `OTP_RESEND_COOLDOWN_SECONDS` (60) y `PUBLIC_APP_URL` (el correo enlaza a `/super/register`). Sin SMTP configurado el correo falla (se registra en el log solo con el id) y el código no llega.
+- Límite por IP: `register` y `resend` 5/min, `verify` 10/min.
+
 ### Límite de intentos
 
-`register` y `login` aceptan 5 peticiones por minuto por IP; después responden `429`.
+`register`, `register/resend` y `login` aceptan 5 peticiones por minuto por IP y `register/verify` 10; después responden `429`.
 `PUT /onboarding/profile/phone` acepta 10 por minuto por IP. El resto de rutas, 100 por minuto.
 
 ## Módulo onboarding
@@ -590,7 +618,7 @@ habla con un repositorio abstracto (`domain/*.repository.ts`) que implementa `in
 
 | Módulo | Responsabilidad | Datos de los que es dueño | Rutas |
 |--------|-----------------|---------------------------|-------|
-| `auth` | Registro y login del superadmin; emite la sesión | Colección `super_admins` | `/auth/super/*` |
+| `auth` | Registro (con código por correo) y login del superadmin; emite la sesión | Colecciones `super_admins` y `pending_registrations` | `/auth/super/*` |
 | `onboarding` | Teléfono (único entre usuarios), dónde conoció Necto el usuario y si ya vio la intro | Colecciones `onboarding_profiles` y `onboarding_intro_views` | `/onboarding/profile/*` |
 | `businesses` | Negocios, jefe vigente, catálogo y habilitación de módulos | Colección `businesses` | `/businesses/*` |
 | `business-access` | Invitación por correo, acceso de administradores con OTP, sesiones y permisos por negocio/módulo | `access_challenges`, `access_rate_limits`, `admin_sessions` | `/business-access/*`, `/businesses/:id/invitation*` |

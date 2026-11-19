@@ -99,7 +99,7 @@ independientes). **Hoy está construido el acceso del SuperAdmin, su bienvenida 
 |-------|-------|--------|
 | Backend: monolito modular `necto-api` (login/registro del SuperAdmin + onboarding) | `packages/services/necto-api` (un solo proceso, puerto 8080) | Funciona, probado con MongoDB real. `platform/` (config, database, security, errors, observability) + `modules/auth` + `modules/onboarding` |
 | MongoDB de desarrollo (Docker) | `infra/` | Funciona; una base (`super_admin_auth`) y un usuario para el backend |
-| Pantallas `/super/login` y `/super/register` | `packages/apps/web/modules/app/src/modules/super-admin-auth` | Funcionan, conectadas al servicio; enlaces cruzados bidireccionales con `/business/access` (`AuthCrossLinks`) y 5 slides estáticos rotativos en registro (`RegisterScenes`) |
+| Pantallas `/super/login` y `/super/register` | `packages/apps/web/modules/app/src/modules/super-admin-auth` | Funcionan, conectadas al servicio; enlaces cruzados bidireccionales con `/business/access` (`AuthCrossLinks`) y 5 slides estáticos rotativos en registro (`RegisterScenes`). El registro verifica el correo con un código de 6 dígitos (`RegisterCodeStep`) antes de crear la cuenta y entra directo a `/welcome`; el paso del código es una pantalla enfocada de una columna (sin panel naranja) con la ilustración del código animada arriba (`src/brand/CodeVerificationArt.tsx`, compartida con business-access): al acertar el código el sobre se cierra antes de entrar. Probado en navegador con Mongo y Mailpit |
 | Cerrar sesión | `src/app/SignOutButton.tsx` | Funciona (borra la sesión del navegador) |
 | Módulo `onboarding` del backend | `packages/services/necto-api/src/modules/onboarding` | Funciona, probado con MongoDB real: guarda teléfono (`onboarding_profiles`, único entre usuarios), dónde nos conoció y si ya vio la intro (`onboarding_intro_views`, vía `PUT /onboarding/profile/intro-seen`) |
 | Onboarding (bienvenida + perfil) | `src/modules/onboarding` (README propio) | Funciona: `/welcome` muestra la intro una sola vez por cuenta (en cualquier dispositivo, vía `introSeen`), sin botón para saltarla: cuatro actos con ilustraciones vectoriales editoriales del lenguaje de `RegisterScenes`/`BrandScenes` (clases `ob-art-*`, piezas que entran escalonadas) y el cierre con la animación del logotipo, y luego lleva a `/welcome/phone` → `/welcome/source` → `/welcome/ready` (formas de marca como decoración fija, `GeometryBackdrop`) → pantalla de carga «El cruce» (`WorkspaceLoader`) → `/workspace`. Con `introSeen` o perfil completo, `/welcome` entra directo en `WorkspaceLoader` |
@@ -338,7 +338,9 @@ Resumen:
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `POST` | `/auth/super/register` | Crea un SuperAdmin. |
+| `POST` | `/auth/super/register` | Inicia el registro: envía un código al correo. **No** crea la cuenta (`202`). |
+| `POST` | `/auth/super/register/verify` | Confirma el código: crea la cuenta y devuelve `{ accessToken, superAdmin }`. |
+| `POST` | `/auth/super/register/resend` | Código nuevo para un registro pendiente. |
 | `POST` | `/auth/super/login` | Login con usuario **o** correo. Devuelve `{ accessToken, superAdmin }`. |
 | `GET` | `/auth/super/me` | Perfil del autenticado (`Authorization: Bearer <token>`). |
 | `GET` | `/health` | Estado. |
@@ -350,7 +352,32 @@ Registro: `username`, `email`, `password`, `identityDocumentType` (`CC`/`CE`/`PA
 - Únicos: `username` y `email`; el documento es único **junto con su tipo**.
 - Usuario inexistente y contraseña incorrecta dan el mismo `401 Invalid credentials` y tardan lo mismo.
 - Cualquier campo fuera de la lista se rechaza con `400`.
-- Colección Mongo: `super_admins`, en la base `super_admin_auth`.
+- Colecciones Mongo: `super_admins` y `pending_registrations`, en la base `super_admin_auth`.
+
+Registro con verificación por correo (el registro **no** crea la cuenta hasta confirmar el código):
+
+| Método | Ruta | Body | Respuesta |
+|--------|------|------|-----------|
+| `POST` | `/auth/super/register` | `username`, `email`, `password`, `identityDocumentType`, `identityDocument`, `acceptTerms` | `202 { registrationId, email, expiresAt, resendAvailableAt }` y envía el código al correo |
+| `POST` | `/auth/super/register/verify` | `registrationId`, `code` (6 dígitos) | `200 { accessToken, superAdmin }` (igual que login): crea la cuenta |
+| `POST` | `/auth/super/register/resend` | `registrationId` | `202` con la misma forma que `register`: código nuevo, intentos a cero |
+
+Errores con `code` estable (cuerpo `{ message, error, statusCode, code }`):
+
+| Status | `code` | Cuándo |
+|--------|--------|--------|
+| `400` | `invalid-code` | Código incorrecto; suma un intento. |
+| `400` | `code-expired` | Código vencido, o el registro pendiente ya no existe (id desconocido o ya usado): hay que registrarse de nuevo. |
+| `429` | `too-many-attempts` | Se agotaron los intentos de ese código (`OTP_MAX_ATTEMPTS`, 5); sirve pedir uno nuevo con `resend`. |
+| `429` | `resend-too-soon` | `resend` antes de `resendAvailableAt` (cabecera `Retry-After`). |
+| `429` | `too-many-codes` | Ya se enviaron 5 códigos a ese correo en los últimos 30 min, contando `register` y `resend` (registrarse de nuevo no reinicia la cuenta). Cabecera `Retry-After`. |
+| `409` | — | Usuario, correo o documento ya registrados (en `register` y, si alguien los tomó entre medias, en `verify`). Mismo mensaje que antes: `A super admin with that <campo> already exists`. |
+
+- El registro pendiente vive en la colección `pending_registrations` (TTL sobre `purgeAt`: lo que dure más entre el código y la ventana de envíos, para que el límite por correo sobreviva a un código vencido). Cada verificación reserva su intento en la base antes de comparar (atómico), así que las peticiones en paralelo no pasan del máximo. Guarda el hash bcrypt de la contraseña y el **HMAC** del código (ligado al id del pendiente, el correo y el propósito `super-admin-registration`); el código nunca se guarda ni se registra en claro.
+- Un nuevo `register` con el mismo correo o usuario reemplaza al pendiente anterior.
+- Usa la misma configuración que los códigos de acceso: `OTP_SECRET`, `OTP_TTL_MINUTES` (10), `OTP_MAX_ATTEMPTS` (5), `OTP_RESEND_COOLDOWN_SECONDS` (60) y `PUBLIC_APP_URL` (el correo enlaza a `/super/register`). Sin SMTP configurado el correo falla (se registra en el log solo con el id) y el código no llega.
+- Límite por IP: `register` y `resend` 5/min, `verify` 10/min.
+
 
 ### Módulo onboarding
 
@@ -372,14 +399,14 @@ Mismo README: [`packages/services/necto-api/README.md`](../packages/services/nec
 
 **Diseño de referencia:** `referencias html/necto-superlogin.html` (sección 11) y diseño NECTO en StockFlow. Dos columnas:
 formulario a la izquierda y panel de marca a la derecha con matriz de puntos blancos que se iluminan al pasar el cursor sin animaciones continuas de fondo (`src/brand/InteractiveDotGrid.tsx`, compartida también con `business-access` sobre panel índigo/oscuro),
-aros decorativos (`DecorativeCircles`), mensajes rotativos con transición escalonada (`RotatingBrandMessages`) y cinco ilustraciones vectoriales estáticas rotativas en `/super/register` (`RegisterScenes`, homólogas a `BrandScenes` en `/business/access`). Ambos módulos comparten enlaces cruzados bidireccionales (`AuthCrossLinks` y `EmailStep`).
+aros decorativos (`DecorativeCircles`), mensajes rotativos con transición escalonada (`RotatingBrandMessages`) y cinco ilustraciones vectoriales estáticas rotativas en `/super/register` (`RegisterScenes`, homólogas a `BrandScenes` en `/business/access`); en el paso del código del registro no hay panel (pantalla enfocada) y la escena del código va animada sobre el título (`src/brand/CodeVerificationArt.tsx`, prop `state` para la animación, parametrizada por prefijo de clases `na`/`sa` y usada también por el slide "codigo" de `BrandScenes`). Hooks compartidos entre módulos en `src/hooks/` (p. ej. `useTick`, cuenta atrás que se pausa con la pestaña oculta). Ambos módulos comparten enlaces cruzados bidireccionales (`AuthCrossLinks` y `EmailStep`).
 Tema **claro** (panel naranja `#ff3f1a`) y **oscuro** (panel azul profundo `#190088`). Fuente **DM Sans** (300 a 700),
 cargada **una sola vez** en `src/app/index.tsx` con `@fontsource/dm-sans/latin-*.css` (sin Google Fonts ni imports por módulo).
 
 **Reglas de rendimiento** (aplicadas en todas las pantallas de acceso, configuración y bienvenida):
 - Nada de bucles continuos: `requestAnimationFrame` solo mientras hay algo que mover (`InteractiveDotGrid` se detiene
   con el cursor quieto) y todo temporizador o rotación se pausa con la pestaña oculta (`document.hidden`) y respeta
-  `prefers-reduced-motion` (`RotatingBrandMessages`, `BrandScenes`, `useTick(active)` de business-access).
+  `prefers-reduced-motion` (`RotatingBrandMessages`, `BrandScenes`, `useTick(active)`).
 - Animar solo `opacity` y `transform`: **no animes `filter`** (el `blur` de los mensajes rotativos se quitó por eso).
   `will-change` solo en lo que está en pantalla (`.ob-art-scene.is-active`, no `.is-past`). En equipos modestos
   (`isLowPowerDevice()`) `ArtStage` apaga los trazos animados.
@@ -387,8 +414,10 @@ cargada **una sola vez** en `src/app/index.tsx` con `@fontsource/dm-sans/latin-*
 - Las animaciones CSS sobre elementos SVG (`scale`, `translate`, `stroke-dashoffset`) corren en el hilo principal:
   recalculan estilo y layout en cada cuadro. Que sean cortas: `ArtStage` las pausa tras `settleMs` (14 s por
   defecto; 6 s en `/welcome/ready`) y en equipos modestos apaga destellos y trazos.
+- `scrollbar-gutter: stable` solo en el workspace (`html:has(.ws-shell-inner)` en `src/css/base.css`): en las pantallas
+  de pantalla completa el hueco reservado mostraba una franja gris a la derecha.
 - `/welcome/ready` es una página quieta, con fondo blanco en tema claro: las formas de marca son decoración fija (`GeometryBackdrop`, en `.ob-decor`
-  con `contain: strict`) que solo entra una vez con CSS. Se quitó el juego de formas (física en `requestAnimationFrame`)
+  con `contain: strict`) que solo entra una vez con CSS, con parallax según el puntero (Web Animations de `translate`, unas 8 actualizaciones por segundo, sin bucle; no en pantallas táctiles ni con movimiento reducido). Se quitó el juego de formas (física en `requestAnimationFrame`)
   porque hacía lenta la app.
 - Carga diferida: `LaunchSequence` solo se descarga en modo intro; los pasos de `/welcome/*` usan los loaders de
   `onboarding/pages/loaders.ts`, que además precargan el paso siguiente.
@@ -536,7 +565,7 @@ Contrato completo en el README del servicio. Rutas del administrador (token de a
 - Los **dos logins son distintos**: el SuperAdmin ya está; el del admin de un negocio vendrá después.
 - Registro del SuperAdmin con confirmación de contraseña, tipo de documento y términos.
 - **Onboarding = módulo del mismo backend** (`modules/onboarding` en `necto-api`, mismo proceso, puerto 8080 y base): teléfono
-  único entre usuarios (E.164, índice único), orígenes y registro de intro vista (`onboarding_intro_views`, un documento por `userId`). Al empezar la intro en `/welcome` se marca vista con `PUT /onboarding/profile/intro-seen` (solo la ven usuarios nuevos, una vez por cuenta, sin botón de saltar). Se guarda el teléfono al pulsar *Continuar* (para avisar el duplicado ahí) y los orígenes al *Finalizar*, pasando luego al cierre `/welcome/ready` (`GeometryBackdrop`). Al pulsar *Comencemos juntos* (y en siguientes inicios de sesión), `WorkspaceLoader` («El cruce») anima la transición mientras consulta el perfil y precarga el workspace (`preloadWorkspacePage`) antes de navegar a `/workspace` (o al paso 1 si el perfil sigue incompleto). **"Mi perfil" en `/workspace/profile` no reabre estos pasos**, solo muestra el nombre.
+  único entre usuarios (E.164, índice único), orígenes y registro de intro vista (`onboarding_intro_views`, un documento por `userId`). Al empezar la intro en `/welcome` se marca vista con `PUT /onboarding/profile/intro-seen` (solo la ven usuarios nuevos, una vez por cuenta, sin botón de saltar). Se guarda el teléfono al pulsar *Continuar* (para avisar el duplicado ahí) y los orígenes al *Finalizar* (el paso 2 se puede *Omitir*: guarda la lista vacía y el perfil queda completo igual), pasando luego al cierre `/welcome/ready` (`GeometryBackdrop`). Al pulsar *Comencemos juntos* (y en siguientes inicios de sesión), `WorkspaceLoader` («El cruce») anima la transición mientras consulta el perfil y precarga el workspace (`preloadWorkspacePage`) antes de navegar a `/workspace` (o al paso 1 si el perfil sigue incompleto). **"Mi perfil" en `/workspace/profile` no reabre estos pasos**, solo muestra el nombre.
 - **Workspace = destino del onboarding** (`/workspace`, módulo de frontend `workspace`, sin backend propio por ahora). Se entra con
   sesión de superadmin **y** perfil completo (`RequireOnboardingCompleted`, que consulta al backend una vez al entrar; si la consulta
   falla, se trata como incompleto y lleva a `/welcome`). `/` redirige a `/workspace`. Fiel a la referencia `necto-workspace`

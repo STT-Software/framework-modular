@@ -456,6 +456,7 @@ html:not(.dark) .ob[data-scene="ready"] {
   left: var(--x);
   top: var(--y);
   transform: translate(-50%, -50%) rotate(var(--angle));
+  /* Parallax: `translate` lo anima GeometryBackdrop con Web Animations (no se mezcla con este `transform`). */
 }
 
 .ob-decor-piece > .ob-shape {
@@ -862,6 +863,9 @@ html:not(.dark) .ob[data-scene="ready"] {
 /* Tinta, íconos y texto. */
 .ob-art-icon { fill: none; stroke: var(--ob-art-blue); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .ob-art-icon-accent { fill: none; stroke: var(--ob-art-accent); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+/* WhatsApp badge of the phone step: brand green with a white line glyph, ring in the paper color to detach it. */
+.ob-art-wa { fill: #25d366; stroke: var(--ob-art-paper); stroke-width: 2.5; }
+.ob-art-wa-glyph { fill: none; stroke: #ffffff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ob-art-text { fill: var(--ob-art-blue); font-weight: 500; }
 .ob-art-label { fill: var(--ob-art-blue); opacity: 0.5; font-weight: 500; letter-spacing: 0.12em; }
 .ob-art-ink { fill: var(--ob-art-blue); }

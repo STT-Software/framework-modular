@@ -59,7 +59,7 @@ business-access/
 ├── stores/adminAccess.store.ts      Estado del flujo (MobX)
 ├── pages/BusinessAccessPage.tsx     Marco de dos columnas
 ├── components/                      EmailStep, CodeStep, ReturnStep, BusinessPicker, ReadyStep, BrandPanel (+ BrandScenes: una escena por vista), HelpDialog
-├── hooks/                           useTick (cuentas atrás) y useFocusHeading
+├── hooks/                           useFocusHeading (useTick vive en `src/hooks/`, compartido)
 └── styles/business-access.css       Prefijo `na-`, claro y oscuro (de la referencia)
 ```
 

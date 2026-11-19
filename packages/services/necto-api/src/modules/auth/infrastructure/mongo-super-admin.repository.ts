@@ -62,4 +62,14 @@ export class MongoSuperAdminRepository extends SuperAdminRepository {
     const record = await this.model.findOne(filter).exec();
     return record ? toDomain(record) : null;
   }
+
+  async findTakenField(
+    candidate: Pick<NewSuperAdmin, 'username' | 'email' | 'identityDocumentType' | 'identityDocument'>,
+  ): Promise<DuplicateField | null> {
+    if (await this.model.exists({ username: candidate.username })) return 'username';
+    if (await this.model.exists({ email: candidate.email })) return 'email';
+    const document = { identityDocumentType: candidate.identityDocumentType, identityDocument: candidate.identityDocument };
+    if (await this.model.exists(document)) return 'identity document';
+    return null;
+  }
 }

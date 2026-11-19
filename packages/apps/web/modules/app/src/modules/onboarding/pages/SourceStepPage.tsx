@@ -62,11 +62,22 @@ function SourceForm({ initialSources }: { initialSources: SourceId[] }) {
       firstChoiceRef.current?.focus();
       return;
     }
+    await save(selected.slice(0, 1));
+  }
+
+  /** Omitir: el paso es opcional; guardar la lista vacía también completa el perfil (lo decide el servicio). */
+  async function handleSkip() {
+    if (phase !== "editing") return;
+    setSelected([]);
+    await save([]);
+  }
+
+  async function save(sources: SourceId[]) {
     setFieldError(null);
     setFormError(null);
     setPhase("saving");
     try {
-      await onboardingProfileStore.saveSources(selected.slice(0, 1));
+      await onboardingProfileStore.saveSources(sources);
       setPhase("done");
     } catch (error) {
       if (isPhoneRequiredError(error)) {
@@ -127,6 +138,11 @@ function SourceForm({ initialSources }: { initialSources: SourceId[] }) {
           <Link className="ob-setup-back" to={PHONE_STEP_PATH}>
             <span aria-hidden="true">←</span> Volver
           </Link>
+          {phase === "editing" && (
+            <button type="button" className="ob-setup-skip" onClick={handleSkip}>
+              Omitir
+            </button>
+          )}
           <Button type="submit" loading={phase === "saving"} disabled={phase === "done"} className="ob-setup-primary">
             {phase === "done" ? (
               "Completado ✓"

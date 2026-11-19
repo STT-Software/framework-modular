@@ -1,9 +1,12 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
 /*
  * Fondo de la pantalla final (`/welcome/ready`): las formas de la geometría de marca como decoración fija alrededor
  * del contenido. No se mueven ni responden al puntero: solo entran una vez, escalonadas, con una animación CSS de
- * opacidad y escala (lo compone la GPU). Sin JavaScript en marcha, sin bucles.
+ * opacidad y escala (lo compone la GPU). Parallax con el puntero: cada forma se desplaza según su tamaño (las grandes
+ * parecen más cerca y se mueven más). Sin bucle: el puntero lanza, unas 8 veces por segundo como mucho, una animación
+ * compuesta de `translate` por forma (Web Animations, en la GPU) hacia su nuevo desplazamiento. Sin parallax en pantallas táctiles ni con movimiento
+ * reducido.
  */
 
 type Kind = "ring" | "capsule" | "square" | "quarter" | "arc" | "wave" | "dots" | "plus" | "slashes" | "disc";
@@ -66,14 +69,65 @@ function inner(kind: Kind): ReactNode {
   }
 }
 
+/** Desplazamiento máximo (px) de la forma más cercana; las demás, en proporción a su tamaño. */
+const PARALLAX_MAX_PX = 28;
+const MAX_SIZE = Math.max(...PIECES.map((piece) => piece.size));
+const PARALLAX_UPDATE_MS = 120;
+
 export function GeometryBackdrop() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const root = ref.current;
+    const fine = window.matchMedia?.("(hover: hover) and (pointer: fine)").matches;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (!root || !fine || reduce) return;
+    let timer = 0;
+    let x = 0;
+    let y = 0;
+    const pieces = Array.from(root.querySelectorAll<HTMLElement>(".ob-decor-piece"));
+    const apply = () => {
+      timer = 0;
+      // One composited animation per shape toward its new offset; it starts from wherever the shape is now (implicit
+      // first keyframe), and the browser drops the finished ones it replaces. No per-frame style work.
+      for (const piece of pieces) {
+        const depth = Number(piece.dataset.depth);
+        piece.animate([{ translate: `${(x * depth).toFixed(1)}px ${(y * depth).toFixed(1)}px` }], {
+          duration: 900,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+          fill: "forwards",
+        });
+      }
+    };
+    const onMove = (event: PointerEvent) => {
+      // -1…1 desde el centro de la pantalla; las formas van en sentido contrario al puntero.
+      x = -((event.clientX / window.innerWidth) * 2 - 1);
+      y = -((event.clientY / window.innerHeight) * 2 - 1);
+      // A few updates per second are enough: each 0.9 s animation smooths the way to the next target.
+      if (!timer) timer = window.setTimeout(apply, PARALLAX_UPDATE_MS);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.clearTimeout(timer);
+    };
+  }, []);
+
   return (
-    <div className="ob-decor" aria-hidden="true">
+    <div ref={ref} className="ob-decor" aria-hidden="true">
       {PIECES.map((piece, i) => (
         <div
           key={i}
           className={`ob-decor-piece${piece.wideOnly ? " is-wide-only" : ""}`}
-          style={{ "--x": `${piece.x}%`, "--y": `${piece.y}%`, "--angle": `${piece.angle}deg`, "--i": i } as CSSProperties}
+          style={
+            {
+              "--x": `${piece.x}%`,
+              "--y": `${piece.y}%`,
+              "--angle": `${piece.angle}deg`,
+              "--i": i,
+            } as CSSProperties
+          }
+          data-depth={((piece.size / MAX_SIZE) * PARALLAX_MAX_PX).toFixed(1)}
         >
           <div className={`ob-shape is-${piece.kind} tone-${piece.tone}`} style={{ "--size": piece.size } as CSSProperties}>
             {inner(piece.kind)}

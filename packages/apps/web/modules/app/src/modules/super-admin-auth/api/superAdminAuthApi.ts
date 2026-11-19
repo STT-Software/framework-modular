@@ -38,8 +38,28 @@ export interface LoginResult {
   superAdmin: SuperAdmin;
 }
 
+/** Respuesta de `register` y `resend`: la cuenta aún no existe, queda pendiente del código enviado por correo. */
+export interface PendingRegistration {
+  registrationId: string;
+  email: string;
+  /** ISO: cuándo vence el código. */
+  expiresAt: string;
+  /** ISO: desde cuándo se puede pedir otro código. */
+  resendAvailableAt: string;
+}
+
+export interface VerifyRegistrationInput {
+  registrationId: string;
+  code: string;
+}
+
 export type AuthErrorKind =
   | "validation"
+  | "invalid-code"
+  | "code-expired"
+  | "too-many-attempts"
+  | "resend-too-soon"
+  | "too-many-codes"
   | "conflict"
   | "unauthorized"
   | "rate-limited"
@@ -69,6 +89,15 @@ function conflictField(message: string): RegisterField | undefined {
   if (message.includes("identity document")) return "identityDocument";
   return undefined;
 }
+
+/** Códigos estables que el backend envía en `code` para el paso de verificación. */
+const CODE_KINDS: Record<string, AuthErrorKind> = {
+  "invalid-code": "invalid-code",
+  "code-expired": "code-expired",
+  "too-many-attempts": "too-many-attempts",
+  "resend-too-soon": "resend-too-soon",
+  "too-many-codes": "too-many-codes",
+};
 
 function kindFromStatus(status: number): AuthErrorKind {
   if (status === 400) return "validation";
@@ -103,9 +132,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const body: unknown = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const raw = (body as { message?: string | string[] } | null)?.message;
+    const parsed = body as { message?: string | string[]; code?: string } | null;
+    const raw = parsed?.message;
     const message = Array.isArray(raw) ? raw.join(", ") : (raw ?? response.statusText);
-    const kind = kindFromStatus(response.status);
+    const kind = (parsed?.code && CODE_KINDS[parsed.code]) || kindFromStatus(response.status);
     throw new SuperAdminAuthError(
       kind,
       response.status,
@@ -118,10 +148,27 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const superAdminAuthApi = {
-  register(input: RegisterInput): Promise<SuperAdmin> {
-    return request<SuperAdmin>("/auth/super/register", {
+  /** Guarda el registro como pendiente y envía un código de 6 dígitos al correo. No crea la cuenta. */
+  register(input: RegisterInput): Promise<PendingRegistration> {
+    return request<PendingRegistration>("/auth/super/register", {
       method: "POST",
       body: JSON.stringify(input),
+    });
+  },
+
+  /** Comprueba el código, crea la cuenta y devuelve la sesión (igual que login). */
+  verifyRegistration(input: VerifyRegistrationInput): Promise<LoginResult> {
+    return request<LoginResult>("/auth/super/register/verify", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  },
+
+  /** Genera y envía un código nuevo; el anterior deja de valer. */
+  resendRegistrationCode(registrationId: string): Promise<PendingRegistration> {
+    return request<PendingRegistration>("/auth/super/register/resend", {
+      method: "POST",
+      body: JSON.stringify({ registrationId }),
     });
   },
 

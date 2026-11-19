@@ -1,4 +1,5 @@
 import "./styles/auth-layout.css";
+import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import { AuthThemeToggle } from "./components/AuthThemeToggle";
 import { DecorativeCircles } from "./components/DecorativeCircles";
@@ -27,14 +28,23 @@ const BRAND_MESSAGES: BrandMessage[] = [
   },
 ];
 
+/** Lo que el layout comparte con sus páginas por `useOutletContext`. */
+export interface AuthLayoutContext {
+  /** El registro avisa cuándo está en el paso del código: la pantalla pasa a una sola columna, sin panel de marca. */
+  setCodeStep: (active: boolean) => void;
+}
+
 /**
  * Layout de acceso del superadmin: formulario a la izquierda y panel de marca
  * (puntos blancos iluminables al pasar el cursor, brillo y aros) a la derecha. Login y registro
  * comparten este layout, así el panel de marca no se reinicia al cambiar de pantalla. En el registro, el panel muestra
- * cinco ilustraciones estáticas (`RegisterScenes.tsx`) que rotan junto con sus mensajes.
+ * cinco ilustraciones estáticas (`RegisterScenes.tsx`) que rotan junto con sus mensajes. En el paso del código el
+ * panel se quita: pantalla enfocada de una columna (la ilustración del código la dibuja el propio paso).
  */
 export default function SuperAdminAuthLayout() {
   const isRegister = useLocation().pathname.replace(/\/$/, "").endsWith("/register");
+  const [codeStep, setCodeStep] = useState(false);
+  const focused = isRegister && codeStep;
   const messages = isRegister ? REGISTER_SLIDES.map((slide) => slide.message) : BRAND_MESSAGES;
   const { index: rawIndex, fadeState, selectIndex } = useRotatingBrandMessages(messages.length);
   // Login and register rotate different lists through the same timer: keep the index inside the current one.
@@ -42,7 +52,7 @@ export default function SuperAdminAuthLayout() {
   const currentMessage = messages[index] ?? messages[0];
 
   return (
-    <main className="sa-auth grid min-h-screen lg:grid-cols-2">
+    <main className={`sa-auth grid min-h-screen ${focused ? "sa-auth-focused" : "lg:grid-cols-2"}`}>
       <section className="sa-form-side flex flex-col bg-white dark:bg-gray-900">
         <header className="sa-header flex items-center justify-between">
           <Link to="/super/login" className="sa-logo-link" aria-label="Necto, ir a inicio de sesión">
@@ -52,8 +62,8 @@ export default function SuperAdminAuthLayout() {
         </header>
 
         <div className="sa-body flex flex-1 items-center justify-center">
-          <div className="w-full max-w-md">
-            <Outlet />
+          <div className={`w-full ${focused ? "max-w-[460px]" : "max-w-md"}`}>
+            <Outlet context={{ setCodeStep } satisfies AuthLayoutContext} />
           </div>
         </div>
 
@@ -62,6 +72,7 @@ export default function SuperAdminAuthLayout() {
         </footer>
       </section>
 
+      {!focused && (
       <aside
         className="sa-brand-side relative flex items-center justify-center overflow-hidden"
         aria-label="Necto, conecta, comparte y crece"
@@ -100,12 +111,9 @@ export default function SuperAdminAuthLayout() {
           />
         </div>
 
-        <BrandMessageIndicators
-          count={messages.length}
-          activeIndex={index}
-          onSelect={selectIndex}
-        />
+        <BrandMessageIndicators count={messages.length} activeIndex={index} onSelect={selectIndex} />
       </aside>
+      )}
     </main>
   );
 }

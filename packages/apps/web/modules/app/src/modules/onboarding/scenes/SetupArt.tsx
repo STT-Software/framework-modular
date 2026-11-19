@@ -62,6 +62,16 @@ export function PhoneArt() {
             </Pop>
 
             <Pop order={2}>
+              {/* WhatsApp badge on the edge of the field: the number is the one we write to */}
+              <g transform="translate(289 132)">
+                <circle className="ob-art-wa" r="12.5" />
+                <g className="ob-art-wa-glyph" transform="translate(-8.4 -8.6) scale(0.7)">
+                  {SOURCE_GLYPHS.whatsapp}
+                </g>
+              </g>
+            </Pop>
+
+            <Pop order={2}>
               <rect className="ob-art-soft" x="182" y="162" width="96" height="22" rx="11" />
               <ArtCheckBadge cx={194} cy={173} r={6} />
               <text className="ob-art-text" x="205" y="175.5" fontSize="7">

@@ -1,17 +1,23 @@
-import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { useEffect, useState, type FormEvent } from "react";
+import { useNavigate, useOutletContext } from "react-router";
 import { Alert } from "@/elements/ui/alert";
 import { PageMeta } from "@/shell/meta";
 import {
   superAdminAuthApi,
   SuperAdminAuthError,
+  type LoginResult,
+  type PendingRegistration,
   type RegisterField,
+  type RegisterInput,
 } from "../api/superAdminAuthApi";
 import { AuthCrossLinks } from "../components/AuthCrossLinks";
 import { DocumentField, PasswordField, TextField } from "../components/AuthFields";
 import { FormHeading } from "../components/FormHeading";
+import { RegisterCodeStep } from "../components/RegisterCodeStep";
 import { SubmitButton } from "../components/SubmitButton";
 import { TermsCheckbox } from "../components/TermsCheckbox";
+import type { AuthLayoutContext } from "../SuperAdminAuthLayout";
+import { superAdminSessionStore } from "../stores/superAdminSession.store";
 import { DEFAULT_DOCUMENT_TYPE, type DocumentType } from "../documentTypes";
 import {
   normalizeIdentityDocument,
@@ -35,6 +41,8 @@ const CONFLICT_MESSAGES: Record<RegisterField, string> = {
 function registerFormError(error: unknown): string {
   if (error instanceof SuperAdminAuthError) {
     switch (error.kind) {
+      case "too-many-codes":
+        return "Enviamos demasiados códigos a este correo. Espera unos minutos e inténtalo de nuevo.";
       case "rate-limited":
         return "Demasiados intentos. Espera un minuto e inténtalo de nuevo.";
       case "network":
@@ -49,8 +57,14 @@ function registerFormError(error: unknown): string {
   return "Ocurrió un error inesperado.";
 }
 
+/**
+ * Registro en dos pasos: el formulario y luego el código de 6 dígitos enviado al correo. Los datos del formulario
+ * (contraseña incluida) viven solo en el estado de esta página, nunca en storage: "Cambiar correo" vuelve al
+ * formulario con todo intacto y, si el registro pendiente venció, se vuelve a registrar con los mismos datos.
+ */
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { setCodeStep } = useOutletContext<AuthLayoutContext>();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -62,6 +76,35 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState<PendingRegistration | null>(null);
+
+  // The brand panel shows the code scene while the code step is on screen.
+  useEffect(() => {
+    setCodeStep(pending !== null);
+    return () => setCodeStep(false);
+  }, [pending, setCodeStep]);
+
+  function registerInput(): RegisterInput {
+    return {
+      username: normalizeUsername(username),
+      email: email.trim().toLowerCase(),
+      password,
+      identityDocumentType: documentType,
+      identityDocument: normalizeIdentityDocument(identityDocument),
+      acceptTerms,
+    };
+  }
+
+  function showConflict(error: SuperAdminAuthError) {
+    setPending(null);
+    if (error.field) setErrors({ [error.field]: CONFLICT_MESSAGES[error.field] });
+    else setFormError(registerFormError(error));
+  }
+
+  function handleVerified(result: LoginResult) {
+    superAdminSessionStore.signIn(result);
+    navigate("/welcome", { replace: true });
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -80,24 +123,32 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const created = await superAdminAuthApi.register({
-        username: normalizeUsername(username),
-        email: email.trim().toLowerCase(),
-        password,
-        identityDocumentType: documentType,
-        identityDocument: normalizeIdentityDocument(identityDocument),
-        acceptTerms,
-      });
-      navigate("/super/login", { replace: true, state: { registeredUsername: created.username } });
+      setPending(await superAdminAuthApi.register(registerInput()));
     } catch (error) {
       if (error instanceof SuperAdminAuthError && error.kind === "conflict" && error.field) {
-        setErrors({ [error.field]: CONFLICT_MESSAGES[error.field] });
+        showConflict(error);
       } else {
         setFormError(registerFormError(error));
       }
     } finally {
       setLoading(false);
     }
+  }
+
+  if (pending) {
+    return (
+      <>
+        <PageMeta title="Necto · Verifica tu correo" />
+        <RegisterCodeStep
+          pending={pending}
+          onPendingChange={setPending}
+          onVerified={handleVerified}
+          onChangeEmail={() => setPending(null)}
+          onRestart={() => superAdminAuthApi.register(registerInput())}
+          onConflict={showConflict}
+        />
+      </>
+    );
   }
 
   return (

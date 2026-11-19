@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { TurnosBaseSetup, type TurnosProfileId, type TurnosProfileOption } from '../../turnos/public';
 import { Clock } from '../../../platform/time/clock';
 import {
   AdministeredBusinessProfiles,
@@ -10,7 +11,14 @@ import {
 } from '../../businesses/public';
 import type { BusinessSetup, ModuleScheduleEntry } from '../domain/business-setup';
 import { BusinessSetupRepository, type SetupPatch } from '../domain/business-setup.repository';
-import { InvalidScheduleError, LogoNotFoundError, ModuleNotAssignedError, SetupBusinessNotFoundError, SetupIncompleteError } from '../domain/errors';
+import {
+  InvalidScheduleError,
+  LogoNotFoundError,
+  ModuleNotAssignedError,
+  SetupBusinessNotFoundError,
+  SetupIncompleteError,
+  TurnosNotAssignedError,
+} from '../domain/errors';
 import { inspectLogo, type LogoFile, type LogoInfo } from '../domain/logo';
 import type { SetupStep } from '../domain/setup-steps';
 import { defaultWeekSchedule, isOpenAt, parseWeekSchedule, type WeekSchedule } from '../domain/week-schedule';
@@ -27,6 +35,16 @@ export interface SetupModuleView {
   /** Its own schedule (the exception), if it has one saved, even while it inherits. */
   ownSchedule: WeekSchedule | null;
   openNow: boolean | null;
+  /** Its own settings (queues, rules...). "ready" only for a module whose configuration is already saved as ready. */
+  settings: { status: 'pending' | 'ready'; summary: { queueCount: number; operatorCount: number } | null };
+}
+
+/** The Turnos part of the base setup: the attention profile that suggests its queues. Only for a business that has Turnos. */
+export interface TurnosSetupInfo {
+  profile: TurnosProfileId;
+  /** The profile the category suggests (the default when none was chosen). */
+  suggested: TurnosProfileId;
+  options: readonly TurnosProfileOption[];
 }
 
 export interface SetupState {
@@ -39,6 +57,7 @@ export interface SetupState {
   baseScheduleSaved: boolean;
   baseOpenNow: boolean | null;
   modules: SetupModuleView[];
+  turnos: TurnosSetupInfo | null;
   progress: { currentStep: SetupStep | null; visitedSteps: SetupStep[]; baseReady: boolean; baseReadyAt: Date | null };
 }
 
@@ -66,6 +85,7 @@ export class BusinessSetupService {
     private readonly profiles: AdministeredBusinessProfiles,
     private readonly setups: BusinessSetupRepository,
     private readonly clock: Clock,
+    private readonly turnos: TurnosBaseSetup,
   ) {}
 
   /** Everything needed to open the setup again where the person left it. Reading creates nothing. */
@@ -86,10 +106,23 @@ export class BusinessSetupService {
     return this.stateOf(business, setup);
   }
 
-  /** "Tipo de negocio": the category of the business. `categoryOther` is required by the request validation when it is "other". */
-  async saveCategory(adminEmail: string, businessId: string, category: BusinessCategoryId, categoryOther: string | null): Promise<SetupState> {
+  /**
+   * "Tipo de negocio": the category of the business (`categoryOther` is required by the request validation when it is "other")
+   * and, for a business that has Turnos, the attention profile that suggests its first queues. The profile belongs to Turnos: it
+   * is stored there and choosing it never deletes or duplicates what was already configured in Turnos.
+   */
+  async saveCategory(
+    adminEmail: string,
+    businessId: string,
+    category: BusinessCategoryId,
+    categoryOther: string | null,
+    turnosProfile: TurnosProfileId | null,
+  ): Promise<SetupState> {
+    const current = await this.requireBusiness(adminEmail, businessId);
+    if (turnosProfile && !current.modules.includes('turnos')) throw new TurnosNotAssignedError();
     const business = await this.profiles.updateCategory(adminEmail, businessId, { category, categoryOther });
     if (!business) throw new SetupBusinessNotFoundError();
+    if (turnosProfile) await this.turnos.choose(adminEmail, businessId, turnosProfile);
     return this.stateOf(business, await this.change(businessId, {}));
   }
 
@@ -184,8 +217,9 @@ export class BusinessSetupService {
     return business;
   }
 
-  private stateOf(business: AdministeredBusinessProfile, setup: BusinessSetup | null): SetupState {
+  private async stateOf(business: AdministeredBusinessProfile, setup: BusinessSetup | null): Promise<SetupState> {
     const now = this.clock.now();
+    const turnosStatus = business.modules.includes('turnos') ? await this.turnos.statusOf(business.id) : null;
     const baseSchedule = setup?.baseSchedule ?? defaultWeekSchedule();
     const modules = BUSINESS_MODULES.filter((module) => business.modules.includes(module.id)).map((module): SetupModuleView => {
       const entry = setup?.moduleSchedules[module.id];
@@ -199,6 +233,13 @@ export class BusinessSetupService {
         effectiveSchedule,
         ownSchedule: entry?.schedule ?? null,
         openNow: isOpenAt(effectiveSchedule, business.timezone, now),
+        settings:
+          module.id === 'turnos' && turnosStatus
+            ? {
+                status: turnosStatus.ready ? 'ready' : 'pending',
+                summary: { queueCount: turnosStatus.queueCount, operatorCount: turnosStatus.operatorCount },
+              }
+            : { status: 'pending', summary: null },
       };
     });
     return {
@@ -210,12 +251,21 @@ export class BusinessSetupService {
       baseScheduleSaved: setup?.baseSchedule != null,
       baseOpenNow: isOpenAt(baseSchedule, business.timezone, now),
       modules,
+      turnos: turnosStatus ? await this.turnosInfo(business) : null,
       progress: {
         currentStep: setup?.currentStep ?? null,
         visitedSteps: setup?.visitedSteps ?? [],
         baseReady: setup?.baseReadyAt != null,
         baseReadyAt: setup?.baseReadyAt ?? null,
       },
+    };
+  }
+
+  private async turnosInfo(business: AdministeredBusinessProfile): Promise<TurnosSetupInfo> {
+    return {
+      profile: await this.turnos.current(business.id, business.category),
+      suggested: this.turnos.suggestedFor(business.category),
+      options: this.turnos.options(),
     };
   }
 }

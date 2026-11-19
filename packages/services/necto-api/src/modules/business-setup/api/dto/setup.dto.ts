@@ -1,6 +1,7 @@
 import { Transform } from 'class-transformer';
 import { IsBoolean, IsDefined, IsIn, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
-import { BusinessContactDto } from '../../../businesses/public';
+import { BusinessCategoryDto, BusinessContactDto } from '../../../businesses/public';
+import { TURNOS_PROFILE_IDS, type TurnosProfileId } from '../../../turnos/public';
 import { SETUP_STEPS, type SetupStep } from '../../domain/setup-steps';
 
 const blankToNull = ({ value }: { value: unknown }) => {
@@ -21,6 +22,13 @@ export class SaveProfileDto extends BusinessContactDto {
   @IsString()
   @MaxLength(DESCRIPTION_MAX_LENGTH, { message: `description must be at most ${DESCRIPTION_MAX_LENGTH} characters long` })
   description?: string | null;
+}
+
+/** The type of business and, for a business that has Turnos, its attention profile (which suggests the first queues). */
+export class SaveCategoryDto extends BusinessCategoryDto {
+  @IsOptional()
+  @IsIn(TURNOS_PROFILE_IDS, { message: `turnosProfile must be one of: ${TURNOS_PROFILE_IDS.join(', ')}` })
+  turnosProfile?: TurnosProfileId;
 }
 
 /** A full week of hours. Its content (days, ranges, times) is validated by the domain, field by field. */

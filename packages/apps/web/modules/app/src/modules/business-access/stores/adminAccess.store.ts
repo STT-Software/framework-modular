@@ -2,6 +2,7 @@ import { makeAutoObservable, runInAction } from "mobx";
 import {
   AccessError,
   businessAccessApi,
+  type AccessGrant,
   type AdministeredBusiness,
   type CodeRules,
   type SessionGrant,
@@ -24,7 +25,7 @@ export function accessErrorMessage(error: unknown): string {
       case "validation":
         return "Revisa los datos ingresados.";
       case "email-not-assigned":
-        return "Este correo todavía no está asignado a ningún negocio. Primero el superadministrador debe invitarte a un negocio.";
+        return "Este correo todavía no está asignado a ningún negocio. Primero el superadministrador debe invitarte, o un administrador debe agregarte como operador.";
       case "not-found":
         return "Este negocio ya no está disponible para ti.";
       case "forbidden":
@@ -42,7 +43,8 @@ export function accessErrorMessage(error: unknown): string {
  *
  * - the access token lives only in memory, so reloading the page asks the server, by the HttpOnly cookie, whether
  *   there is still a session ("regreso") instead of keeping anything in the browser's storage;
- * - the businesses are exactly the ones the server returned after authenticating the person.
+ * - the accesses (a business in a role: administrator or operator) are exactly the ones the server returned after
+ *   authenticating the person; the same email can hold several.
  */
 class AdminAccessStore {
   view: AccessView = "loading";
@@ -56,7 +58,13 @@ class AdminAccessStore {
   /** When the current code was requested, to count the expiry and the wait before asking for another one. */
   codeRequestedAt = 0;
   remember = false;
+  /** Everything the person may open, in any role. */
+  accesses: AccessGrant[] = [];
+  /** The access the person chose (or the only one they have). */
+  access: AccessGrant | null = null;
+  /** The businesses they ADMINISTER (the `admin` accesses). */
   businesses: AdministeredBusiness[] = [];
+  /** The administered business behind the chosen access; null when the chosen access is an operator one. */
   business: AdministeredBusiness | null = null;
   private accessToken: string | null = null;
 
@@ -136,9 +144,10 @@ class AdminAccessStore {
     });
   }
 
-  /** From a business back to the list, when the person administers more than one. */
+  /** From an access back to the list, when the person has more than one. */
   backToBusinesses(): void {
     this.business = null;
+    this.access = null;
     this.error = null;
     this.view = "negocios";
   }
@@ -149,14 +158,28 @@ class AdminAccessStore {
     this.view = "acceso";
   }
 
-  /** Opens one of the authorized businesses, confirming with the server that it still is. */
-  async openBusiness(id: string): Promise<void> {
+  /**
+   * Opens one of the authorized accesses. An administrator access is confirmed with the server (it must still be the boss of an
+   * active business); an operator one is confirmed by the server on the first request of its own page.
+   */
+  async openAccess(key: string): Promise<void> {
+    const access = this.accesses.find((item) => item.key === key);
+    if (!access) return;
     await this.run(async () => {
-      const business = await this.withToken((token) => businessAccessApi.business(token, id));
-      runInAction(() => {
-        this.business = business;
-        this.view = "listo";
-      });
+      if (access.role === "admin") {
+        const business = await this.withToken((token) => businessAccessApi.business(token, access.businessId));
+        runInAction(() => {
+          this.business = business;
+          this.access = access;
+          this.view = "listo";
+        });
+      } else {
+        runInAction(() => {
+          this.business = null;
+          this.access = access;
+          this.view = "listo";
+        });
+      }
     });
   }
 
@@ -164,13 +187,17 @@ class AdminAccessStore {
     this.accessToken = grant.accessToken;
     this.email = grant.admin.email;
     this.remember = grant.admin.remember;
+    this.accesses = grant.accesses;
     this.businesses = grant.businesses;
     this.error = null;
     this.notice = "";
-    if (grant.businesses.length === 1) {
-      this.business = grant.businesses[0];
+    if (grant.accesses.length === 1) {
+      const only = grant.accesses[0];
+      this.access = only;
+      this.business = only.role === "admin" ? (grant.businesses.find((item) => item.id === only.businessId) ?? null) : null;
       this.view = "listo";
     } else {
+      this.access = null;
       this.business = null;
       this.view = "negocios";
     }
@@ -201,6 +228,7 @@ class AdminAccessStore {
       const grant = await businessAccessApi.refresh();
       runInAction(() => {
         this.accessToken = grant.accessToken;
+        this.accesses = grant.accesses;
         this.businesses = grant.businesses;
       });
       return call(grant.accessToken);
@@ -217,6 +245,8 @@ class AdminAccessStore {
     this.accessToken = null;
     this.email = "";
     this.remember = false;
+    this.accesses = [];
+    this.access = null;
     this.businesses = [];
     this.business = null;
     this.rules = null;

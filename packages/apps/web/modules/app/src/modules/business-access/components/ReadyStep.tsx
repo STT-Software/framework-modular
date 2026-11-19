@@ -7,15 +7,23 @@ import { businessInitials } from "../initials";
 import { adminAccessStore } from "../stores/adminAccess.store";
 
 /**
- * Step 5: the person is in. It shows the business the server authorized and the modules it has enabled; the
- * operation of each module is not part of this screen yet.
+ * Step 5: the person is in. It shows the access the server authorized: for an administrator, the business and the modules it
+ * has enabled; for an operator, the business and only the module they work in. The operation of each module is not part of
+ * this screen yet.
  */
 export const ReadyStep = observer(() => {
   const store = adminAccessStore;
+  const access = store.access;
   const business = store.business;
   const headingRef = useFocusHeading();
   const baseId = useId();
-  if (!business) return null;
+  if (!access) return null;
+  const isOperator = access.role === "operator";
+  if (!isOperator && !business) return null;
+  const name = isOperator ? access.businessName : business!.name;
+  const category = isOperator ? access.category : business!.category;
+  const categoryOther = isOperator ? access.categoryOther : business!.categoryOther;
+  const modules = isOperator ? access.modules : business!.modules;
 
   return (
     <section className="na-view-enter" aria-labelledby={`${baseId}-title`}>
@@ -38,20 +46,20 @@ export const ReadyStep = observer(() => {
       <div className="na-ready-business">
         <div>
           <span className="na-business-avatar" aria-hidden="true">
-            {businessInitials(business.name)}
+            {businessInitials(name)}
           </span>
           <div>
-            <strong>{business.name}</strong>
-            <span>{categoryLabel(business.category as CategoryId, business.categoryOther)}</span>
+            <strong>{name}</strong>
+            <span>{categoryLabel(category as CategoryId, categoryOther)}</span>
           </div>
-          <span className="na-role-badge">Administrador</span>
+          <span className="na-role-badge">{isOperator ? "Operador" : "Administrador"}</span>
         </div>
         <p>{store.email}</p>
         <div className="na-ready-modules">
-          {business.modules.length === 0 ? (
+          {modules.length === 0 ? (
             <span>Sin módulos habilitados todavía</span>
           ) : (
-            business.modules.map((id) => <span key={id}>{moduleInfo(id)?.name ?? id}</span>)
+            modules.map((id) => <span key={id}>{moduleInfo(id)?.name ?? id}</span>)
           )}
         </div>
       </div>
@@ -62,15 +70,15 @@ export const ReadyStep = observer(() => {
         </svg>
         <span>{store.remember ? "Elegiste recordar este dispositivo personal durante 30 días." : "Acceso verificado para esta sesión."}</span>
       </div>
-      <Link to={`/business/setup/${business.id}`} className="na-primary">
-        Preparar mi negocio
+      <Link to={isOperator ? `/business/turnos/${access.businessId}/operator` : `/business/setup/${access.businessId}`} className="na-primary">
+        {isOperator ? "Ver mis filas" : "Preparar mi negocio"}
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 12h14m-6-6 6 6-6 6" />
         </svg>
       </Link>
-      {store.businesses.length > 1 && (
+      {store.accesses.length > 1 && (
         <button type="button" className="na-secondary" onClick={() => store.backToBusinesses()}>
-          Cambiar de negocio
+          Cambiar de negocio o de rol
         </button>
       )}
       <button

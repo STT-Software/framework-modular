@@ -1,4 +1,5 @@
 import { FixedClock } from '../../platform/time/fixed-clock.spec';
+import { TurnosBaseSetup, TURNOS_PROFILE_IDS, type TurnosProfileId, type TurnosProfileOption, type TurnosSetupStatus } from '../turnos/public';
 import {
   AdministeredBusinessProfiles,
   type AdministeredBusinessProfile,
@@ -124,6 +125,34 @@ export class InMemoryBusinessSetupRepository extends BusinessSetupRepository {
   }
 }
 
+/** What Turnos tells the base setup: the profile chosen per business and how far its configuration is. In memory. */
+export class FakeTurnosBaseSetup extends TurnosBaseSetup {
+  readonly chosen = new Map<string, TurnosProfileId>();
+  readonly statuses = new Map<string, TurnosSetupStatus>();
+  constructor(private readonly profiles: FakeAdministeredBusinessProfiles) {
+    super();
+  }
+  options(): readonly TurnosProfileOption[] {
+    return TURNOS_PROFILE_IDS.map((id) => ({ id, name: id, description: '', suggestedQueues: [{ name: `Cola ${id}`, mode: 'auto' as const, averageMinutes: 10 }] }));
+  }
+  suggestedFor(category: string): TurnosProfileId {
+    return category === 'gastronomy' ? 'restaurant' : 'custom';
+  }
+  async current(businessId: string, category: string) {
+    return this.chosen.get(businessId) ?? this.suggestedFor(category);
+  }
+  async choose(adminEmail: string, businessId: string, profile: TurnosProfileId) {
+    const business = await this.profiles.find(adminEmail, businessId);
+    if (!business) throw new Error('not the boss of an active business');
+    if (!business.modules.includes('turnos')) throw new Error('turnos not enabled');
+    this.chosen.set(businessId, profile);
+    return profile;
+  }
+  async statusOf(businessId: string) {
+    return this.statuses.get(businessId) ?? { ready: false, queueCount: 0, operatorCount: 0 };
+  }
+}
+
 /** A service with a business of Ana (modules turnos and reservas) and another one of Luis, all in memory. */
 export function setupBusinessSetup() {
   const clock = new FixedClock('2026-03-04T15:00:00.000Z'); // Wednesday 10:00 in Bogotá (UTC-5)
@@ -131,10 +160,11 @@ export function setupBusinessSetup() {
   const repository = new InMemoryBusinessSetupRepository();
   profiles.add(aProfile(), BOSS_EMAIL);
   profiles.add(aProfile({ id: OTHER_BUSINESS_ID, name: 'Librería Sur', modules: ['inventario'] }), 'luis@libreriasur.co');
-  const service = new BusinessSetupService(profiles, repository, clock);
+  const turnos = new FakeTurnosBaseSetup(profiles);
+  const service = new BusinessSetupService(profiles, repository, clock, turnos);
   /** The same persisted data seen from a brand new service, as after signing out and coming back. */
-  const reopen = () => new BusinessSetupService(profiles, repository, clock);
-  return { service, reopen, profiles, repository, clock };
+  const reopen = () => new BusinessSetupService(profiles, repository, clock, turnos);
+  return { service, reopen, profiles, repository, clock, turnos };
 }
 
 export const NIGHT_SHIFT: WeekSchedule['mon'] = { open: true, ranges: [{ start: '18:00', end: '23:00' }] };

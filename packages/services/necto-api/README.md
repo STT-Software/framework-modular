@@ -336,25 +336,31 @@ Datos: colección `businesses`, índices `{ ownerId, idempotencyKey }` (único),
 
 ## Módulo business-access
 
-Acceso de los **administradores de negocio** (el jefe asignado de cada negocio), **sin contraseña**: el correo asignado y un código
-de 6 dígitos enviado a ese correo. Una misma persona puede administrar varios negocios; entra una vez y elige.
+Acceso de los **administradores de negocio** (el jefe asignado de cada negocio) y de los **operadores** de un módulo (hoy, Turnos),
+**sin contraseña**: el correo asignado y un código de 6 dígitos enviado a ese correo. **Es el mismo login para los dos roles**: la
+identidad es el correo, y una misma persona puede administrar varios negocios y ser operadora de otros; entra una vez y elige.
 
 ### Cómo funciona
 
-1. `POST /business-access/otp/request { email }` → `202` (`expiresInMinutes`, `resendAfterSeconds`, `maxAttempts`) si el correo es el jefe
-   vigente de algún negocio **activo**: se pide el envío del código. Si no lo es (sin negocio, negocio pausado o jefe reemplazado),
-   responde `404` con `code: "email-not-assigned"` y **no se crea ningún código**: la pantalla no avanza y dice que primero el
-   superadministrador debe invitar a la persona. Pedir otro código antes de 60 s, o mientras espera un código temporal, responde `202` sin
+1. `POST /business-access/otp/request { email }` → `202` (`expiresInMinutes`, `resendAfterSeconds`, `maxAttempts`) si el correo tiene
+   **algún acceso ahora mismo**: es el jefe vigente de un negocio **activo**, o es operador de un negocio activo que tiene ese módulo
+   habilitado. Se pide el envío del código. Si no (sin negocio, negocio pausado, jefe reemplazado, módulo deshabilitado u operador
+   retirado), responde `404` con `code: "email-not-assigned"` y **no se crea ningún código**: la pantalla no avanza y dice que primero
+   el superadministrador o un administrador debe asignar a la persona. Pedir otro código antes de 60 s, o mientras espera un código temporal, responde `202` sin
    emitir uno nuevo.
    > **Decisión de producto:** esta respuesta revela si un correo está asignado a un negocio (antes el acceso respondía igual para
    > todos). Cada solicitud, asignada o no, cuenta para los límites por correo y por IP (5/h y 20/h), que es lo que frena el sondeo
    > masivo. Si algún día debe volver la respuesta genérica, el único cambio es dejar de lanzar `EmailNotAssignedError` en
    > `AdminLoginService.requestCode`.
-2. `POST /business-access/otp/verify { email, code, remember? }` → `200`. El servidor gasta el código, comprueba que el correo siga siendo
-   jefe de al menos un negocio activo y abre una **sesión de servidor**. Responde con `accessToken` (corto), `expiresInSeconds`,
-   `admin { email, remember }` y `businesses[]` (solo los autorizados), y pone la cookie de sesión.
-3. Con una sola opción el cliente entra directo; con varias muestra el selector. Cada negocio se confirma con
-   `GET /business-access/businesses/:businessId` (el servidor vuelve a comprobar todo).
+2. `POST /business-access/otp/verify { email, code, remember? }` → `200`. El servidor gasta el código, comprueba que el correo tenga al
+   menos un acceso y abre una **sesión de servidor**. Responde con `accessToken` (corto), `expiresInSeconds`,
+   `admin { email, remember }`, `accesses[]` (todo lo que la persona puede abrir, en cualquier rol) y `businesses[]` (solo los que
+   **administra**, por compatibilidad con las pantallas anteriores a los roles), y pone la cookie de sesión.
+   Cada elemento de `accesses`: `{ key: "<businessId>:<role>", businessId, businessName, category, categoryOther, role: "admin" | "operator", modules, personName }`.
+   Para un administrador, `modules` son los módulos habilitados del negocio; para un operador, **solo** el módulo al que está asignado.
+3. Con un solo acceso el cliente entra directo; con varios muestra el selector de **negocio y rol** (un correo puede ser jefe y operador
+   del mismo negocio: son dos elementos). Un administrador entra a `/business/setup/<id>`; un operador, a la vista de su módulo
+   (`GET /turnos/businesses/:businessId/operator`). `GET /business-access/accesses` devuelve la misma lista con la sesión abierta.
 
 **Conocer el correo nunca basta**: sin un código válido no se crea ninguna sesión, y `GET /session` sin la cookie responde `401`.
 
@@ -391,13 +397,15 @@ Mientras el envío real de correo no esté listo, el **dueño** del negocio pued
 
 - La sesión vive en el **servidor** (`admin_sessions`). El navegador guarda un secreto aleatorio en la cookie `necto_admin_session`
   (**`HttpOnly`**, **`SameSite=Strict`**, `Secure` si `PUBLIC_APP_URL` es https); la base guarda solo su **hash SHA-256**.
-- El `accessToken` (JWT, `role: business-admin`, solo lleva el id de la sesión) dura **10 minutos** y se pide de nuevo con
+- El `accessToken` (JWT, `role: business-admin`, solo lleva el id de la sesión; el nombre es histórico: **identifica una sesión por correo, no
+  dice qué puede hacer la persona**, eso se decide en cada petición) dura **10 minutos** y se pide de nuevo con
   `POST /session/refresh` usando la cookie. El cliente lo guarda **solo en memoria**.
 - **Sesión normal:** cookie de navegador (muere al cerrarlo), 2 h de inactividad y 12 h en total.
 - **"Recordar este dispositivo"** (`remember: true`, **desactivado por defecto**): cookie de 30 días como máximo, 14 días de inactividad,
   nunca más de **30 días desde el código** aunque se renueve (`ADMIN_REMEMBER_DAYS` no puede pasar de 30).
-- **Renovación:** `refresh` mueve la caducidad por inactividad, nunca más allá de la absoluta, y devuelve los negocios autorizados en ese
-  instante. Si ya no administra ninguno, la sesión se termina.
+- **Renovación:** `refresh` mueve la caducidad por inactividad, nunca más allá de la absoluta, y devuelve los accesos autorizados en ese
+  instante. Si la persona ya no tiene **ninguno** (ni como administrador ni como operador), la sesión se termina; si le queda alguno, la
+  sesión sigue y solo desaparece lo retirado.
 - **Revocación:** `DELETE /session` (cerrar sesión u olvidar el dispositivo) y "cerrar las demás sesiones" terminan la sesión **al
   instante**: el guard comprueba la sesión en la base en **cada** petición, así que ni un token que aún no venció sirve.
   Abrir una sesión nueva en un navegador termina la anterior de ese navegador.
@@ -412,7 +420,16 @@ Mientras el envío real de correo no esté listo, el **dueño** del negocio pued
   esté **activo** y, por módulo, que lo tenga **habilitado**. Pausar un negocio, reemplazar al jefe o quitar un módulo cierran la
   puerta al instante. Un negocio desconocido, pausado o ajeno responde igual (`404`).
 - Para que un módulo funcional (reservas, turnos...) proteja sus rutas `/…/:businessId/…`, importa `BusinessAccessModule` y usa los
-  decoradores de `business-access/public.ts`: `@BusinessAdminOnly()`, `@RecentlyVerified()`, `@RequiresBusinessModule('reservas')` y `@AdministersBusiness()` (para lo que tiene todo negocio, sin exigir ningún módulo: es el que usa `business-setup`).
+  decoradores de `business-access/public.ts`: `@BusinessAdminOnly()` (solo comprueba la **sesión**), `@RecentlyVerified()`,
+  `@RequiresBusinessModule('reservas')` (ser el jefe de ESE negocio y que tenga el módulo), `@AdministersBusiness()` (para lo que tiene todo
+  negocio, sin exigir ningún módulo: es el que usa `business-setup`) y `@OperatesModule('turnos')` (ser **operador** de ESE negocio para ese módulo).
+- **Dos roles, dos puertas.** `@RequiresBusinessModule` exige ser el jefe; `@OperatesModule` exige una asignación de operador. Ninguna
+  sirve para la otra: ser jefe no convierte en operador y un operador nunca entra a una ruta de administrador (todas responden el mismo `404`).
+- **Quién asigna operadores.** `business-access` **no guarda ni copia** las asignaciones: cada módulo que asigna personas implementa
+  `MemberAccessSource` y se registra al arrancar en `MemberAccessRegistry` (así `business-access` no importa a los módulos y no hay
+  ciclos). En cada decisión se pregunta al módulo dueño, y `business-access` solo acepta la asignación si el negocio está **activo** y el
+  módulo sigue **habilitado**: retirar al operador, deshabilitar el módulo o pausar el negocio cierran el acceso en la petición siguiente.
+  Retirar una asignación **no borra la identidad** (que es solo el correo) ni los demás accesos de esa persona.
 
 ### Correo
 
@@ -476,10 +493,12 @@ tipo de negocio y la revisión. **No** incluye los ajustes propios de cada módu
 {
   "business": { "id": "…", "status": "active", "currency": "COP", "timezone": "America/Bogota" },
   "modules": [
-    { "id": "reservas", "name": "Reservas", "description": "…", "schedule": { "mode": "inherited" }, "settings": { "status": "pending" } }
+    { "id": "reservas", "name": "Reservas", "description": "…", "schedule": { "mode": "inherited" }, "settings": { "status": "pending" } },
+    { "id": "turnos", "name": "Turnos", "description": "…", "schedule": { "mode": "inherited" }, "settings": { "status": "ready", "summary": { "queueCount": 2, "operatorCount": 3 } } }
   ],
   "profile": { "name": "…", "legalName": null, "taxId": null, "phone": null, "supportEmail": null, "address": null, "website": null, "description": null },
   "category": { "id": "gastronomy", "other": null },
+  "turnos": { "profile": "restaurant", "suggested": "restaurant", "profiles": [{ "id": "clinic", "name": "Clínica / Salud", "description": "…", "suggestedQueues": ["Consulta general", "Laboratorio"] }] },
   "logo": null,
   "schedule": {
     "timezone": "America/Bogota",
@@ -490,7 +509,8 @@ tipo de negocio y la revisión. **No** incluye los ajustes propios de cada módu
 }
 ```
 - `modules`: **solo** los módulos habilitados para el negocio, en el orden del catálogo (`reservas`, `turnos`, `agendamiento`, `referidos`,
-  `inventario`, `pedidos`). Puede ser `[]`. `schedule.mode` es `inherited` o `custom`; `settings.status` es siempre `pending` en esta etapa.
+  `inventario`, `pedidos`). Puede ser `[]`. `schedule.mode` es `inherited` o `custom`; `settings.status` es `pending` hasta que el módulo diga que su configuración está preparada: hoy solo Turnos lo hace (`ready`, con `settings.summary { queueCount, operatorCount }`; ver el módulo `turnos`).
+- `turnos`: `null` si el negocio no tiene Turnos. Si lo tiene, `profile` es el perfil de atención vigente (el elegido o, si nadie eligió, el que sugiere la categoría), `suggested` el que sugiere la categoría y `profiles[]` las cinco opciones con los nombres de las filas que sugiere cada una.
 - `profile` y `category` son los datos del negocio tal como están ahora (precarga del formulario). `description` es de este módulo.
 - `logo`: `null` o `{ contentType, sizeBytes, updatedAt, url }`. **Los bytes nunca vienen en el JSON**: se piden a `url` (ver Logo).
 - `schedule.base.saved` es `false` mientras nadie guardó un horario: `days` muestra entonces el horario por defecto (lunes a viernes
@@ -522,6 +542,10 @@ superadministrador (`phone` `+573001234567`, `taxId` 4 a 20 caracteres, `website
 **`PUT /category`**: `{ category, categoryOther? }` con `category` en `gastronomy`, `retail`, `professional-services`, `health-wellness`, `other`.
 Con `other`, `categoryOther` (2 a 60 caracteres) es obligatorio (`400` con `fields.categoryOther`); con otra categoría se descarta. La
 precarga es la categoría registrada por el superadministrador.
+Para un negocio **con Turnos** el cuerpo acepta además `turnosProfile` (`clinic`, `restaurant`, `bank`, `salon` o `custom`): el **perfil de atención**
+que sugiere las primeras filas de Turnos. Ese dato **pertenece a Turnos** (se guarda allí y es el mismo que edita su primer paso), así que
+cambiarlo desde aquí nunca borra ni duplica lo ya configurado en Turnos (ver «Cambiar el perfil» en el módulo `turnos`). Sin `turnosProfile` el
+perfil queda como estaba. Un perfil desconocido o enviado a un negocio sin Turnos responde `400` con `fields.turnosProfile`, y no cambia nada.
 
 **Logo.** `PUT /logo` es `multipart/form-data` con **un** campo de archivo llamado `logo` (nada más). PNG, JPG o WebP de **hasta 1 MB**
 (`1 048 576` bytes; más pesa `413`). El tipo se decide por los **bytes** del archivo (firma PNG/JPEG), no por la extensión ni por el
@@ -551,8 +575,8 @@ etiqueta `<img src>` directa no envía el token). Sin logo, `404`. `DELETE /logo
 **`POST /complete`** («Guardar configuración base»): vuelve a validar lo que tiene la base (nombre, `other` con descripción, horario base y
 horarios propios) y marca **solo la base** como preparada (`progress.baseReady: true`, `baseReadyAt`, `currentStep: "review"`). Repetirlo no cambia la
 fecha. Si algo no es válido: `409 { "code": "setup-incomplete", "fields": {…} }`. **Cualquier cambio posterior** de datos, tipo, logo u horarios
-(no el de paso) la vuelve a `baseReady: false`: hay que revisarla y guardarla otra vez. Los ajustes de cada módulo no se marcan: siguen
-`settings.status: "pending"`.
+(no el de paso) la vuelve a `baseReady: false`: hay que revisarla y guardarla otra vez. Esto no marca los ajustes de cada módulo: el estado de cada
+uno lo dice el propio módulo en `modules[].settings.status`.
 
 ### Errores
 `400` validación (`message` lista de textos y `fields` por campo, como el resto de la API) · `401` sin token o sesión terminada
@@ -568,11 +592,155 @@ fecha. Si algo no es válido: `409 { "code": "setup-incomplete", "fields": {…}
 | Logo (`no-logo-file`, quitar) | `PUT` / `DELETE /logo`; `logo.url` para mostrarlo |
 | Horarios, pestañas Negocio / módulo, «Heredar» | `PUT /schedule`, `PUT /schedule/modules/:id` |
 | Tipo (`negocio-tipo`), «Otra» | `PUT /category` (`Otra` → `other` + `categoryOther`) |
+| «Perfil de atención de Turnos» (`no-turnos-profile`) | `turnos.profile` / `turnos.profiles` del estado; se guarda con `PUT /category { …, turnosProfile }` |
+| Tarjeta de Turnos: «Configurar» / «Revisar configuración» | `modules[].settings.status` (`pending` / `ready`); lleva a `/business/turnos/:id/profile` |
 | Siguiente / Atrás entre pasos | `PUT /progress` |
 | «Guardar configuración base» | `POST /complete` |
 Las claves del HTML (`legal`, `tax`, `email`, `about`, categorías en español) se traducen a las del contrato en el cliente del módulo.
 Las claves de categoría: `Gastronomía`→`gastronomy`, `Retail y boutique`→`retail`, `Servicios profesionales`→`professional-services`,
 `Salud y bienestar`→`health-wellness`, `Otra`→`other`.
+
+## Módulo turnos
+La **configuración** de Turnos de un negocio: perfil de atención, filas, reglas generales y operadores. Referencia visual:
+`referencias html/necto-configuracion-turnos.html`. **Todavía no** emite ni atiende turnos, no hay llamados, pantalla de sala ni estadísticas.
+Colección propia: `turnos_configurations` (un documento por negocio, índices `{ businessId }` único y `{ operators.email }`).
+
+- **Dos roles, dos controladores.** La configuración (`/turnos/businesses/:businessId/…`) es del **administrador** de ese negocio
+  (`@RequiresBusinessModule('turnos')`: jefe vigente de un negocio activo que tiene Turnos). La vista del operador
+  (`/turnos/businesses/:businessId/operator`) es del **operador** (`@OperatesModule('turnos')`). Se comprueba **en cada petición**, contra la
+  base; el negocio de la URL, el rol, los módulos y las filas nunca se toman de lo que envía la página. Sin token `401`; token de
+  superadmin `403`; negocio ajeno, inexistente, pausado o mal formado, o ser operador (que no jefe) en una ruta de administrador, **el mismo
+  `404`**; Turnos no habilitado en el negocio, `403` con `code: "module-not-enabled"`.
+- **Un documento, una escritura.** Filas y operadores viven **dentro** del documento del negocio (MongoDB local no tiene transacciones):
+  cualquier cambio que toque a la vez filas y operadores (eliminar una fila y reasignar a quien se quedaría sin ninguna) es **una sola
+  escritura condicionada a la `version` leída**; si alguien escribió en medio, el cambio se recalcula sobre lo que escribió (hasta 5
+  intentos) y, si no se logra, `409 concurrent-change`. Un negocio nunca muestra un operador sin fila.
+- **Primera apertura.** `GET` genera **una vez** las filas sugeridas por el perfil y las guarda (así tienen `id` estables). Abrir de nuevo no
+  genera nada. El perfil es el elegido en la configuración base o, si nadie eligió, el que sugiere la categoría (`gastronomy` → `restaurant`,
+  `health-wellness` → `clinic`, `retail` y `professional-services` → `bank`, `other` → `custom`). Todos los perfiles, incluido `custom`
+  («Atención general»), parten con al menos una fila.
+- Todas las respuestas llevan `Cache-Control: no-store`. **Cada escritura devuelve el estado completo** (el mismo del `GET`); `POST /queues` y
+  `POST /operators` añaden `created: { id }` con el id de lo creado.
+
+### Estado completo: `GET /turnos/businesses/:businessId`
+```json
+{
+  "business": { "id": "…", "name": "Casa Oliva", "category": "gastronomy", "categoryOther": null },
+  "profile": { "id": "restaurant", "suggested": "restaurant", "suggestionsUntouched": true },
+  "queues": [
+    {
+      "id": "…", "name": "Pedidos en caja", "color": "orange", "mode": "auto", "averageMinutes": 8, "source": "restaurant",
+      "overrides": { "prefix": null, "urgentMinutes": null, "busyLimit": null, "fullLimit": null },
+      "effective": { "prefix": "P", "urgentMinutes": 10, "busyLimit": 4, "fullLimit": 8 },
+      "ticketExample": "P-001"
+    }
+  ],
+  "rules": { "prefixMode": "initial", "fixedPrefix": null, "dailyReset": true, "urgentMinutes": 10, "busyLimit": 4, "fullLimit": 8 },
+  "operators": [{ "id": "…", "name": "Laura Gómez", "email": "laura@example.com", "phone": null, "queueIds": ["…"], "createdAt": "…" }],
+  "progress": { "currentStep": null, "visitedSteps": [], "ready": false, "readyAt": null },
+  "catalog": { "profiles": [{ "id": "clinic", "name": "Clínica / Salud", "description": "…", "suggestedQueues": [{ "name": "Consulta general", "mode": "auto", "averageMinutes": 14 }] }], "colors": ["orange", "purple", "blue", "green", "pink", "amber"], "modes": ["auto", "manual"], "prefixModes": ["initial", "fixed", "none"], "steps": ["profile", "queues", "rules", "operators", "review"], "limits": { "…": "…" } }
+}
+```
+- `profile.suggestionsUntouched`: `true` mientras las filas siguen siendo las sugeridas sin tocar y no hay operadores (cambiar el perfil las **reemplaza**); `false`
+  cuando hay trabajo de la persona (cambiar el perfil lo conserva): la pantalla debe ofrecer «Solo cambiar perfil» o «Añadir sugerencias».
+- `queues[].source`: `"custom"` (la creó la persona) o el id del perfil que la sugirió («Sugerida · Clínica / Salud» en la pantalla).
+- `queues[].overrides`: lo que la fila fija **por su cuenta**; `null` es «usa la regla general», **campo por campo**. `effective` es lo que la fila usa de
+  verdad (propio o heredado) y `ticketExample` el número de ejemplo (`C-001`, `T-001`, `001`): la pantalla no necesita recalcular la herencia.
+- `catalog` trae lo que la interfaz necesita para validar igual que el servidor: perfiles con sus filas sugeridas, colores, modos, límites.
+  `limits`: nombre de fila 2 a 60, promedio 1 a 1440 min, prefijo 1 a 5 letras o dígitos, urgencia 1 a 1440, ocupada 1 a 9999, llena 1 a 10000
+  (la **general** parte de 2), operador 2 a 80 caracteres, teléfono 7 a 15 dígitos, hasta 30 filas y 100 operadores por negocio (límites propios del producto).
+
+### Rutas de la configuración (tras `/turnos/businesses/:businessId`)
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| `GET` | `` | Estado completo (la primera vez genera las filas sugeridas). |
+| `PUT` | `/profile` | `{ profile, addSuggestedQueues? }`: cambia el perfil de atención. |
+| `POST` | `/queues` · `PUT /queues/:queueId` · `DELETE /queues/:queueId` | Crear (`201`), reemplazar lo editable, eliminar. |
+| `PUT` | `/rules` | Reglas generales. |
+| `POST` | `/operators` · `PUT /operators/:operatorId` · `DELETE /operators/:operatorId` | Crear (`201`), reemplazar, retirar. |
+| `PUT` | `/progress` | `{ step }`: recuerda el paso actual (`profile`, `queues`, `rules`, `operators`, `review`). |
+| `POST` | `/complete` | «Guardar configuración»: la marca como preparada. |
+
+**Cambiar el perfil** (`PUT /profile`, y también `turnosProfile` en la configuración base): **nunca borra ni duplica** lo que hizo la persona.
+- Si las filas siguen siendo las sugeridas sin tocar (nadie editó filas, reglas ni operadores) y no hay operadores, se **reemplazan** por las del nuevo perfil.
+- Si no, filas, reglas y operadores quedan **exactamente** como están y solo cambia el perfil. Con `addSuggestedQueues: true` se **añaden** las
+  sugeridas del nuevo perfil, saltando las que ya existen por nombre (sin distinguir mayúsculas): pedirlo otra vez no añade nada.
+- El mismo perfil sin `addSuggestedQueues` no cambia nada. Un perfil desconocido: `400` con `fields.profile`.
+
+**Filas** — `{ name, mode, averageMinutes, color?, overrides? }` con `overrides: { prefix?, urgentMinutes?, busyLimit?, fullLimit? }`:
+nombre único en el negocio (sin distinguir mayúsculas), `mode` `auto` o `manual`, `color` de la paleta (si falta, se elige uno), y cada valor propio
+**opcional e independiente**: omitido o `null` hereda el general. El prefijo propio se normaliza a mayúsculas sin tildes. `PUT` **reemplaza**: un campo de
+`overrides` que no se envía vuelve a heredar. Errores `400` con `code: "invalid-queue"` y `fields` (`name`, `mode`, `color`, `averageMinutes`, `overrides.prefix`…).
+
+**Reglas** — `{ prefixMode: "initial" | "fixed" | "none", fixedPrefix?, dailyReset, urgentMinutes, busyLimit, fullLimit }`.
+`fixedPrefix` es obligatorio solo con `fixed` (y se guarda `null` con los otros modos). `fullLimit` debe ser **mayor** que `busyLimit`.
+
+**Límite de llena mayor que el de ocupada, con valores heredados y propios.** Se valida con lo que la fila **realmente** usa (propio o general):
+- Al guardar una fila: una `busyLimit` propia que alcanza la `fullLimit` **heredada**, o una `fullLimit` propia que no supera la `busyLimit` heredada, se rechaza
+  (`400`, `fields["overrides.fullLimit"]`).
+- Al guardar las reglas generales: si cruzarían con los valores propios de alguna fila, se rechaza (`400`, `fields.fullLimit`) nombrando las filas, y no cambia nada.
+- Al guardar como preparada se vuelve a comprobar todo.
+
+**Operadores** — `{ name, email, phone?, queueIds }`: nombre (2 a 80) y correo **obligatorios**, teléfono opcional (se limpia: `+573001234567`),
+y **una o varias** filas **existentes de este negocio** (un id de otro negocio, o ninguno, es `400` con `fields.queueIds`). El correo es con el que
+entra, se normaliza como en el login (sin espacios, en minúsculas) y es único entre los operadores del negocio (`400` con `fields.email`); la misma
+persona sí puede ser operadora de varios negocios. Agregar operadores es **opcional**. Quitar un operador (`DELETE`) elimina **solo su asignación a
+Turnos de este negocio**: no borra su identidad (que es solo el correo), ni sus sesiones, ni sus accesos a otros negocios o roles.
+
+**Eliminar una fila** — `DELETE /queues/:queueId` con cuerpo opcional `{ reassignments: [{ operatorId, queueId }] }`:
+- Quien tiene **otras** filas solo pierde esta. Quien se quedaría **sin ninguna** necesita una nueva fila en `reassignments`.
+- Si falta alguno: `409` con `code: "reassignment-required"` y `fields["reassignments.<operatorId>"]` por cada persona; **no se elimina nada**.
+- Una reasignación hacia la fila eliminada, hacia una fila que no existe o es de otro negocio, para alguien que no la necesita o repetida: `400` con
+  `fields["reassignments.<n>.…"]`.
+- Es la única fila del negocio y tiene operadores (no hay a dónde moverlos): `409` con `code: "queue-has-operators"`.
+- Fila y operadores cambian en **una sola escritura**: o pasa todo o no pasa nada, y nadie queda sin fila.
+
+**Guardar la configuración** — `POST /complete` exige **al menos una fila** y **reglas válidas** (y que filas y operadores sigan siendo válidos);
+los operadores son opcionales. Marca `progress.ready` y `readyAt`; repetirlo conserva la fecha. Si no se cumple: `409` con `code: "turnos-incomplete"` y
+`fields` (`queues`, `rules.<campo>`, `queues.<id>.…`, `operators.<id>.…`). **Cualquier cambio posterior** de perfil con efecto, filas, reglas u
+operadores la vuelve a `ready: false`; mover el paso (`PUT /progress`) no. **Recuperar**: `GET` devuelve todo lo guardado, también tras cerrar sesión.
+
+### Vista del operador: `GET /turnos/businesses/:businessId/operator`
+```json
+{ "business": { "id": "…", "name": "Casa Oliva" }, "operator": { "id": "…", "name": "Laura Gómez", "email": "laura@example.com" },
+  "queues": [{ "id": "…", "name": "Laboratorio", "color": "purple", "mode": "manual", "averageMinutes": 25 }] }
+```
+El operador se busca por el **correo de la sesión** (nunca por algo que envíe la página) y la respuesta trae **solo sus filas**: sin reglas, sin otros
+operadores, sin ninguna ruta administrativa. Es de solo lectura; no concede acceso a otros módulos del negocio. Si se le quita la asignación o su última fila,
+se deshabilita Turnos o se pausa el negocio, responde `404` en la petición siguiente.
+
+### Login compartido
+El operador entra por `/business-access` (ver ese módulo), con su correo y un código real enviado por correo (vencimiento, un solo uso y los mismos
+límites de solicitudes e intentos). No existe ningún código de prueba. `verify` y `GET /business-access/accesses` devuelven `accesses[]` con
+`role: "admin" | "operator"`; con más de uno se elige negocio y rol. Turnos se registra como fuente de asignaciones al arrancar
+(`TurnosOperatorAccessSource`) y solo cuenta a un operador que conserva al menos una fila existente.
+
+### Errores del módulo
+`400` validación (`message` lista y `fields`; `code` `invalid-queue`, `invalid-rules`, `invalid-operator`, `invalid-profile`, `invalid-request`) ·
+`401` sin token o sesión terminada (`session-expired`) · `403` token de superadmin, o `module-not-enabled` · `404` negocio, fila u operador que no es tuyo ·
+`409` `reassignment-required`, `queue-has-operators`, `turnos-incomplete`, `concurrent-change`.
+
+### Contrato público (`turnos/public.ts`)
+`TurnosBaseSetup`, que usa la configuración base: opciones de perfil, perfil vigente, elegirlo y el estado de Turnos (`ready`, filas, operadores). Quien
+elige el perfil debe ser el jefe vigente de un negocio activo con Turnos, comprobado en la misma operación.
+
+### Cómo conectar el HTML (`necto-configuracion-turnos`)
+| Pantalla / acción del HTML | Backend |
+|----------------------------|---------|
+| Tarjeta de Turnos en los módulos, «Configurar» / «Revisar configuración» | `modules[].settings.status` de `GET /business-setup/businesses/:id` |
+| `turnos-perfil`: tarjetas de perfil y filas sugeridas | `catalog.profiles`, `profile.id`; `PUT /profile` |
+| Diálogo «Añadir otras filas sugeridas» (`nt-change-profile-*`) | «Solo cambiar perfil» → `addSuggestedQueues: false`; «Añadir sugerencias» → `true` |
+| `turnos-filas`: lista, «Nueva fila», editar, eliminar | `queues[]`; `POST` / `PUT` / `DELETE /queues` |
+| Diálogo de fila: nombre, modo, promedio, color, reglas propias | cuerpo de fila; `overrides` vacío = «General: …» (`rules`) |
+| `turnos-reglas`: prefijo, reinicio, urgencia, ocupada, llena | `PUT /rules` |
+| `turnos-operadores`: alta, edición, filas por operador | `POST` / `PUT /operators`; `queueIds` |
+| «Continuar sin agregar» operadores | no hace falta llamar nada: los operadores son opcionales |
+| Diálogo «Eliminar fila» con reasignación (`nt-delete-reassign`) | `DELETE /queues/:id` con `reassignments`; `409 reassignment-required` lista a quién falta |
+| «Ver acceso OTP» / «Probar su acceso» | el operador entra por `/business/access` con su correo; el código real llega por correo |
+| `turnos-revision` y «Guardar configuración» | `POST /complete` |
+| `turnos-acceso-operador` | `GET /turnos/businesses/:id/operator` |
+| Siguiente / Atrás entre pasos | `PUT /progress` |
+Las claves del HTML (`average`, `queueIds`, `urgent`, `busy`, `full`, `prefixMode: 'initial'`) se traducen a las del contrato en el cliente del módulo.
 
 ## Estructura
 
@@ -607,7 +775,8 @@ src/
     │   └── infrastructure/      Esquemas de Mongo y repositorio de `onboarding_profiles` y `onboarding_intro_views`
     ├── businesses/              Negocios, jefe vigente y módulos habilitados (colección `businesses`)
     ├── business-access/         Acceso de administradores por OTP, sesiones y permisos (`access_challenges`, `access_rate_limits`, `admin_sessions`)
-    └── business-setup/          Configuración inicial del negocio por su administrador (`business_setups`)
+    ├── business-setup/          Configuración inicial del negocio por su administrador (`business_setups`)
+    └── turnos/                  Configuración de Turnos: perfil, filas, reglas y operadores (`turnos_configurations`)
 ```
 
 Dentro de un módulo, las capas dependen en una sola dirección: `api` y `infrastructure` -> `application` y `domain`;
@@ -623,6 +792,7 @@ habla con un repositorio abstracto (`domain/*.repository.ts`) que implementa `in
 | `businesses` | Negocios, jefe vigente, catálogo y habilitación de módulos | Colección `businesses` | `/businesses/*` |
 | `business-access` | Invitación por correo, acceso de administradores con OTP, sesiones y permisos por negocio/módulo | `access_challenges`, `access_rate_limits`, `admin_sessions` | `/business-access/*`, `/businesses/:id/invitation*` |
 | `business-setup` | Configuración inicial del negocio por su administrador: datos, logo, horarios (propios o heredados), tipo y progreso | `business_setups` | `/business-setup/businesses/:businessId/*` |
+| `turnos` | Configuración de Turnos: perfil de atención, filas, reglas generales y operadores (que entran por el login compartido) | `turnos_configurations` | `/turnos/businesses/:businessId/*` |
 
 - **Puertas públicas.** `modules/<módulo>/public.ts` es lo único que otro código puede importar de un módulo. Hoy exporta
   el módulo de Nest (para que `app.module.ts` lo registre) y, si otro módulo lo necesita, contratos: `businesses` exporta
@@ -672,6 +842,16 @@ Son tres cosas distintas y viven en lugares distintos:
   (se invalida con cualquier cambio, no con el paso), DTOs y los guards declarados en los controladores. Con `NECTO_TEST_MONGODB_URI` apuntando a la base de desarrollo,
   `mongo-business-setup.repository.spec.ts` también prueba el repositorio contra MongoDB real (usa ids propios y los borra al terminar):
   `NECTO_TEST_MONGODB_URI="$(grep ^MONGODB_URI= .env | cut -d= -f2-)" npm test`.
+- **Login compartido** (`business-access/application/access-grants.service.spec.ts`, `turnos/shared-login.spec.ts`): una identidad con varios roles
+  (jefe de un negocio y operadora de otro, o ambos en el mismo), el flujo OTP real de un operador (código por correo, un solo uso, bloqueo por intentos, el
+  código de demostración `123456` no abre nada), el guard de operador (otro negocio, otro módulo, un jefe que no es operador) y cómo se cierra el acceso
+  al retirar la asignación, deshabilitar el módulo, pausar el negocio o reemplazar al jefe, sin borrar la identidad ni los demás accesos.
+- **`turnos`:** reglas y herencia campo por campo (incluida la combinación de límites heredados y propios), validación de filas y operadores, perfil
+  (reemplazar sugerencias sin tocar, conservar y no duplicar), eliminación con reasignación, aislamiento entre negocios (ids de otro negocio, mismo correo en
+  dos negocios), persistencia al volver a abrir, concurrencia (reintento y conflicto), «guardar» (mínimo, fecha conservada, se invalida con cualquier cambio),
+  vista del operador (solo sus filas), contrato con la configuración base, DTOs, guards declarados en los controladores y la forma de las respuestas.
+  `mongo-turnos-configuration.repository.spec.ts` prueba el repositorio contra MongoDB real con `NECTO_TEST_MONGODB_URI` (versión, dos escritores, borrar fila y
+  reasignar en una escritura, búsqueda por correo de operador).
 - **Arquitectura** (`src/architecture.spec.ts`): lee los imports reales y comprueba que `platform/` no depende de los
   módulos, que los módulos solo se alcanzan por `public.ts`, que las capas respetan su sentido, que Mongoose solo está en
   `infrastructure`, que `@nestjs/jwt` solo está en `platform/security` y `nodemailer` solo en `platform/mail`, y que no hay ciclos entre archivos ni entre módulos.

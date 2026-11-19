@@ -7,6 +7,7 @@ import {
   ModuleNotAssignedError,
   SetupBusinessNotFoundError,
   SetupIncompleteError,
+  TurnosNotAssignedError,
 } from '../domain/errors';
 import { defaultWeekSchedule } from '../domain/week-schedule';
 import { aWeek, BOSS_EMAIL, BUSINESS_ID, NIGHT_SHIFT, OTHER_BUSINESS_ID, setupBusinessSetup } from '../fakes.spec';
@@ -46,7 +47,7 @@ describe('setup: the modules assigned to the business', () => {
   it('never lets the administrator change the assignments: saving the form leaves modules, currency and time zone as the owner set them', async () => {
     const { service, profiles } = setupBusinessSetup();
     await service.saveProfile(BOSS_EMAIL, BUSINESS_ID, form);
-    await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'retail', null);
+    await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'retail', null, null);
     const business = profiles.businesses.get(BUSINESS_ID)!;
     assert.deepEqual(business.modules, ['turnos', 'reservas']);
     assert.equal(business.currency, 'COP');
@@ -61,7 +62,7 @@ describe('setup: isolation between businesses and permissions', () => {
     const calls: Array<() => Promise<unknown>> = [
       () => service.get(LUIS, BUSINESS_ID),
       () => service.saveProfile(LUIS, BUSINESS_ID, form),
-      () => service.saveCategory(LUIS, BUSINESS_ID, 'retail', null),
+      () => service.saveCategory(LUIS, BUSINESS_ID, 'retail', null, null),
       () => service.saveBaseSchedule(LUIS, BUSINESS_ID, defaultWeekSchedule()),
       () => service.saveModuleSchedule(LUIS, BUSINESS_ID, 'turnos', { inherit: false }),
       () => service.uploadLogo(LUIS, BUSINESS_ID, { bytes: PNG, declaredType: 'image/png' }),
@@ -158,10 +159,10 @@ describe('setup: business data, description and type', () => {
   it('keeps the type of business, and the text of "other" only for "other"', async () => {
     const { service } = setupBusinessSetup();
     assert.equal((await service.get(BOSS_EMAIL, BUSINESS_ID)).business.category, 'gastronomy');
-    const other = await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'other', 'Estudio de tatuajes');
+    const other = await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'other', 'Estudio de tatuajes', null);
     assert.equal(other.business.category, 'other');
     assert.equal(other.business.categoryOther, 'Estudio de tatuajes');
-    const back = await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'retail', 'texto que debe descartarse');
+    const back = await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'retail', 'texto que debe descartarse', null);
     assert.equal(back.business.categoryOther, null);
   });
 });
@@ -325,7 +326,7 @@ describe('setup: progress and saving the base', () => {
   it('recovers everything saved halfway: form, description, type, hours and the module exception', async () => {
     const { service, reopen } = setupBusinessSetup();
     await service.saveProfile(BOSS_EMAIL, BUSINESS_ID, form);
-    await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'other', 'Café y coworking');
+    await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'other', 'Café y coworking', null);
     await service.saveBaseSchedule(BOSS_EMAIL, BUSINESS_ID, aWeek());
     await service.saveModuleSchedule(BOSS_EMAIL, BUSINESS_ID, 'turnos', { inherit: false, schedule: aWeek(NIGHT_SHIFT) });
     await service.saveProgress(BOSS_EMAIL, BUSINESS_ID, 'category');
@@ -345,7 +346,10 @@ describe('setup: progress and saving the base', () => {
     assert.equal(state.progress.baseReady, true);
     assert.ok(state.progress.baseReadyAt);
     assert.equal(state.progress.currentStep, 'review');
-    for (const module of state.modules) assert.deepEqual(Object.keys(module).sort(), ['description', 'effectiveSchedule', 'id', 'inherit', 'name', 'openNow', 'ownSchedule']);
+    for (const module of state.modules) {
+      assert.deepEqual(Object.keys(module).sort(), ['description', 'effectiveSchedule', 'id', 'inherit', 'name', 'openNow', 'ownSchedule', 'settings']);
+      assert.equal(module.settings.status, 'pending', 'saving the base never marks the settings of a module as ready');
+    }
   });
 
   it('keeps the original date when the base is saved again without changes', async () => {
@@ -359,7 +363,7 @@ describe('setup: progress and saving the base', () => {
   it('is no longer ready after any change to the base, but not after only moving between steps', async () => {
     const changes: Array<[string, (service: ReturnType<typeof setupBusinessSetup>['service']) => Promise<unknown>]> = [
       ['form', (service) => service.saveProfile(BOSS_EMAIL, BUSINESS_ID, form)],
-      ['type', (service) => service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'retail', null)],
+      ['type', (service) => service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'retail', null, null)],
       ['business hours', (service) => service.saveBaseSchedule(BOSS_EMAIL, BUSINESS_ID, aWeek())],
       ['module hours', (service) => service.saveModuleSchedule(BOSS_EMAIL, BUSINESS_ID, 'turnos', { inherit: false })],
       ['logo', (service) => service.uploadLogo(BOSS_EMAIL, BUSINESS_ID, { bytes: PNG, declaredType: 'image/png' })],
@@ -386,5 +390,69 @@ describe('setup: progress and saving the base', () => {
       return true;
     });
     assert.equal((await service.get(BOSS_EMAIL, BUSINESS_ID)).progress.baseReady, false);
+  });
+});
+
+describe('setup: the attention profile of Turnos (chosen here, stored by Turnos)', () => {
+  it('offers the profile only to a business that has Turnos, with the one its category suggests', async () => {
+    const { service, profiles } = setupBusinessSetup();
+    profiles.businesses.get(BUSINESS_ID)!.modules = ['reservas'];
+    assert.equal((await service.get(BOSS_EMAIL, BUSINESS_ID)).turnos, null, 'no Turnos, no profile to choose');
+    profiles.businesses.get(BUSINESS_ID)!.modules = ['turnos'];
+    const info = (await service.get(BOSS_EMAIL, BUSINESS_ID)).turnos!;
+    assert.equal(info.suggested, 'restaurant', 'gastronomy suggests restaurant');
+    assert.equal(info.profile, 'restaurant', 'nothing chosen yet: the suggested one is shown');
+    assert.deepEqual(info.options.map((option) => option.id), ['clinic', 'restaurant', 'bank', 'salon', 'custom']);
+  });
+
+  it('chooses the profile with the category step and keeps it after signing out and back in', async () => {
+    const { service, reopen, profiles, turnos } = setupBusinessSetup();
+    profiles.businesses.get(BUSINESS_ID)!.modules = ['turnos'];
+    const state = await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'health-wellness', null, 'clinic');
+    assert.equal(state.turnos?.profile, 'clinic');
+    assert.equal(turnos.chosen.get(BUSINESS_ID), 'clinic');
+    assert.equal((await reopen().get(BOSS_EMAIL, BUSINESS_ID)).turnos?.profile, 'clinic');
+  });
+
+  it('refuses a profile for a business without Turnos and changes nothing', async () => {
+    const { service, profiles, turnos } = setupBusinessSetup();
+    profiles.businesses.get(BUSINESS_ID)!.modules = ['reservas'];
+    await assert.rejects(service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'retail', null, 'bank'), TurnosNotAssignedError);
+    assert.equal(profiles.businesses.get(BUSINESS_ID)!.category, 'gastronomy');
+    assert.equal(turnos.chosen.size, 0);
+  });
+
+  it('does not let the boss of another business choose a profile', async () => {
+    const { service, turnos, profiles } = setupBusinessSetup();
+    profiles.businesses.get(BUSINESS_ID)!.modules = ['turnos'];
+    await assert.rejects(service.saveCategory(LUIS, BUSINESS_ID, 'retail', null, 'bank'), SetupBusinessNotFoundError);
+    assert.equal(turnos.chosen.size, 0);
+  });
+
+  it('saving the category without a profile leaves the chosen one as it was', async () => {
+    const { service, profiles } = setupBusinessSetup();
+    profiles.businesses.get(BUSINESS_ID)!.modules = ['turnos'];
+    await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'retail', null, 'salon');
+    const state = await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'other', 'Estudio', null);
+    assert.equal(state.turnos?.profile, 'salon');
+  });
+
+  it('shows the module as ready (with its counts) once Turnos says its configuration is saved', async () => {
+    const { service, profiles, turnos } = setupBusinessSetup();
+    profiles.businesses.get(BUSINESS_ID)!.modules = ['turnos', 'reservas'];
+    const before = (await service.get(BOSS_EMAIL, BUSINESS_ID)).modules;
+    assert.deepEqual(before.map((module) => [module.id, module.settings.status]), [['reservas', 'pending'], ['turnos', 'pending']]);
+    turnos.statuses.set(BUSINESS_ID, { ready: true, queueCount: 2, operatorCount: 3 });
+    const after = (await service.get(BOSS_EMAIL, BUSINESS_ID)).modules;
+    assert.deepEqual(after.find((module) => module.id === 'turnos')!.settings, { status: 'ready', summary: { queueCount: 2, operatorCount: 3 } });
+    assert.equal(after.find((module) => module.id === 'reservas')!.settings.status, 'pending');
+  });
+
+  it('changing the category invalidates the saved base, like any other change', async () => {
+    const { service, profiles } = setupBusinessSetup();
+    profiles.businesses.get(BUSINESS_ID)!.modules = ['turnos'];
+    await service.complete(BOSS_EMAIL, BUSINESS_ID);
+    const state = await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'gastronomy', null, 'bank');
+    assert.equal(state.progress.baseReady, false);
   });
 });

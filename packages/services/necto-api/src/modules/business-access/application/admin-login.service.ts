@@ -6,7 +6,7 @@ import { EmailNotAssignedError, InvalidAccessCodeError } from '../domain/errors'
 import { AccessCodeService } from './access-code.service';
 import { AccessMailer } from './access-mailer';
 import { AdminSessionService, type SessionGrant, type StartedSession } from './admin-session.service';
-import { AdministeredBusinessesService } from './administered-businesses.service';
+import { AccessGrantsService } from './access-grants.service';
 
 /** What the public request-a-code endpoint can say: only the rules, never whether the email is assigned. */
 export interface CodeRequestRules {
@@ -17,9 +17,10 @@ export interface CodeRequestRules {
 }
 
 /**
- * Signing in as an administrator of businesses: the person types an email, receives a six-digit code and uses it.
- * Knowing an email is never enough: the session only starts with a valid code for that email, and only if the email
- * is the current boss of at least one active business.
+ * Signing in with an email: the person types it, receives a six-digit code and uses it. The same login serves every role:
+ * administrators of businesses and operators of a module. Knowing an email is never enough: the session only starts with
+ * a valid code for that email, and only if the email has at least one access right now (boss of an active business, or an
+ * operator assignment of a business that is active and has that module).
  */
 @Injectable()
 export class AdminLoginService {
@@ -27,7 +28,7 @@ export class AdminLoginService {
     private readonly codes: AccessCodeService,
     private readonly mailer: AccessMailer,
     private readonly sessions: AdminSessionService,
-    private readonly businesses: AdministeredBusinessesService,
+    private readonly grants: AccessGrantsService,
     private readonly policy: AccessPolicy,
     private readonly clock: Clock,
   ) {}
@@ -42,14 +43,14 @@ export class AdminLoginService {
   }
 
   /**
-   * Emails a code to the current boss of an active business. An email that is not one is refused with
-   * `EmailNotAssignedError`, so the page can say that the owner must invite them first (this reveals whether an email
+   * Emails a code to an email that has an access (boss of an active business, or operator). An email with none is
+   * refused with `EmailNotAssignedError`, so the page can say that they must be invited first (this reveals whether an email
    * is assigned; the limits below count every request alike, assigned or not). Asking again too soon, or while the
    * owner's manual code is waiting, answers the same as a send and does not issue another code.
    */
   async requestCode(input: { email: string; ip: string }): Promise<void> {
     await this.codes.assertCanRequest(input);
-    const person = await this.businesses.person(input.email);
+    const person = await this.grants.person(input.email);
     if (!person) throw new EmailNotAssignedError();
     if (await this.codes.hasPendingManualCode(input.email)) return;
     const last = await this.codes.latestIssuedAt(input.email, 'login');
@@ -67,7 +68,7 @@ export class AdminLoginService {
 
   /**
    * Checks the code, spends it and opens a session. A previous session on this browser is ended so it cannot be
-   * left behind. Wrong, expired, used, locked and "no business" are all the same `InvalidAccessCodeError`.
+   * left behind. Wrong, expired, used, locked and "no access" are all the same `InvalidAccessCodeError`.
    */
   async verifyCode(input: {
     email: string;
@@ -77,10 +78,10 @@ export class AdminLoginService {
     previousCookie?: string;
   }): Promise<{ started: StartedSession; grant: SessionGrant }> {
     await this.codes.verify({ email: input.email, code: input.code, ip: input.ip, purposes: SIGN_IN_PURPOSES });
-    const businesses = await this.businesses.list(input.email);
-    if (businesses.length === 0) throw new InvalidAccessCodeError();
+    const accesses = await this.grants.list(input.email);
+    if (accesses.length === 0) throw new InvalidAccessCodeError();
     if (input.previousCookie) await this.sessions.endByCookie(input.previousCookie, 'replaced');
     const started = await this.sessions.start({ email: input.email, remember: input.remember });
-    return { started, grant: await this.sessions.grant(started.session, businesses) };
+    return { started, grant: await this.sessions.grant(started.session, accesses) };
   }
 }

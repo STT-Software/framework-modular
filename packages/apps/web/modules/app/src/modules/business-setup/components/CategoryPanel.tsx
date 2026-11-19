@@ -7,6 +7,7 @@ import { ModuleIcon } from "./ModuleIcon";
 /** Paso 3: la categoría que registró el superadministrador, para confirmarla o ajustarla. "Otra" pide su descripción. */
 export const CategoryPanel = observer(() => {
   const store = businessSetupStore;
+  const turnos = store.state?.turnos ?? null;
   return (
     <section className="no-panel no-panel-enter" aria-label="Tipo de negocio">
       <div className="no-category-intro">
@@ -62,6 +63,27 @@ export const CategoryPanel = observer(() => {
       <p id="no-category-error" className="no-error" role="status" hidden={!store.categoryError}>
         {store.categoryError}
       </p>
+      {turnos && (
+        <div className="no-card" style={{ marginTop: 24 }}>
+          <div className="no-field">
+            <label htmlFor="no-turnos-profile">Perfil de atención de Turnos</label>
+            <select id="no-turnos-profile" value={store.turnosProfileDraft ?? turnos.profile} onChange={(event) => store.chooseTurnosProfile(event.target.value)}>
+              {turnos.profiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.name}
+                </option>
+              ))}
+            </select>
+            <p className="no-field-note">
+              {(() => {
+                const chosen = turnos.profiles.find((profile) => profile.id === (store.turnosProfileDraft ?? turnos.profile));
+                return chosen && chosen.suggestedQueues.length > 0 ? `Filas sugeridas: ${chosen.suggestedQueues.join(" · ")}` : "Empieza sin filas sugeridas. Podrás crear las tuyas.";
+              })()}
+            </p>
+          </div>
+          <p className="no-field-note">Este perfil se precarga en Turnos para sugerir filas. Podrás editarlas o crear otras al configurar el módulo.</p>
+        </div>
+      )}
       <div className="no-category-context">
         <MiniMark />
         <p>Esta categoría identifica a tu negocio. Las reglas específicas de cada módulo se configurarán en la siguiente etapa.</p>

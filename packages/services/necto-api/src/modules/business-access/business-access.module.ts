@@ -8,14 +8,16 @@ import { TimeModule } from '../../platform/time/time.module';
 import { BusinessesModule } from '../businesses/public';
 import { accessPolicyFromConfig } from './access-policy.provider';
 import { AdminAccessController } from './api/admin-access.controller';
-import { BusinessAdminGuard, BusinessAdministeredGuard, BusinessModuleGuard, RecentVerificationGuard } from './api/business-admin.guards';
+import { BusinessAdminGuard, BusinessAdministeredGuard, BusinessModuleGuard, OperatorModuleGuard, RecentVerificationGuard } from './api/business-admin.guards';
 import { InvitationsController } from './api/invitations.controller';
 import { AccessCodeService } from './application/access-code.service';
+import { AccessGrantsService } from './application/access-grants.service';
 import { AccessMailer } from './application/access-mailer';
 import { AdminLoginService } from './application/admin-login.service';
 import { AdminSessionService } from './application/admin-session.service';
 import { AdministeredBusinessesService } from './application/administered-businesses.service';
 import { InvitationService } from './application/invitation.service';
+import { MemberAccessRegistry } from './application/member-access.registry';
 import { BusinessEventsSubscriber } from './business-events.subscriber';
 import { AccessPolicy } from './domain/access-policy';
 import { ChallengeRepository } from './domain/challenge.repository';
@@ -57,15 +59,28 @@ import { RateLimitRecord, RateLimitSchema } from './infrastructure/rate-limit.sc
     AccessMailer,
     InvitationService,
     AdministeredBusinessesService,
+    MemberAccessRegistry,
+    AccessGrantsService,
     AdminSessionService,
     AdminLoginService,
     BusinessAdminGuard,
     RecentVerificationGuard,
     BusinessModuleGuard,
     BusinessAdministeredGuard,
+    OperatorModuleGuard,
     BusinessEventsSubscriber,
   ],
   // What a module that serves a functionality needs to use `@BusinessAdminOnly()` / `@RequiresBusinessModule()` on its routes.
-  exports: [AdminSessionService, AdministeredBusinessesService, BusinessAdminGuard, RecentVerificationGuard, BusinessModuleGuard, BusinessAdministeredGuard],
+  exports: [
+    AdminSessionService,
+    AdministeredBusinessesService,
+    AccessGrantsService,
+    MemberAccessRegistry,
+    BusinessAdminGuard,
+    RecentVerificationGuard,
+    BusinessModuleGuard,
+    BusinessAdministeredGuard,
+    OperatorModuleGuard,
+  ],
 })
 export class BusinessAccessModule {}

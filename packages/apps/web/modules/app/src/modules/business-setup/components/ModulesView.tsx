@@ -109,9 +109,9 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
               <h3>{module.name}</h3>
               <p>{module.description}</p>
               <div className="no-module-card-footer">
-                <span>{ready ? "Ajustes específicos pendientes" : "Configuración pendiente"}</span>
+                <span>{module.settings.status === "ready" ? "Configuración preparada" : ready ? "Ajustes específicos pendientes" : "Configuración pendiente"}</span>
                 <button type="button" aria-label={`Configurar ${module.name}`} onClick={() => onConfigure(module.id)}>
-                  {ready ? "Revisar base" : "Configurar"}
+                  {module.settings.status === "ready" ? "Revisar configuración" : module.id === "turnos" ? "Configurar" : ready ? "Revisar base" : "Configurar"}
                 </button>
               </div>
             </article>

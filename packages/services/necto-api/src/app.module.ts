@@ -4,6 +4,7 @@ import { BusinessAccessModule } from './modules/business-access/public';
 import { BusinessSetupModule } from './modules/business-setup/public';
 import { BusinessesModule } from './modules/businesses/public';
 import { OnboardingModule } from './modules/onboarding/public';
+import { TurnosModule } from './modules/turnos/public';
 import { PlatformConfigModule } from './platform/config/config.module';
 import { DatabaseModule } from './platform/database/database.module';
 import { ErrorsModule } from './platform/errors/errors.module';
@@ -28,6 +29,7 @@ import { RateLimitModule } from './platform/security/rate-limit.module';
     BusinessesModule,
     BusinessAccessModule,
     BusinessSetupModule,
+    TurnosModule,
   ],
 })
 export class AppModule {}

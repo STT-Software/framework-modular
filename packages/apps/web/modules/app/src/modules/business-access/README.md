@@ -1,7 +1,8 @@
 # Módulo business-access (frontend)
 
-El acceso de los **administradores de negocio**: la persona asignada como jefe de un negocio entra con **su correo y un código de un
-solo uso** que recibe por correo, sin contraseña. El diseño sale de la referencia `necto-login-admin` (carpeta `referencias html/`,
+El acceso de los **administradores de negocio** y de los **operadores** de un módulo (hoy, Turnos): la persona asignada entra con **su correo y un
+código de un solo uso** que recibe por correo, sin contraseña. Es **el mismo login para los dos roles**: la identidad es el correo, y el servidor
+devuelve todo lo que esa persona puede abrir (`accesses`: un negocio en un rol). El diseño sale de la referencia `necto-login-admin` (carpeta `referencias html/`,
 ignorada por git), **sin** sus controles de demostración (la barra "VISTA PREVIA", el código fijo `123456`, las sesiones ficticias y
 "Probar mi próximo acceso"). Todo lo que decide el acceso lo decide el servidor (`necto-api`, ver su README).
 
@@ -17,8 +18,8 @@ Es **pública**: no pasa por la puerta del superadmin. Enlaces cruzados: "¿Eres
 
 El estado vive en un store (`stores/adminAccess.store.ts`); la dirección no cambia entre pantallas.
 
-1. **Correo** (`EmailStep`): el correo asignado al negocio. Si el correo **no es jefe de ningún negocio activo**, la pantalla **no avanza** al
-   código y dice: "Este correo todavía no está asignado a ningún negocio. Primero el superadministrador debe invitarte a un negocio."
+1. **Correo** (`EmailStep`): el correo asignado al negocio, como jefe o como operador. Si el correo **no tiene ningún acceso**, la pantalla **no avanza** al
+   código y dice: "Este correo todavía no está asignado a ningún negocio. Primero el superadministrador debe invitarte, o un administrador debe agregarte como operador."
    (el servidor responde `404 email-not-assigned`; esto revela si un correo está asignado, ver el README del servicio).
 2. **Código** (`CodeStep`): seis dígitos, vence en 10 minutos, 5 intentos por código y "Reenviar en 01:00". El servidor no dice *por qué*
    falla un código (errado, vencido, usado y bloqueado dan la misma respuesta), así que la página lleva su propia cuenta de los 5 intentos
@@ -26,8 +27,10 @@ El estado vive en un store (`stores/adminAccess.store.ts`); la dirección no cam
    por defecto (hasta 30 días).
 3. **Regreso** (`ReturnStep`): si este navegador ya tiene una sesión vigente, ofrece continuar **sin otro código**
    ("Continuar con mi sesión"). "Usar otra cuenta" y "Olvidar este dispositivo" terminan esa sesión en el servidor.
-4. **Negocios** (`BusinessPicker`): solo si administra más de uno; muestra únicamente los que el servidor autorizó.
-5. **Listo** (`ReadyStep`): el negocio elegido, su categoría y los módulos habilitados. Aún **no** opera los módulos.
+4. **Negocios** (`BusinessPicker`): solo si tiene más de un acceso; cada opción es un **negocio y un rol** («Casa Oliva · Administrador», «Clínica Norte · Operador»; un
+   mismo correo puede ser jefe de un negocio y operador de otro, o ambos en el mismo). Muestra únicamente lo que el servidor autorizó.
+5. **Listo** (`ReadyStep`): el acceso elegido, su categoría y sus módulos. Un **administrador** ve los módulos habilitados del negocio y sigue a
+   `/business/setup/:id` («Preparar mi negocio»); un **operador** ve solo Turnos y sigue a `/business/turnos/:id/operator` («Ver mis filas»). Aún **no** opera los módulos.
 
 ## Sesión y seguridad
 
@@ -68,4 +71,5 @@ business-access/
 - **Otro módulo**, solo por su puerta pública: `businesses` (`categoryLabel` y `moduleInfo`, para mostrar la categoría y los nombres de los
   módulos). `businesses` no importa a `business-access`: no hay ciclo.
 - **Elements:** `Input` y `Label` (el correo). El campo del código, el selector de negocios y las casillas son propios, como en la referencia.
+- **Quien usa su sesión:** `business-setup` y `turnos` importan de aquí, por `index.ts`, `adminAccessStore` (token en memoria, `ensureSession`, `withToken`), `AccessError` y los tipos (`AccessGrant`, `AccessRole`). Este módulo no los importa.
 - **Base común:** `brand/NectoLogo`, `brand/InteractiveDotGrid`, `brand/DecorativeCircles`, `ThemeIconButton`, `PageMeta`. **Fuente:** DM Sans, cargada una sola vez en `src/app/index.tsx`.

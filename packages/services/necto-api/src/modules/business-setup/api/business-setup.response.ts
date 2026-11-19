@@ -20,6 +20,19 @@ export function toSetupResponse(state: SetupState) {
       description: state.description,
     },
     category: { id: business.category, other: business.categoryOther },
+    /** Only for a business that has Turnos: the attention profile that suggests its first queues. */
+    turnos: state.turnos
+      ? {
+          profile: state.turnos.profile,
+          suggested: state.turnos.suggested,
+          profiles: state.turnos.options.map((option) => ({
+            id: option.id,
+            name: option.name,
+            description: option.description,
+            suggestedQueues: option.suggestedQueues.map((queue) => queue.name),
+          })),
+        }
+      : null,
     logo: state.logo
       ? {
           contentType: state.logo.contentType,
@@ -53,8 +66,8 @@ function moduleResponse(module: SetupState['modules'][number]) {
     name: module.name,
     description: module.description,
     schedule: { mode: module.inherit ? 'inherited' : 'custom' },
-    // The settings of each module (its own steps) are a later stage: they are always pending here.
-    settings: { status: 'pending' },
+    // The settings of each module are configured in the module itself: pending until it says it is ready.
+    settings: { status: module.settings.status, ...(module.settings.summary ? { summary: module.settings.summary } : {}) },
   };
 }
 

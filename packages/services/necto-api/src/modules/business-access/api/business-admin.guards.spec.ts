@@ -5,7 +5,7 @@ import { Reflector } from '@nestjs/core';
 import type { AuthenticatedUser } from '../../../platform/security/authenticated-user';
 import { ModuleNotEnabledError, ReverificationRequiredError, SessionExpiredError, BusinessNotAdministeredError } from '../domain/errors';
 import { aBusiness, setupAdminAccess } from '../fakes.spec';
-import { BusinessAdministeredGuard, BusinessAdminGuard, BusinessModuleGuard, RecentVerificationGuard, RequiresBusinessModule, type AdminRequest } from './business-admin.guards';
+import { BusinessAdministeredGuard, BusinessAdminGuard, BusinessModuleGuard, OperatesModule, OperatorModuleGuard, RecentVerificationGuard, RequiresBusinessModule, type AdminRequest } from './business-admin.guards';
 
 function contextFor(request: Partial<AdminRequest>, handler: () => void = () => undefined): ExecutionContext {
   return { switchToHttp: () => ({ getRequest: () => request }), getHandler: () => handler, getClass: () => class {} } as unknown as ExecutionContext;
@@ -172,5 +172,72 @@ describe('BusinessAdministeredGuard (is this business yours, whatever functional
   it('answers 401 when no session was checked before it', async () => {
     const setup = setupAdminAccess();
     await assert.rejects(new BusinessAdministeredGuard(setup.administered).canActivate(contextFor({ params: { businessId: setup.business.id } })), UnauthorizedException);
+  });
+});
+
+describe('OperatorModuleGuard (is this person an operator of this business for this module?)', () => {
+  function handlerFor(moduleId: string) {
+    class Route {
+      @OperatesModule(moduleId)
+      handle() {}
+    }
+    return Route.prototype.handle;
+  }
+  const LAURA = 'laura@cafecentral.co';
+  async function run(setup: ReturnType<typeof setupAdminAccess>, email: string, businessId: string, moduleId = 'turnos') {
+    const { started } = await setup.signIn({ email });
+    const request: Partial<AdminRequest> = { adminSession: started.session, params: { businessId } };
+    const allowed = await new OperatorModuleGuard(new Reflector(), setup.grants).canActivate(contextFor(request, handlerFor(moduleId)));
+    return { allowed, request };
+  }
+  function withOperator() {
+    const setup = setupAdminAccess();
+    setup.directory.set({ ...setup.business, modules: ['turnos'] });
+    setup.memberSource.assign(LAURA, { businessId: setup.business.id, moduleId: 'turnos', role: 'operator', personName: 'Laura Gómez' });
+    return setup;
+  }
+
+  it('lets through an assigned operator and leaves their grant on the request', async () => {
+    const setup = withOperator();
+    const { allowed, request } = await run(setup, LAURA, setup.business.id);
+    assert.equal(allowed, true);
+    assert.equal(request.accessGrant?.role, 'operator');
+  });
+
+  it('does not let an administrator in just for being the boss, and answers 404 like for any business that is not theirs', async () => {
+    const setup = withOperator();
+    await assert.rejects(run(setup, setup.business.boss.email, setup.business.id), BusinessNotAdministeredError);
+  });
+
+  it('answers 404 for another business, an unknown one, another module, and once the assignment, the module or the business is gone', async () => {
+    const setup = withOperator();
+    const { started } = await setup.signIn({ email: LAURA });
+    const guard = new OperatorModuleGuard(new Reflector(), setup.grants);
+    const check = (businessId = setup.business.id, moduleId = 'turnos') =>
+      guard.canActivate(contextFor({ adminSession: started.session, params: { businessId } }, handlerFor(moduleId)));
+    assert.equal(await check(), true);
+    await assert.rejects(check('e'.repeat(24)), BusinessNotAdministeredError, 'another business');
+    await assert.rejects(check(setup.business.id, 'reservas'), BusinessNotAdministeredError, 'another module');
+    setup.directory.set({ ...setup.business, modules: [] });
+    await assert.rejects(check(), BusinessNotAdministeredError, 'module disabled');
+    setup.directory.set({ ...setup.business, modules: ['turnos'], status: 'paused' });
+    await assert.rejects(check(), BusinessNotAdministeredError, 'business paused');
+    setup.directory.set({ ...setup.business, modules: ['turnos'] });
+    assert.equal(await check(), true);
+    setup.memberSource.remove(LAURA, setup.business.id);
+    await assert.rejects(check(), BusinessNotAdministeredError, 'assignment removed');
+  });
+
+  it('answers 401 when no session was checked before it', async () => {
+    const setup = withOperator();
+    await assert.rejects(new OperatorModuleGuard(new Reflector(), setup.grants).canActivate(contextFor({ params: { businessId: setup.business.id } }, handlerFor('turnos'))), UnauthorizedException);
+  });
+
+  it('an operator is never let into an administrator route of the same business', async () => {
+    const setup = withOperator();
+    const { started } = await setup.signIn({ email: LAURA });
+    const route = (() => { class R { @RequiresBusinessModule('turnos') handle() {} } return R.prototype.handle; })();
+    const guard = new BusinessModuleGuard(new Reflector(), setup.administered);
+    await assert.rejects(guard.canActivate(contextFor({ adminSession: started.session, params: { businessId: setup.business.id } }, route)), BusinessNotAdministeredError);
   });
 });

@@ -19,8 +19,8 @@ módulo por cada uno.
 
 | Parte | Estado |
 |-------|--------|
-| Backend | Alineado: un **monolito modular**, `packages/services/necto-api`. Una sola aplicación (un proceso, un puerto, una conexión a MongoDB) con `platform/` (infraestructura transversal) y `modules/` (un módulo por capacidad: `auth`, `onboarding`, `businesses`, `business-access` y `business-setup`), cada uno con sus capas y su puerta pública. |
-| Frontend | Alineado para seis módulos: `src/modules/super-admin-auth/` (login y registro), `src/modules/onboarding/` (bienvenida y pasos de perfil), `src/modules/workspace/` (el marco y las rutas del workspace), `src/modules/businesses/` (negocios: store, asistente, tarjetas y ficha; sin rutas propias, el workspace los monta) `src/modules/business-access/` (acceso público del jefe con código por correo) y `src/modules/business-setup/` (configuración inicial del negocio por su administrador; importa de `business-access` y `businesses` por su `index.ts`). Lo común sin reglas de negocio, como el logotipo (`src/brand/`), vive en la base común. `src/app/` registra los módulos (`modules.ts`) y renderiza sus rutas con carga diferida y `ModuleBoundary`. El resto del scaffolding de WebIAI Elements sigue organizado por tipo técnico (`pages/`, `elements/`, `shell/`...) y hace de base común. |
+| Backend | Alineado: un **monolito modular**, `packages/services/necto-api`. Una sola aplicación (un proceso, un puerto, una conexión a MongoDB) con `platform/` (infraestructura transversal) y `modules/` (un módulo por capacidad: `auth`, `onboarding`, `businesses`, `business-access`, `business-setup` y `turnos`), cada uno con sus capas y su puerta pública. |
+| Frontend | Alineado para siete módulos: `src/modules/super-admin-auth/` (login y registro), `src/modules/onboarding/` (bienvenida y pasos de perfil), `src/modules/workspace/` (el marco y las rutas del workspace), `src/modules/businesses/` (negocios: store, asistente, tarjetas y ficha; sin rutas propias, el workspace los monta), `src/modules/business-access/` (acceso con código por correo de administradores y operadores), `src/modules/business-setup/` (configuración inicial del negocio por su administrador; importa de `business-access` y `businesses` por su `index.ts`) y `src/modules/turnos/` (configuración de Turnos y vista del operador; importa de `business-access` y `businesses` por su `index.ts`). Lo común sin reglas de negocio, como el logotipo (`src/brand/`), vive en la base común. `src/app/` registra los módulos (`modules.ts`) y renderiza sus rutas con carga diferida y `ModuleBoundary`. El resto del scaffolding de WebIAI Elements sigue organizado por tipo técnico (`pages/`, `elements/`, `shell/`...) y hace de base común. |
 
 ## Principios
 
@@ -109,7 +109,8 @@ packages/services/necto-api/           ← el backend (el nombre es el de la apl
         ├── onboarding/ ...            ← misma forma
         ├── businesses/ ...            ← negocios, jefe vigente y módulos habilitados
         ├── business-access/ ...       ← acceso de administradores por OTP, sesiones y permisos (depende de businesses/public)
-        └── business-setup/ ...        ← configuración inicial del negocio por su administrador (depende de businesses/public y business-access/public)
+        ├── business-setup/ ...        ← configuración inicial del negocio por su administrador (depende de businesses/public, business-access/public y turnos/public)
+        └── turnos/ ...                ← configuración de Turnos: perfil, filas, reglas y operadores (depende de businesses/public y business-access/public)
 
 infra/                                 ← infraestructura de desarrollo compartida
 ├── docker-compose.yml                 ← MongoDB
@@ -285,5 +286,6 @@ export const superAdminAuthModule = {
   `business-setup` es el segundo consumidor: usa `business-access/public` (quién es el administrador de qué negocio) y `businesses/public`
   (`AdministeredBusinessProfiles`: leer y corregir los datos del negocio **en el documento del dueño**, sin copia y sin poder tocar módulos,
   jefe, estado, moneda ni zona horaria). Ningún módulo importa a `business-setup`; si uno futuro necesita saber si la base está lista, se publica su contrato en `business-setup/public.ts`.
+- **Un módulo que asigna personas a un negocio** (hoy `turnos`, con sus operadores) se da a conocer a `business-access` sin que este lo importe: implementa `MemberAccessSource` y se registra al arrancar en `MemberAccessRegistry` (ambos exportados por `business-access/public.ts`). `business-access` pregunta en cada decisión, no copia nada, y solo acepta la asignación si el negocio está activo y el módulo habilitado; así la identidad sigue siendo solo el correo y una persona puede tener varios roles. `business-setup` depende de `turnos/public` (`TurnosBaseSetup`: el perfil de atención y el estado de Turnos) y `turnos` de `business-access/public` y `businesses/public`; los sentidos opuestos no existen.
 - **Errores de dominio de validación:** `DomainError` admite `kind: 'invalid'` (`400`) con `fields` por ruta (`schedule.mon.ranges.0.end`), para reglas
   que no caben en un DTO (horarios). El cuerpo conserva la forma de un error de DTO.

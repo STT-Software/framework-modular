@@ -5,6 +5,9 @@ import { MailSendError, MailTransport, type MailAcceptance, type MailFailureCode
 import { BusinessDirectory, BusinessModuleAccess, type BusinessAccessView, type BusinessModuleId } from '../businesses/public';
 import { isSessionActive, type AdminSession, type SessionEndReason } from './domain/admin-session';
 import { AccessCodeService } from './application/access-code.service';
+import { AccessGrantsService } from './application/access-grants.service';
+import { MemberAccessRegistry } from './application/member-access.registry';
+import { MemberAccessSource, type MemberAssignment } from './domain/member-access';
 import { AccessMailer } from './application/access-mailer';
 import { AdminLoginService } from './application/admin-login.service';
 import { AdminSessionService } from './application/admin-session.service';
@@ -240,6 +243,20 @@ export function aBusiness(overrides: Partial<BusinessAccessView> = {}): Business
   };
 }
 
+/** A module that assigns operators, with the assignments the test sets. */
+export class FakeMemberSource extends MemberAccessSource {
+  private items: Array<MemberAssignment & { email: string }> = [];
+  async assignmentsOf(email: string) {
+    return this.items.filter((item) => item.email === email).map(({ email: _email, ...assignment }) => assignment);
+  }
+  assign(email: string, assignment: MemberAssignment) {
+    this.items.push({ ...assignment, email });
+  }
+  remove(email: string, businessId: string) {
+    this.items = this.items.filter((item) => !(item.email === email && item.businessId === businessId));
+  }
+}
+
 /** Records the emails instead of sending them. `failWith` makes the next sends fail like a broken provider. */
 export class RecordingMailTransport extends MailTransport {
   readonly sent: MailMessage[] = [];
@@ -273,8 +290,12 @@ export function setupAdminAccess(policyOverrides: Partial<AccessPolicy> = {}) {
   const tokens = new TokenService(new JwtService({ secret: 'k'.repeat(32), signOptions: { expiresIn: '1h' } }));
   const sessionRepository = new InMemorySessionRepository();
   const administered = new AdministeredBusinessesService(directory, new FakeModuleAccess(directory));
-  const sessions = new AdminSessionService(sessionRepository, tokens, codes, mailer, administered, policy, clock);
-  const login = new AdminLoginService(codes, mailer, sessions, administered, policy, clock);
+  const registry = new MemberAccessRegistry();
+  const memberSource = new FakeMemberSource();
+  registry.register(memberSource);
+  const grants = new AccessGrantsService(directory, new FakeModuleAccess(directory), registry);
+  const sessions = new AdminSessionService(sessionRepository, tokens, codes, mailer, grants, policy, clock);
+  const login = new AdminLoginService(codes, mailer, sessions, grants, policy, clock);
 
   /** Asks for a code and returns it as the person would read it in the email. */
   async function requestCode(email = business.boss.email, ip = '203.0.113.1') {
@@ -294,6 +315,6 @@ export function setupAdminAccess(policyOverrides: Partial<AccessPolicy> = {}) {
 
   return {
     directory, business, challenges, clock, policy, transport, codes, mailer, tokens,
-    sessionRepository, administered, sessions, login, requestCode, signIn,
+    sessionRepository, administered, registry, memberSource, grants, sessions, login, requestCode, signIn,
   };
 }

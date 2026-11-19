@@ -4,6 +4,7 @@ import { SecurityModule } from '../../platform/security/security.module';
 import { TimeModule } from '../../platform/time/time.module';
 import { BusinessAccessModule } from '../business-access/public';
 import { BusinessesModule } from '../businesses/public';
+import { TurnosModule } from '../turnos/public';
 import { BusinessSetupController } from './api/business-setup.controller';
 import { BusinessSetupService } from './application/business-setup.service';
 import { BusinessSetupRepository } from './domain/business-setup.repository';
@@ -21,6 +22,7 @@ import { MongoBusinessSetupRepository } from './infrastructure/mongo-business-se
     TimeModule,
     BusinessesModule,
     BusinessAccessModule,
+    TurnosModule,
     MongooseModule.forFeature([{ name: BusinessSetupRecord.name, schema: BusinessSetupSchema }]),
   ],
   controllers: [BusinessSetupController],

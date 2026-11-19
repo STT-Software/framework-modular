@@ -16,7 +16,9 @@ Desde la pantalla «Ya estás en tu negocio» de `business-access` hay un botón
    registró el superadmin (el mismo documento del negocio, no una copia). Moneda y zona horaria se muestran, pero no se editan.
 2. **Horarios**: pestaña «Negocio» y una por módulo asignado. Un módulo puede **usar el horario del negocio** (hereda: lo que cambie el negocio se ve en él) o tener
    el suyo (excepción que se conserva aunque el negocio cambie). Varias franjas por día; apertura y cierre obligatorios, cierre posterior y sin solapes.
-3. **Tipo de negocio**: la categoría registrada, para confirmarla. «Otro / Personalizado» exige su descripción.
+3. **Tipo de negocio**: la categoría registrada, para confirmarla. «Otro / Personalizado» exige su descripción. Si el negocio tiene **Turnos**, aquí también se elige su
+   **perfil de atención** (lo que sugiere sus primeras filas): el dato **pertenece a Turnos** (lo guarda el servidor allí y es el mismo que edita el primer paso de Turnos), así que
+   cambiarlo desde aquí nunca borra ni duplica lo ya configurado en Turnos. Solo se envía si la persona lo cambió.
 4. **Revisión**: resume la base y guarda con «Guardar configuración base». Eso marca **solo la base**; los ajustes de cada módulo siguen pendientes.
 ## Cómo guarda y recupera
 - **Cada paso se guarda en el servidor al avanzar** (y al volver atrás si tiene cambios válidos). Cerrar sesión no pierde nada: al volver, `GET` devuelve todo y
@@ -29,6 +31,7 @@ Desde la pantalla «Ya estás en tu negocio» de `business-access` hay un botón
 - `business-access` (por su `index.ts`): la sesión del administrador (`adminAccessStore.ensureSession`, `withToken`), `AccessError` y los tipos.
 - `businesses` (por su `index.ts`): el catálogo de módulos (`moduleInfo`), `categoryLabel` y los tipos `ModuleId` y `CategoryId`.
 - `business-access` enlaza aquí con un botón, sin importar este módulo.
+- La tarjeta de **Turnos** de la pantalla de módulos refleja `settings.status` (`Configuración preparada` / `Configurar`) y lleva a `/business/turnos/:id/profile`; su configuración vive en el módulo `turnos`, que no se importa desde aquí (solo se navega a su ruta).
 ## Notas
 - El logo necesita el `Authorization`, así que se descarga con `fetch` y se muestra con un `blob:` URL (se libera al salir o cambiar de imagen).
 - Las horas son **del negocio** (su zona horaria): el navegador no las convierte.

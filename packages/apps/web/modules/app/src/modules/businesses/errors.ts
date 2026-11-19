@@ -1,7 +1,7 @@
 import { BusinessesError } from "./api/businessesApi";
 
-/** Texto que ve la persona según el tipo de error del servicio (los textos del servidor van en inglés). */
-export function businessErrorMessage(error: unknown): string {
+/** User-facing Spanish message mapped from a service error kind, with an optional fallback. */
+export function businessErrorMessage(error: unknown, fallback = "Ocurrió un error inesperado."): string {
   if (error instanceof BusinessesError) {
     switch (error.kind) {
       case "rate-limited":
@@ -25,7 +25,7 @@ export function businessErrorMessage(error: unknown): string {
         return "Ocurrió un problema en el servicio. Inténtalo de nuevo en unos minutos.";
     }
   }
-  return "Ocurrió un error inesperado.";
+  return fallback;
 }
 
 function waitText(seconds: number): string {

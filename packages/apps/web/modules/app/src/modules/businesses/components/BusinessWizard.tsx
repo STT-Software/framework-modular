@@ -120,6 +120,7 @@ export function BusinessWizard({ business, onCancel, onSaved }: BusinessWizardPr
     try {
       const saved =
         editing && business ? await businessesApi.update(business.id, input) : await businessesApi.create(input, attempt.current!.key);
+      if (editing) businessesStore.replace(saved);
       businessesStore.invalidate();
       const name = saved.name;
       businessesStore.setNotice(

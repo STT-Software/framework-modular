@@ -22,9 +22,9 @@ export const BaseAppHeader: React.FC<BaseAppHeaderProps> = observer(({
     <header
       className={`relative z-30 flex w-full rounded-2xl border border-gray-200/80 bg-white dark:border-white/10 dark:bg-gray-900 shadow-theme-xs ${className}`.trim()}
     >
-      <div className="flex flex-col items-center justify-between grow xl:flex-row xl:px-5">
+      <div className="flex flex-col items-center justify-between grow min-w-0 xl:flex-row xl:gap-4 xl:px-5">
         {/* Top row */}
-        <div className="flex items-center justify-between w-full min-h-[62px] md:min-h-[68px] gap-2 px-3 py-2.5 sm:gap-4 xl:justify-normal xl:px-0 xl:py-3">
+        <div className="flex items-center justify-between w-full min-h-[62px] md:min-h-[68px] gap-2 px-3 py-2.5 sm:gap-4 xl:flex-1 xl:min-w-0 xl:justify-normal xl:px-0 xl:py-3">
           {leftContent}
 
           {/* Mobile logo - center */}
@@ -65,7 +65,7 @@ export const BaseAppHeader: React.FC<BaseAppHeaderProps> = observer(({
             uiStore.headerMenuOpen
               ? "flex border-t border-gray-200/70 dark:border-white/5"
               : "hidden"
-          } items-center justify-end w-full gap-3 px-4 py-3 xl:flex xl:border-t-0 xl:px-0 xl:py-0`}
+          } items-center justify-end w-full gap-3 px-4 py-3 xl:flex xl:w-auto xl:shrink-0 xl:border-t-0 xl:px-0 xl:py-0`}
         >
           {children}
         </div>

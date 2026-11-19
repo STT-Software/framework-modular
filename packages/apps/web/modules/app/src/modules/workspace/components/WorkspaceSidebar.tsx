@@ -11,6 +11,7 @@ import {
 } from "@/shell";
 import { uiStore } from "@/stores";
 import { cn } from "@/utils";
+import { PanelToggleIcon } from "@/icons";
 import { NEW_BUSINESS_PATH, PROFILE_PATH, WORKSPACE_PATH } from "../paths";
 
 export interface WorkspaceSidebarProps {
@@ -58,7 +59,28 @@ const SignOutIcon = ({ className = "size-5" }: { className?: string }) => (
 const RAIL_TOOLTIP_CLASSES =
   "hidden xl:flex pointer-events-none absolute left-[52px] items-center gap-2 whitespace-nowrap rounded-xl border border-gray-200/90 bg-white/95 dark:bg-gray-900/95 dark:border-white/10 px-3 py-1.5 text-xs font-medium text-gray-900 dark:text-white shadow-theme-md backdrop-blur-md opacity-0 -translate-x-1 transition-all duration-150 group-hover/rail:opacity-100 group-hover/rail:translate-x-0 group-focus-visible/rail:opacity-100 group-focus-visible/rail:translate-x-0 z-50";
 
-/** Workspace sidebar built on BaseAppSidebar: floating card when expanded, centered clickable rail pill when collapsed. */
+/**
+ * The Necto N in an indigo circle, linking to the workspace home. With the sidebar collapsed it sits in the top-left
+ * corner (passed to `ToggleAppSidebar` as `collapsedSlot`), where the expand button used to be.
+ */
+export function WorkspaceRailMark() {
+  return (
+    <Link
+      to={WORKSPACE_PATH}
+      aria-label="Necto, inicio del workspace"
+      title="Inicio"
+      className="flex items-center justify-center w-11 h-11 rounded-full border border-gray-200/80 bg-white shadow-theme-xs transition-transform duration-200 hover:scale-105 active:scale-95 dark:border-transparent dark:bg-[#190088] dark:shadow-[0_6px_14px_-6px_rgba(0,0,0,0.6)] dark:[&_path[fill='#190088']]:fill-white"
+    >
+      <NectoLogo variant="mark" width={20} height={20} />
+    </Link>
+  );
+}
+
+/**
+ * Workspace sidebar built on BaseAppSidebar: floating card when expanded. Collapsed it is a bare rail (no card) with two
+ * floating white pills: centered in height, the expand button with the navigation; at the bottom profile and sign out.
+ * The Necto N goes to the top-left corner (`WorkspaceRailMark`). The current section gets a soft circle.
+ */
 export const WorkspaceSidebar = observer(({ businessCount }: WorkspaceSidebarProps) => {
   return (
     <BaseAppSidebar
@@ -73,16 +95,7 @@ export const WorkspaceSidebar = observer(({ businessCount }: WorkspaceSidebarPro
           <NectoLogo width={144} height={21} />
         </Link>
       }
-      logoCollapsed={
-        <Link
-          to={WORKSPACE_PATH}
-          title="NECTO"
-          aria-label="Inicio NECTO"
-          className="group flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 hover:bg-gray-100/70 dark:hover:bg-white/5"
-        >
-          <NectoLogo variant="mark" width={20} height={20} />
-        </Link>
-      }
+      bareRail
     >
       <WorkspaceSidebarContent businessCount={businessCount} />
     </BaseAppSidebar>
@@ -120,73 +133,72 @@ const WorkspaceSidebarContent = observer(({ businessCount }: WorkspaceSidebarPro
   const isNewBusinessActive = pathname === NEW_BUSINESS_PATH;
   const isProfileActive = pathname === PROFILE_PATH;
 
+  // Inside a pill: plain icons; the current section gets a soft circle (the dark circle is reserved for the N).
   const railButtonClass = (active: boolean) =>
     cn(
-      "group/rail relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ease-out hover:scale-110 active:scale-95 cursor-pointer",
+      "group/rail relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ease-out hover:scale-105 active:scale-95 cursor-pointer",
       active
-        ? "text-brand-500 bg-brand-50 dark:bg-brand-500/15 dark:text-brand-400 scale-105"
-        : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100/70 dark:hover:bg-white/5"
+        ? "bg-gray-100 text-gray-900 dark:bg-white/10 dark:text-white"
+        : "text-gray-500 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/5"
     );
+  // Each group has its own floating white pill.
+  const railPillClass =
+    "flex flex-col items-center gap-2 rounded-full border border-gray-200/80 bg-white p-1.5 shadow-theme-xs dark:border-white/10 dark:bg-gray-900";
 
   if (!isExpanded) {
     return (
-      <nav className="flex flex-col items-center justify-center gap-2 w-full py-1" aria-label="Menú rápido del workspace">
-        <NavLink
-          to={WORKSPACE_PATH}
-          end
-          aria-label={businessCount !== null ? `Negocios (${businessCount})` : "Negocios"}
-          className={() => railButtonClass(isBusinessesActive)}
-        >
-          <span className="h-5 w-5 flex items-center justify-center transition-transform duration-200 group-hover/rail:scale-110">
+      <nav className="flex h-full flex-col items-center w-full" aria-label="Menú rápido del workspace">
+        <div className={cn(railPillClass, "my-auto")}>
+          <button
+            type="button"
+            onClick={() => uiStore.toggleSidebar()}
+            aria-label="Expandir barra lateral"
+            className="group/rail relative flex items-center justify-center w-10 h-10 rounded-full bg-[#ff3f1a] text-white shadow-[0_6px_14px_-6px_rgba(255,63,26,0.6)] hover:bg-[#e5351a] dark:bg-[#190088] dark:shadow-[0_6px_14px_-6px_rgba(0,0,0,0.6)] dark:hover:bg-[#17016c] transition-transform duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            <PanelToggleIcon filled={false} size={18} />
+            <span className={RAIL_TOOLTIP_CLASSES}>Expandir menú</span>
+          </button>
+
+          <NavLink
+            to={WORKSPACE_PATH}
+            end
+            aria-label={businessCount !== null ? `Negocios (${businessCount})` : "Negocios"}
+            className={() => railButtonClass(isBusinessesActive)}
+          >
             <StoreIcon className="h-5 w-5" />
-          </span>
-          {businessCount !== null && businessCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF3F1A] shadow-[0_0_8px_#FF3F1A] ring-1.5 ring-white dark:ring-gray-900" />
-            </span>
-          )}
-          <span className={RAIL_TOOLTIP_CLASSES}>
-            <span>Negocios</span>
-            {businessCount !== null && (
-              <span className="rounded-md bg-gray-100 dark:bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-gray-600 dark:text-gray-300">
-                {businessCount}
+            {businessCount !== null && businessCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF3F1A] ring-1.5 ring-white dark:ring-gray-900" />
               </span>
             )}
-          </span>
-        </NavLink>
+            <span className={RAIL_TOOLTIP_CLASSES}>
+              <span>Negocios</span>
+              {businessCount !== null && (
+                <span className="rounded-md bg-gray-100 dark:bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-gray-600 dark:text-gray-300">
+                  {businessCount}
+                </span>
+              )}
+            </span>
+          </NavLink>
 
-        <NavLink
-          to={NEW_BUSINESS_PATH}
-          aria-label="Crear negocio"
-          className={() => railButtonClass(isNewBusinessActive)}
-        >
-          <span className="h-5 w-5 flex items-center justify-center transition-transform duration-200 group-hover/rail:scale-110">
+          <NavLink to={NEW_BUSINESS_PATH} aria-label="Crear negocio" className={() => railButtonClass(isNewBusinessActive)}>
             <PlusSquareIcon className="h-5 w-5" />
-          </span>
-          <span className={RAIL_TOOLTIP_CLASSES}>Crear negocio</span>
-        </NavLink>
+            <span className={RAIL_TOOLTIP_CLASSES}>Crear negocio</span>
+          </NavLink>
+        </div>
 
-        <NavLink
-          to={PROFILE_PATH}
-          aria-label="Mi perfil"
-          className={() => railButtonClass(isProfileActive)}
-        >
-          <span className="h-5 w-5 flex items-center justify-center transition-transform duration-200 group-hover/rail:scale-110">
+        <div className={railPillClass}>
+          <NavLink to={PROFILE_PATH} aria-label="Mi perfil" className={() => railButtonClass(isProfileActive)}>
             <UserOutlineIcon className="h-5 w-5" />
-          </span>
-          <span className={RAIL_TOOLTIP_CLASSES}>Mi perfil</span>
-        </NavLink>
-
-        <div className="w-full border-t border-gray-200/70 dark:border-white/5 mt-1 pt-2 flex flex-col items-center">
+            <span className={RAIL_TOOLTIP_CLASSES}>Mi perfil</span>
+          </NavLink>
           <button
             type="button"
             onClick={() => superAdminSessionStore.signOut()}
             aria-label="Cerrar sesión"
-            className="group/rail relative flex items-center justify-center w-10 h-10 rounded-full text-error-700 hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-500/10 transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+            className="group/rail relative flex items-center justify-center w-10 h-10 rounded-full text-error-700 hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-500/10 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
           >
-            <span className="h-5 w-5 flex items-center justify-center transition-transform duration-200 group-hover/rail:scale-110">
-              <SignOutIcon className="h-5 w-5" />
-            </span>
+            <SignOutIcon className="h-5 w-5" />
             <span className={RAIL_TOOLTIP_CLASSES}>Cerrar sesión</span>
           </button>
         </div>

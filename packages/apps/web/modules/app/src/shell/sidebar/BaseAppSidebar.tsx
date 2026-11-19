@@ -14,7 +14,15 @@ interface BaseAppSidebarProps {
    * Use only for showcases/documentation - not for runtime control.
    */
   collapsed?: boolean;
+  /**
+   * Collapsed look without the pill: no card (background, border, shadow), full height below the expand button, so the
+   * content lays out its own floating icon buttons (e.g. navigation centered, sign out at the bottom).
+   */
+  bareRail?: boolean;
 }
+
+/** Top of the bare rail: below the expand button of the top-left corner. */
+const BARE_RAIL_TOP = 100;
 
 /** Duración del cambio de tamaño. Al contraer es más corta: cerrar no se espera. */
 const MS_EXPANDIR = 340;
@@ -34,6 +42,7 @@ export const BaseAppSidebar: React.FC<BaseAppSidebarProps> = observer(({
   children,
   contained = false,
   collapsed,
+  bareRail = false,
 }) => {
   // If collapsed prop is defined, use it as override; otherwise use store
   const showExpanded = collapsed !== undefined
@@ -44,7 +53,7 @@ export const BaseAppSidebar: React.FC<BaseAppSidebarProps> = observer(({
   const medidor = useRef<HTMLDivElement>(null);
   const [altoContraida, setAltoContraida] = useState<number | null>(null);
   useLayoutEffect(() => {
-    if (showExpanded || !medidor.current) return;
+    if (showExpanded || bareRail || !medidor.current) return;
     const medir = () => {
       // 24px from py-3 + 2px from 1px top/bottom borders.
       if (medidor.current) setAltoContraida(medidor.current.offsetHeight + 26);
@@ -53,7 +62,7 @@ export const BaseAppSidebar: React.FC<BaseAppSidebarProps> = observer(({
     const ro = new ResizeObserver(medir);
     ro.observe(medidor.current);
     return () => ro.disconnect();
-  }, [showExpanded]);
+  }, [showExpanded, bareRail]);
 
   // Clip overflowing labels only while animating so hover tooltips/flyouts are never clipped once settled.
   const [viajando, setViajando] = useState(false);
@@ -77,9 +86,12 @@ export const BaseAppSidebar: React.FC<BaseAppSidebarProps> = observer(({
 
   const duracion = showExpanded ? MS_EXPANDIR : MS_CONTRAER;
   const expandida: React.CSSProperties = { top: 16, height: "calc(100vh - 2rem)", borderRadius: 24 };
+  const bare = bareRail && !showExpanded;
   const geometria: React.CSSProperties = contained
     ? {}
-    : showExpanded || !altoContraida
+    : bare
+      ? { top: BARE_RAIL_TOP, height: `calc(100vh - ${BARE_RAIL_TOP + 16}px)`, borderRadius: 0 }
+      : showExpanded || !altoContraida
       ? { ...expandida, ...(showExpanded ? {} : { borderRadius: ANCHO_CONTRAIDA / 2 }) }
       : { top: `calc(50vh - ${altoContraida / 2}px)`, height: altoContraida, borderRadius: ANCHO_CONTRAIDA / 2 };
 
@@ -95,14 +107,19 @@ export const BaseAppSidebar: React.FC<BaseAppSidebarProps> = observer(({
           transitionDuration: `${duracion}ms`,
         }}
         aria-label="Barra lateral de navegación"
-        className={`barra-lateral flex flex-col border border-gray-200/80 bg-white dark:border-white/10 dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-theme-xs
+        className={`barra-lateral flex flex-col border text-gray-900 dark:text-gray-100 ${
+          bare
+            ? "border-transparent bg-transparent shadow-none"
+            : "border-gray-200/80 bg-white dark:border-white/10 dark:bg-gray-900 shadow-theme-xs"
+        }
           ${animable ? "transition-[width,height,top,border-radius,padding,translate] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none" : ""}
           ${positionClasses}
           ${viajando ? "overflow-hidden" : ""}
           ${showExpanded ? "w-[274px] px-5" : "w-[54px] px-1.5 py-3"}`}
       >
-        <div ref={medidor} className={showExpanded ? "contents" : "flex flex-col"}>
+        <div ref={medidor} className={showExpanded ? "contents" : bare ? "flex flex-col h-full" : "flex flex-col"}>
           {/* Logo section */}
+          {(showExpanded || !bare || logoCollapsed) && (
           <div
             className={`flex shrink-0 ${
               showExpanded ? "pt-6 pb-5 justify-start" : "pb-2 pt-0.5 justify-center"
@@ -112,12 +129,13 @@ export const BaseAppSidebar: React.FC<BaseAppSidebarProps> = observer(({
               {showExpanded ? logo : logoCollapsed}
             </div>
           </div>
+          )}
 
           {/* Content section */}
           <div
             key={showExpanded ? "expandido" : "colapsado"}
             className={`barra-lateral__entrada flex flex-col no-scrollbar ${
-              showExpanded ? "flex-1 overflow-y-auto" : "flex-initial"
+              showExpanded ? "flex-1 overflow-y-auto" : bare ? "flex-1 min-h-0" : "flex-initial"
             }`}
           >
             {children}

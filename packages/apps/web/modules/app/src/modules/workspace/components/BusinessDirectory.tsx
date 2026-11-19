@@ -4,15 +4,14 @@ import { Input } from "@/elements/form/input";
 import { Select } from "@/elements/form/select";
 import {
   BusinessCard,
-  BusinessDetailDialog,
   businessesStore,
   CATEGORIES,
   PAGE_SIZE,
-  type Business,
   type BusinessStatus,
   type CategoryId,
 } from "@/modules/businesses";
 import { BusinessEmptyState } from "./BusinessEmptyState";
+import { useWorkspaceDetail } from "./WorkspaceDetailContext";
 import { Skeleton, SkeletonGroup } from "@/components/skeleton";
 
 const SEARCH_DELAY_MS = 300;
@@ -28,17 +27,15 @@ const STATUS_OPTIONS = [
 interface BusinessDirectoryProps {
   onCreate: () => void;
   onReplay: () => void;
-  onEdit: (business: Business) => void;
-  onAnnounce: (message: string) => void;
 }
 
 /**
  * The directory of businesses: header with the count, filters and the list. With no businesses at all, the list
  * is the empty state that invites to create the first one. Filtering and paging are done by the service.
  */
-export const BusinessDirectory = observer(({ onCreate, onReplay, onEdit, onAnnounce }: BusinessDirectoryProps) => {
+export const BusinessDirectory = observer(({ onCreate, onReplay }: BusinessDirectoryProps) => {
   const store = businessesStore;
-  const [selected, setSelected] = useState<Business | null>(null);
+  const { openBusinessDetail } = useWorkspaceDetail();
   const [searchText, setSearchText] = useState(store.filters.q);
   // The Select component is uncontrolled: a new key makes it show the cleared value.
   const [filterKey, setFilterKey] = useState(0);
@@ -174,7 +171,7 @@ export const BusinessDirectory = observer(({ onCreate, onReplay, onEdit, onAnnou
           )}
           <div className={`ws-business-grid${store.state === "loading" ? " bs-business-grid-busy" : ""}`} aria-busy={store.state === "loading"}>
             {store.items.map((business) => (
-              <BusinessCard key={business.id} business={business} onOpen={setSelected} />
+              <BusinessCard key={business.id} business={business} onOpen={openBusinessDetail} />
             ))}
           </div>
           {store.pageCount > 1 && (
@@ -200,17 +197,6 @@ export const BusinessDirectory = observer(({ onCreate, onReplay, onEdit, onAnnou
         </span>
         <span>Todo comienza con una conexión.</span>
       </footer>
-
-      <BusinessDetailDialog
-        business={selected}
-        onClose={() => setSelected(null)}
-        onEdit={onEdit}
-        onChanged={(updated) => {
-          store.replace(updated);
-          setSelected(updated);
-        }}
-        onAnnounce={onAnnounce}
-      />
     </section>
   );
 });

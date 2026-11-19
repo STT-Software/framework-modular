@@ -58,7 +58,7 @@ export class EmailNotAssignedError extends DomainError {
   readonly kind = 'not-found';
   override readonly code = 'email-not-assigned';
   constructor() {
-    super('This email is not assigned to any active business: the owner of a business must invite it first');
+    super('This email is not assigned to any active business: the owner of a business must invite it first, or an administrator must add it as an operator');
   }
 }
 

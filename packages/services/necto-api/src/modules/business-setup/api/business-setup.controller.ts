@@ -18,12 +18,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { AdministersBusiness, type AdminRequest } from '../../business-access/public';
-import { BusinessCategoryDto } from '../../businesses/public';
 import { BusinessSetupService } from '../application/business-setup.service';
 import { LOGO_MAX_BYTES } from '../domain/logo';
-import { NoStoreInterceptor } from './no-store.interceptor';
+import { NoStoreInterceptor } from '../../../platform/http/no-store.interceptor';
 import { toModulesResponse, toSetupResponse } from './business-setup.response';
-import { SaveModuleScheduleDto, SaveProfileDto, SaveProgressDto, SaveScheduleDto } from './dto/setup.dto';
+import { SaveCategoryDto, SaveModuleScheduleDto, SaveProfileDto, SaveProgressDto, SaveScheduleDto } from './dto/setup.dto';
 
 /** What multer gives for an uploaded file (kept in memory; the 1 MB limit keeps that small). */
 interface UploadedLogo {
@@ -71,10 +70,12 @@ export class BusinessSetupController {
     return toSetupResponse(await this.setup.saveProfile(email(request), businessId, { contact: contactChange, description: description ?? null }));
   }
 
-  /** The type of business. "other" requires `categoryOther`. */
+  /** The type of business. "other" requires `categoryOther`. With Turnos, `turnosProfile` chooses its attention profile. */
   @Put('category')
-  async saveCategory(@Req() request: AdminRequest, @Param('businessId') businessId: string, @Body() dto: BusinessCategoryDto) {
-    return toSetupResponse(await this.setup.saveCategory(email(request), businessId, dto.category, dto.categoryOther ?? null));
+  async saveCategory(@Req() request: AdminRequest, @Param('businessId') businessId: string, @Body() dto: SaveCategoryDto) {
+    return toSetupResponse(
+      await this.setup.saveCategory(email(request), businessId, dto.category, dto.categoryOther ?? null, dto.turnosProfile ?? null),
+    );
   }
 
   /** The logo as an image (PNG, JPG or WebP). */

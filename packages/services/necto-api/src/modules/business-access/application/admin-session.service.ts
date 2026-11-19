@@ -16,7 +16,9 @@ import { ReverificationRequiredError, SessionExpiredError, TooManyRequestsError 
 import { SessionRepository } from '../domain/session.repository';
 import { AccessCodeService } from './access-code.service';
 import { AccessMailer } from './access-mailer';
-import { AdministeredBusinessesService, type AdministeredBusiness } from './administered-businesses.service';
+import type { AccessGrant } from '../domain/access-grant';
+import { AccessGrantsService } from './access-grants.service';
+import type { AdministeredBusiness } from './administered-businesses.service';
 
 /** A session that was just started: the cookie to give the browser and how long it should keep it. */
 export interface StartedSession {
@@ -32,6 +34,9 @@ export interface SessionGrant {
   expiresInSeconds: number;
   email: string;
   remember: boolean;
+  /** Everything the person may enter right now, in any role (an administrator and an operator can be the same email). */
+  accesses: AccessGrant[];
+  /** The administered businesses only (the same ones as the `admin` accesses), kept for the pages that predate roles. */
   businesses: AdministeredBusiness[];
 }
 
@@ -48,7 +53,7 @@ export class AdminSessionService {
     private readonly tokens: TokenService,
     private readonly codes: AccessCodeService,
     private readonly mailer: AccessMailer,
-    private readonly businesses: AdministeredBusinessesService,
+    private readonly grants: AccessGrantsService,
     private readonly policy: AccessPolicy,
     private readonly clock: Clock,
   ) {}
@@ -103,29 +108,38 @@ export class AdminSessionService {
 
   /**
    * Gives the browser a new access token and moves the idle expiry forward (never past the absolute one).
-   * If the person no longer administers any active business, the session is ended instead.
+   * If the person no longer has any access (neither as administrator nor as operator), the session is ended instead.
    */
   async refresh(cookieValue: string | undefined): Promise<SessionGrant> {
     const session = await this.requireCookie(cookieValue);
-    const businesses = await this.businesses.list(session.email);
+    const accesses = await this.grants.list(session.email);
     const now = this.clock.now();
-    if (businesses.length === 0) {
+    if (accesses.length === 0) {
       await this.sessions.revoke(session.id, 'no-access', now);
       throw new SessionExpiredError();
     }
     const idleMs = session.remember ? this.policy.rememberIdleMs : this.policy.sessionIdleMs;
     const renewed = await this.sessions.renew(session.id, now, this.idleDeadline(now, idleMs, session.absoluteExpiresAt));
     if (!renewed) throw new SessionExpiredError();
-    return this.grant(renewed, businesses);
+    return this.grant(renewed, accesses);
   }
 
-  async grant(session: AdminSession, businesses: AdministeredBusiness[]): Promise<SessionGrant> {
+  async grant(session: AdminSession, accesses: AccessGrant[]): Promise<SessionGrant> {
     return {
       accessToken: await this.issueAccessToken(session),
       expiresInSeconds: this.policy.accessTokenSeconds,
       email: session.email,
       remember: session.remember,
-      businesses,
+      accesses,
+      businesses: accesses
+        .filter((access) => access.role === 'admin')
+        .map((access) => ({
+          id: access.businessId,
+          name: access.businessName,
+          category: access.category,
+          categoryOther: access.categoryOther,
+          modules: [...access.modules],
+        })),
     };
   }
 
@@ -160,7 +174,7 @@ export class AdminSessionService {
       const waitMs = last.getTime() + this.policy.resendCooldownMs - now.getTime();
       if (waitMs > 0) throw new TooManyRequestsError(Math.ceil(waitMs / 1000));
     }
-    const person = await this.businesses.person(session.email);
+    const person = await this.grants.person(session.email);
     const { challenge, code } = await this.codes.issue({ email: session.email, purpose: 'reverify' });
     this.mailer.dispatch({
       challengeId: challenge.id,

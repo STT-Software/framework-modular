@@ -19,7 +19,7 @@ módulo por cada uno.
 
 | Parte | Estado |
 |-------|--------|
-| Backend | Alineado: un **monolito modular**, `packages/services/necto-api`. Una sola aplicación (un proceso, un puerto, una conexión a MongoDB) con `platform/` (infraestructura transversal) y `modules/` (un módulo por capacidad: `auth`, `onboarding`, `businesses`, `business-access` y `business-setup`), cada uno con sus capas y su puerta pública. |
+| Backend | Alineado: un **monolito modular**, `packages/services/necto-api`. Una sola aplicación (un proceso, un puerto, una conexión a MongoDB) con `platform/` (infraestructura transversal) y `modules/` (un módulo por capacidad: `auth`, `onboarding`, `businesses`, `business-access`, `business-setup` y `turnos`), cada uno con sus capas y su puerta pública. |
 | Frontend | Alineado para seis módulos: `src/modules/super-admin-auth/` (login y registro), `src/modules/onboarding/` (bienvenida y pasos de perfil), `src/modules/workspace/` (el marco y las rutas del workspace), `src/modules/businesses/` (negocios: store, asistente, tarjetas y ficha; sin rutas propias, el workspace los monta) `src/modules/business-access/` (acceso público del jefe con código por correo) y `src/modules/business-setup/` (configuración inicial del negocio por su administrador; importa de `business-access` y `businesses` por su `index.ts`). Lo común sin reglas de negocio, como el logotipo (`src/brand/`), vive en la base común. `src/app/` registra los módulos (`modules.ts`) y renderiza sus rutas con carga diferida y `ModuleBoundary`. El resto del scaffolding de WebIAI Elements sigue organizado por tipo técnico (`pages/`, `elements/`, `shell/`...) y hace de base común. |
 
 ## Principios
@@ -109,7 +109,8 @@ packages/services/necto-api/           ← el backend (el nombre es el de la apl
         ├── onboarding/ ...            ← misma forma
         ├── businesses/ ...            ← negocios, jefe vigente y módulos habilitados
         ├── business-access/ ...       ← acceso de administradores por OTP, sesiones y permisos (depende de businesses/public)
-        └── business-setup/ ...        ← configuración inicial del negocio por su administrador (depende de businesses/public y business-access/public)
+        ├── business-setup/ ...        ← configuración inicial del negocio por su administrador (depende de businesses/public, business-access/public y turnos/public)
+        └── turnos/ ...                ← configuración de Turnos: perfil, filas, reglas y operadores (depende de businesses/public y business-access/public)
 
 infra/                                 ← infraestructura de desarrollo compartida
 ├── docker-compose.yml                 ← MongoDB

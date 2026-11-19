@@ -3,6 +3,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AdminLoginService } from '../application/admin-login.service';
 import { AdminSessionService, type SessionGrant } from '../application/admin-session.service';
+import { AccessGrantsService } from '../application/access-grants.service';
 import { AdministeredBusinessesService } from '../application/administered-businesses.service';
 import { AccessPolicy } from '../domain/access-policy';
 import { ReverifyDto, RequestCodeDto, VerifyCodeDto } from './dto/admin-access.dto';
@@ -14,6 +15,7 @@ function toGrantResponse(grant: SessionGrant) {
     accessToken: grant.accessToken,
     expiresInSeconds: grant.expiresInSeconds,
     admin: { email: grant.email, remember: grant.remember },
+    accesses: grant.accesses,
     businesses: grant.businesses,
   };
 }
@@ -31,6 +33,7 @@ export class AdminAccessController {
     private readonly login: AdminLoginService,
     private readonly sessions: AdminSessionService,
     private readonly businesses: AdministeredBusinessesService,
+    private readonly grants: AccessGrantsService,
     private readonly policy: AccessPolicy,
   ) {}
 
@@ -110,6 +113,13 @@ export class AdminAccessController {
   @RecentlyVerified()
   async revokeOthers(@Req() request: AdminRequest) {
     return { revoked: await this.sessions.revokeOthers(request.adminSession!) };
+  }
+
+  /** Everything this person may enter right now, in any role: the businesses they administer and the ones they operate. */
+  @Get('accesses')
+  @BusinessAdminOnly()
+  async listAccesses(@Req() request: AdminRequest) {
+    return { accesses: await this.grants.list(request.adminSession!.email) };
   }
 
   /** Only the businesses this person administers right now (active, and they are its current boss). */

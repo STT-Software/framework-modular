@@ -26,6 +26,17 @@ export class InvalidScheduleError extends DomainError {
   }
 }
 
+/** A Turnos attention profile was sent for a business that does not have Turnos. */
+export class TurnosNotAssignedError extends DomainError {
+  readonly kind = 'invalid';
+  override readonly code = 'invalid-turnos-profile';
+  override readonly fields: Record<string, string[]>;
+  constructor() {
+    super('Turnos is not enabled for this business');
+    this.fields = { turnosProfile: ['Turnos is not enabled for this business'] };
+  }
+}
+
 export class InvalidLogoError extends DomainError {
   readonly kind = 'invalid';
   override readonly code = 'invalid-logo';

@@ -46,10 +46,6 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
           <p>
             Este es el espacio de <strong>{state.profile.name}</strong>. Prepara sus datos, define sus horarios y deja la base lista para tus módulos.
           </p>
-          <div className="no-welcome-meta">
-            <span>{count === 1 ? "1 módulo asignado" : `${count} módulos asignados`}</span>
-            <span className={ready ? "is-ready" : undefined}>{ready ? "Base preparada" : "Base por preparar"}</span>
-          </div>
           <button
             className={`no-primary${startingBase ? " is-loading" : ""}`}
             type="button"

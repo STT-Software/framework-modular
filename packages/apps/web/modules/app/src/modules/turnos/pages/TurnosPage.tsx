@@ -320,36 +320,42 @@ const TurnosPage = observer(() => {
                   <p>{copy.description}</p>
                 </header>
                 {ready ? (
-                  <div className={view === "rules" ? undefined : "config-step-workspace"}>
-                    {view !== "rules" && state && <TurnosGuide step={view} state={state} />}
-                    {view === "profile" && <ProfilePanel />}
-                    {view === "queues" && <QueuesPanel />}
-                    {view === "rules" && <RulesPanel />}
-                    {view === "operators" && <OperatorsPanel />}
-                    {view === "review" && <ReviewPanel onEdit={(target) => void go(target)} />}
-                    {store.error && (
-                      <p className="nt-error" role="alert">
-                        {store.error}
-                      </p>
-                    )}
-                    <footer className="nt-form-footer">
-                      <span>{`Paso ${index + 1} de 5`}</span>
-                      <div>
-                        {index > 0 && (
-                          <Button variant="outline" type="button" className="nt-secondary" disabled={store.saving} onClick={() => void go(TURNOS_STEPS[index - 1])}>
-                            Atrás
+                  <div className={view === "rules" ? "config-step-workspace is-single-col" : "config-step-workspace"}>
+                    <div className="config-form-col">
+                      {view === "profile" && <ProfilePanel />}
+                      {view === "queues" && <QueuesPanel />}
+                      {view === "rules" && <RulesPanel />}
+                      {view === "operators" && <OperatorsPanel />}
+                      {view === "review" && <ReviewPanel onEdit={(target) => void go(target)} />}
+                      {store.error && (
+                        <p className="nt-error" role="alert">
+                          {store.error}
+                        </p>
+                      )}
+                      <footer className="nt-form-footer">
+                        <span>{`Paso ${index + 1} de 5`}</span>
+                        <div>
+                          {index > 0 && (
+                            <Button variant="outline" type="button" className="nt-secondary" disabled={store.saving} onClick={() => void go(TURNOS_STEPS[index - 1])}>
+                              Atrás
+                            </Button>
+                          )}
+                          {view === "operators" && (state?.operators.length ?? 0) === 0 && (
+                            <button type="button" className="nt-text-button" disabled={store.saving} onClick={() => void go("review")}>
+                              Continuar sin agregar
+                            </button>
+                          )}
+                          <Button type="button" className="nt-primary" disabled={store.saving} onClick={() => void next()}>
+                            {store.saving ? "Guardando…" : index === 4 ? "Guardar configuración" : "Siguiente"}
                           </Button>
-                        )}
-                        {view === "operators" && (state?.operators.length ?? 0) === 0 && (
-                          <button type="button" className="nt-text-button" disabled={store.saving} onClick={() => void go("review")}>
-                            Continuar sin agregar
-                          </button>
-                        )}
-                        <Button type="button" className="nt-primary" disabled={store.saving} onClick={() => void next()}>
-                          {store.saving ? "Guardando…" : index === 4 ? "Guardar configuración" : "Siguiente"}
-                        </Button>
-                      </div>
-                    </footer>
+                        </div>
+                      </footer>
+                    </div>
+                    {view !== "rules" && state && (
+                      <aside className="config-guide-col">
+                        <TurnosGuide step={view} state={state} />
+                      </aside>
+                    )}
                   </div>
                 ) : (
                   <p className="nt-muted" role="status">

@@ -1,11 +1,13 @@
 .config-guide {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(225px, 1fr);
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--nt-border, var(--oc-border));
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
-  margin: 0 0 24px;
+  margin: 0;
   background: var(--nt-card, var(--oc-card));
+  box-shadow: 0 4px 20px rgba(16, 24, 40, 0.04);
+  width: 100%;
 }
 .config-art-stage {
   position: relative;
@@ -13,15 +15,16 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background-color: var(--nt-card, #ffffff);
-  background-image: radial-gradient(circle, #e4e7ec 1.2px, transparent 1.5px);
-  background-size: 20px 20px;
-  border-bottom: 1px solid var(--nt-border, #e4e7ec);
+  background-color: #ffffff !important;
+  background-image: radial-gradient(circle, #e4e7ec 1.2px, transparent 1.5px) !important;
+  background-size: 20px 20px !important;
+  border-bottom: 1px solid var(--nt-border, var(--oc-border)) !important;
+  width: 100%;
 }
 .dark .config-art-stage {
-  background-color: #131a2b;
-  background-image: radial-gradient(circle, #293246 1.2px, transparent 1.5px);
-  border-bottom-color: var(--nt-border, #293246);
+  background-color: #ffffff !important;
+  background-image: radial-gradient(circle, #e4e7ec 1.2px, transparent 1.5px) !important;
+  border-bottom-color: var(--nt-border, var(--oc-border)) !important;
 }
 .config-art-stage::before, .config-art-stage::after {
   display: none;
@@ -34,27 +37,33 @@
   fill: none;
   stroke: none;
 }
-.config-guide figcaption { align-self: center; padding: clamp(20px, 3vw, 36px); }
+.config-guide figcaption {
+  padding: 24px 22px;
+}
 :is(.nt-root, .oc-root) .config-guide h2 {
-  font-size: clamp(18px, 1.65vw, 23px);
-  line-height: 1.23;
-  letter-spacing: -.025em;
-  font-weight: 650;
-  margin: 0 0 9px;
+  font-size: 18px;
+  line-height: 1.35;
+  letter-spacing: -.02em;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--necto-blue, #190088);
+}
+.dark :is(.nt-root, .oc-root) .config-guide h2 {
+  color: #b7adff;
 }
 :is(.nt-root, .oc-root) .config-guide p {
-  font-size: 14px;
-  line-height: 1.65;
+  font-size: 13px;
+  line-height: 1.6;
   color: var(--nt-muted, var(--oc-muted));
   overflow-wrap: anywhere;
+  margin: 0;
 }
 .nt-rule-preview:has(> .config-art-stage) { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; }
 .nt-rule-preview > .config-art-stage { width: 100%; }
 .nt-rule-preview > .config-art-stage ~ .nt-preview-copy { padding: 20px 22px 0; }
 .nt-rule-preview > .config-art-stage ~ .nt-load-legend { margin: 18px 22px 22px; }
 @media (max-width: 620px) {
-  .config-guide { grid-template-columns: 1fr; }
-  .config-guide figcaption { padding: 17px 20px 19px; }
+  .config-guide figcaption { padding: 18px 20px 20px; }
   .config-guide .config-art-stage > svg { width: 100%; }
 }
 

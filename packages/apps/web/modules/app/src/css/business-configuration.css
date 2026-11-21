@@ -440,3 +440,75 @@
     display: none !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   4. 100% Screen Real Estate & Vertical Vector Guide Architecture
+   -------------------------------------------------------------------------- */
+.config-step-workspace {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) clamp(340px, 28vw, 420px) !important;
+  gap: 36px !important;
+  align-items: start !important;
+  width: 100% !important;
+}
+
+.config-step-workspace.is-single-col {
+  grid-template-columns: 1fr !important;
+}
+
+.config-form-col {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.config-guide-col {
+  min-width: 0 !important;
+  width: 100% !important;
+  position: sticky !important;
+  top: 24px !important;
+  align-self: start !important;
+  z-index: 10 !important;
+}
+
+@media (max-width: 1100px) {
+  .config-step-workspace {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. Consistent Sticky Baseline Layout & Bottom-Right Footer Alignment
+   -------------------------------------------------------------------------- */
+:is(.no-root, .nt-root, .oc-root) {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100svh !important;
+}
+
+:is(.no-main, .nt-layout, .oc-layout) {
+  flex: 1 0 auto !important;
+}
+
+:is(.no-footer, .nt-footer, .oc-footer, .na-auth-footer) {
+  margin-top: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important; /* Bottom-right corner */
+  padding: 16px clamp(20px, 3.5vw, 48px) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  border-top: 1px solid #ECECEC !important;
+  font-size: 12px !important;
+  color: #667085 !important;
+  background: transparent !important;
+}
+
+:is(.no-footer, .nt-footer, .oc-footer, .na-auth-footer) span {
+  text-align: right !important;
+  margin-left: auto !important;
+}
+
+.dark :is(.no-footer, .nt-footer, .oc-footer, .na-auth-footer) {
+  border-top-color: #1d2939 !important;
+  color: #98a2b3 !important;
+}

@@ -6,14 +6,14 @@
   --oc-muted: #667085;
   --oc-border: #e4e7ec;
   --oc-soft: #f2f4f7;
-  --oc-orange: #f04420;
-  --oc-orange-soft: #fff0eb;
-  --oc-purple: #4438a2;
+  --oc-orange: #FF3F1A;
+  --oc-orange-soft: #fff3ed;
+  --oc-purple: #190088;
   --oc-purple-soft: #f0edff;
   --oc-green: #067647;
   --oc-green-soft: #ecfdf3;
-  --oc-cyan: #026aa2;
-  --oc-cyan-soft: #f0f9ff;
+  --oc-cyan: #190088;
+  --oc-cyan-soft: #97d6df24;
   min-height: 100vh;
   background: var(--oc-bg);
   color: var(--oc-text);
@@ -35,8 +35,8 @@
   --oc-purple-soft: #292542;
   --oc-green: #75e0a7;
   --oc-green-soft: #15362f;
-  --oc-cyan: #7cd4fd;
-  --oc-cyan-soft: #183044;
+  --oc-cyan: #97D6DF;
+  --oc-cyan-soft: #97d6df1f;
 }
 
 .oc-root [hidden] {
@@ -109,7 +109,7 @@
 }
 
 .oc-header {
-  padding: 24px max(32px, calc((100vw - 1440px) / 2));
+  padding: 20px clamp(20px, 3.5vw, 48px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -214,15 +214,19 @@
 
 .oc-layout {
   display: grid;
-  grid-template-columns: 235px minmax(0, 1fr);
-  gap: 56px;
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 48px 32px 64px;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 40px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 32px clamp(20px, 3.5vw, 48px) 64px;
 }
 
 .oc-sidebar {
   min-width: 0;
+  position: sticky;
+  top: 24px;
+  align-self: start;
 }
 
 .oc-back {
@@ -249,6 +253,7 @@
   justify-content: center;
   background: var(--oc-cyan-soft);
   color: var(--oc-cyan);
+  border: 1px solid #97d6df60;
   border-radius: 14px;
   width: 48px;
   height: 48px;
@@ -487,12 +492,12 @@
 }
 
 .oc-primary {
-  background: #f04420;
+  background: #FF3F1A;
   color: #fff;
 }
 
 .oc-primary:hover {
-  background: #d93615;
+  background: #e63514;
 }
 
 .oc-secondary {
@@ -539,9 +544,10 @@
   display: flex;
   gap: 24px;
   justify-content: space-between;
-  max-width: 1440px;
-  padding: 20px 32px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  padding: 20px clamp(20px, 3.5vw, 48px);
+  margin: 0;
   color: var(--oc-muted);
   font-size: 11px;
 }

@@ -235,15 +235,16 @@ export const OrdersConfigPage = observer(() => {
         </aside>
 
         {/* STAGE */}
-        <div className="oc-stage config-step-workspace">
+        <div className="oc-stage">
           <header className="oc-stage-heading">
             <span className="oc-eyebrow">{`PASO ${stepIndex + 1} DE 6 · CONFIGURACIÓN DE PEDIDOS`}</span>
             <h1>{copy.title}</h1>
             <p>{copy.description}</p>
           </header>
 
-          <OrdersGuide step={currentStep} state={state} />
-          <div className="oc-card">
+          <div className="config-step-workspace">
+            <div className="config-form-col">
+              <div className="oc-card">
             {/* PASO 1: PERFIL */}
             {currentStep === "profile" && (
               <div>
@@ -329,7 +330,7 @@ export const OrdersConfigPage = observer(() => {
                       type="checkbox"
                       checked={state.fulfillment.riskThresholdActive}
                       onChange={(e) => store.setRiskThreshold(e.target.checked)}
-                      style={{ width: "18px", height: "18px", accentColor: "#f04420" }}
+                      style={{ width: "18px", height: "18px", accentColor: "#FF3F1A" }}
                     />
                     Exigir confirmación manual en órdenes con alto costo de flete
                   </label>
@@ -549,6 +550,12 @@ export const OrdersConfigPage = observer(() => {
             </footer>
           </div>
         </div>
+
+        <aside className="config-guide-col">
+          <OrdersGuide step={currentStep} state={state} />
+        </aside>
+      </div>
+    </div>
       </main>
 
       {/* FOOTER */}

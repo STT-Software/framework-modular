@@ -15,15 +15,15 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background-color: #ffffff !important;
-  background-image: radial-gradient(circle, #e4e7ec 1.2px, transparent 1.5px) !important;
-  background-size: 20px 20px !important;
-  border-bottom: 1px solid var(--nt-border, var(--oc-border)) !important;
+  background-color: #ffffff;
+  background-image: radial-gradient(circle, #e4e7ec 1.2px, transparent 1.5px);
+  background-size: 20px 20px;
+  border-bottom: 1px solid var(--nt-border, var(--oc-border));
   width: 100%;
 }
 .dark .config-art-stage {
-  background-color: #ffffff !important;
-  background-image: radial-gradient(circle, #e4e7ec 1.2px, transparent 1.5px) !important;
+  background-color: var(--nt-card, #101828) !important;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1.2px, transparent 1.5px) !important;
   border-bottom-color: var(--nt-border, var(--oc-border)) !important;
 }
 .config-art-stage::before, .config-art-stage::after {

@@ -235,14 +235,26 @@
 .nt-queue-checkboxes input{width:18px;height:18px;accent-color:#FF3F1A}
 .nt-queue-checkboxes i{width:7px;height:7px;border-radius:50%;background:var(--nt-queue-color)}
 .nt-queue-checkboxes label:has(input:checked){border-color:var(--nt-purple);background:var(--nt-purple-soft)}
-.nt-otp-person{display:flex;align-items:center;gap:12px;margin-bottom:22px;flex-wrap:wrap}
-.nt-otp-person>div{flex:1;min-width:0}
-.nt-otp-person strong{font-size:16px;font-weight:500}
-.nt-otp-person p{font-size:13px;color:var(--nt-muted);overflow-wrap:anywhere}
-.nt-otp-example{padding:22px 16px;border:1px dashed var(--nt-border);background:var(--nt-soft);border-radius:12px;text-align:center;margin-top:22px}
-.nt-otp-example>span{font-size:10px;letter-spacing:.1em;color:var(--nt-muted)}
-.nt-otp-example strong{display:block;font-size:32px;letter-spacing:10px;padding-left:10px;line-height:1.7}
-.nt-otp-example small{font-size:12px;color:var(--nt-muted);display:block}
+.nt-otp-dialog{max-width:520px;width:min(520px,calc(100vw - 32px));border-radius:20px;overflow:hidden}
+.nt-otp-person{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--nt-soft);border:1px solid var(--nt-border);border-radius:12px;margin-bottom:18px}
+.nt-otp-person-info{flex:1;min-width:0}
+.nt-otp-person-info strong{display:block;font-size:15px;font-weight:600;color:var(--nt-text)}
+.nt-otp-person-info p{font-size:13px;color:var(--nt-muted);margin:2px 0 0;overflow-wrap:anywhere}
+.nt-badge-role{padding:4px 10px;border-radius:20px;background:#f0ecff;color:#190088;font-size:11px;font-weight:600;white-space:nowrap}
+.dark .nt-badge-role{background:#19008825;color:#b7adff}
+.nt-otp-desc{font-size:14px;line-height:1.6;color:var(--nt-muted);margin:0 0 20px}
+.nt-otp-link-card{display:flex;flex-direction:column;gap:8px;padding:16px;background:var(--nt-soft);border:1px solid var(--nt-border);border-radius:14px;margin-bottom:16px}
+.nt-otp-label{font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--nt-muted);text-transform:uppercase}
+.nt-otp-link-row{display:flex;align-items:center;gap:8px;background:var(--nt-card);border:1px solid var(--nt-border);border-radius:10px;padding:6px 6px 6px 12px;transition:border-color .15s}
+.nt-otp-link-row:focus-within{border-color:#190088}
+.nt-otp-link-input{flex:1;min-width:0;border:0;background:transparent;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:var(--nt-text);outline:none;cursor:text}
+.nt-otp-copy-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:8px;border:1px solid transparent;background:#190088;color:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
+.nt-otp-copy-btn:hover{background:#2500be}
+.nt-otp-copy-btn.is-copied{background:#027a48}
+.nt-copy-icon{width:15px;height:15px;stroke:currentColor;fill:none}
+.nt-help-note{font-size:12px;line-height:1.5;color:var(--nt-muted);margin:0 0 18px}
+.nt-otp-queues-section{padding-top:16px;border-top:1px solid var(--nt-border)}
+.nt-otp-queues-section .nt-queue-pills{margin-top:10px}
 .nt-saved-dialog{text-align:center;padding:40px;max-width:510px}
 .nt-saved-mark{width:80px;height:80px;margin:0 auto 24px;color:var(--nt-purple)}
 .nt-saved-mark circle{fill:var(--nt-purple-soft);stroke:var(--nt-border)}

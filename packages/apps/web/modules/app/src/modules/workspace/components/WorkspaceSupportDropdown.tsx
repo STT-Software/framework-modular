@@ -228,21 +228,21 @@ export function WorkspaceSupportDropdown({
           onClick={() => showComingSoon("Tutoriales")}
           className="mt-3.5 w-full p-3.5 rounded-2xl bg-[#F6F6F8] dark:bg-gray-800/60 border border-gray-200/60 dark:border-gray-800 flex items-center justify-between text-left cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
         >
-          {/* Left column: play badge, label, brand logo and CTA */}
+          {/* Left column: play badge, label and CTA */}
           <span className="flex flex-col justify-between self-stretch pr-2 min-w-0">
             <span>
               <span className="w-5 h-5 rounded-md bg-white dark:bg-gray-800 border border-black/10 dark:border-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 mb-1.5 shadow-2xs">
                 <PlayIcon className="w-2.5 h-2.5 fill-current ml-0.5" />
               </span>
-              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium block">
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider block">
                 Tutoriales
               </span>
-              <span className="mt-0.5 block ws-brand dark:[&_path[fill='#190088']]:fill-white">
-                <NectoLogo width={112} height={16} />
+              <span className="mt-0.5 text-xs sm:text-[13px] font-bold text-gray-900 dark:text-white block leading-tight">
+                Aprende en video
               </span>
             </span>
 
-            <span className="mt-3 flex items-center gap-1 text-[11px] font-semibold text-gray-800 dark:text-gray-200 group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors">
+            <span className="mt-2.5 flex items-center gap-1 text-[11px] font-semibold text-[#190088] dark:text-[#97D6DF] group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors">
               <span>Ir a Tutoriales</span>
               <ChevronRightIcon className="w-3 h-3 stroke-[2.5]" />
             </span>

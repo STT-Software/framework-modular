@@ -624,3 +624,52 @@
   }
 }
 
+/* --------------------------------------------------------------------------
+   7. Unified Header Action Row & Icon Buttons
+   -------------------------------------------------------------------------- */
+:is(.no-header-actions, .nt-header-actions, .oc-header-actions) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+}
+
+:is(.no-icon-button, .nt-icon-button, .oc-icon-button, .config-icon-button) {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.config-icon-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  width: 40px !important;
+  height: 40px !important;
+  border: 1px solid rgba(228, 231, 236, 0.9) !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  color: #667085 !important;
+  transition: all 0.15s ease !important;
+  cursor: pointer !important;
+}
+
+.config-icon-button:hover {
+  color: #190088 !important;
+  border-color: #d0d5dd !important;
+  background: #f9fafb !important;
+}
+
+.dark .config-icon-button {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: #141e30 !important;
+  color: #98a2b3 !important;
+}
+
+.dark .config-icon-button:hover {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  background: #1d2939 !important;
+}
+
+

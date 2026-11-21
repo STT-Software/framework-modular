@@ -224,7 +224,7 @@ const TurnosPage = observer(() => {
             </label>
           )}
           <ThemeIconButton className="nt-icon-button" />
-          <WorkspaceSupportDropdown triggerClassName="w-10 h-10" />
+          <WorkspaceSupportDropdown triggerClassName="config-icon-button" />
           <button
             type="button"
             className="nt-signout-btn"

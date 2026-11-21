@@ -144,7 +144,7 @@ const BusinessSetupPage = observer(() => {
             </select>
           </label>
           <ThemeIconButton className="no-icon-button" />
-          <WorkspaceSupportDropdown triggerClassName="w-10 h-10" />
+          <WorkspaceSupportDropdown triggerClassName="config-icon-button" />
           <button
             type="button"
             className="no-signout-btn"

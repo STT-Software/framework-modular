@@ -169,7 +169,7 @@ export const OrdersConfigPage = observer(() => {
             </select>
           </label>
           <ThemeIconButton className="oc-icon-button" />
-          <WorkspaceSupportDropdown triggerClassName="w-10 h-10" />
+          <WorkspaceSupportDropdown triggerClassName="config-icon-button" />
           <button
             type="button"
             className="oc-signout-btn"

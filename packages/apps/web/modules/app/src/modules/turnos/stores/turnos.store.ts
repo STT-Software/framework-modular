@@ -43,6 +43,8 @@ class TurnosStore {
   error: string | null = null;
   saving = false;
   announcement = "";
+  previewQueueId: string | null = null;
+  previewOperatorId: string | null = null;
 
   rulesForm: RulesForm | null = null;
   rulesError = "";
@@ -75,6 +77,8 @@ class TurnosStore {
   }
 
   reset(): void {
+    this.previewQueueId = null;
+    this.previewOperatorId = null;
     this.status = "idle";
     this.businessId = null;
     this.state = null;
@@ -140,7 +144,9 @@ class TurnosStore {
     const problem = queueProblem(form, { rules: state.rules, queues: state.queues, selfId: queueId, limits: state.catalog.limits });
     if (problem) return { ok: false, message: problem, fields: {}, code: null };
     const body = queueBody(form);
-    return this.write((token, id) => (queueId ? turnosApi.updateQueue(token, id, queueId, body) : turnosApi.createQueue(token, id, body)));
+    const result = await this.write((token, id) => (queueId ? turnosApi.updateQueue(token, id, queueId, body) : turnosApi.createQueue(token, id, body)));
+    if (result.ok) runInAction(() => { this.previewQueueId = queueId ?? result.created ?? null; });
+    return result;
   }
 
   deleteQueue(queueId: string, reassignments: Array<{ operatorId: string; queueId: string }>): Promise<WriteResult> {
@@ -155,7 +161,9 @@ class TurnosStore {
     const problem = operatorProblem(form, { queues: state.queues, operators: state.operators, selfId: operatorId, limits: state.catalog.limits });
     if (problem) return { ok: false, message: problem, fields: {}, code: null };
     const body = operatorBody(form);
-    return this.write((token, id) => (operatorId ? turnosApi.updateOperator(token, id, operatorId, body) : turnosApi.createOperator(token, id, body)));
+    const result = await this.write((token, id) => (operatorId ? turnosApi.updateOperator(token, id, operatorId, body) : turnosApi.createOperator(token, id, body)));
+    if (result.ok) runInAction(() => { this.previewOperatorId = operatorId ?? result.created ?? null; });
+    return result;
   }
 
   deleteOperator(operatorId: string): Promise<WriteResult> {

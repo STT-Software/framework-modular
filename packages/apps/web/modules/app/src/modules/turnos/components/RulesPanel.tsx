@@ -1,10 +1,8 @@
 import { observer } from "mobx-react-lite";
-import { NectoLogo } from "@/brand/NectoLogo";
+import { ArtStage, PassArt } from "@/components/configuration/GuideFigure";
 import { turnosStore } from "../stores/turnos.store";
 import type { PrefixMode } from "../types";
-import { rulesFromForm, ticketFor } from "../validation";
-import { Icon } from "./Icon";
-import { ICONS } from "./icons";
+import { effectiveFor, rulesFromForm, ticketFor } from "../validation";
 
 const PREFIX_LABELS: Record<PrefixMode, string> = {
   initial: "Inicial de la fila · C-001",
@@ -20,21 +18,17 @@ export const RulesPanel = observer(() => {
   if (!state || !form) return null;
   const limits = state.catalog.limits;
   const sample = state.queues[0] ?? { name: "Tu fila", overrides: { prefix: null, urgentMinutes: null, busyLimit: null, fullLimit: null } };
-  const code = ticketFor(sample, rulesFromForm(form));
+  const rules = rulesFromForm(form);
+  const code = ticketFor(sample, rules);
+  const effective = effectiveFor(sample, rules);
+  const validThresholds = Number.isInteger(effective.busyLimit) && effective.busyLimit > 0 && Number.isInteger(effective.fullLimit) && effective.fullLimit > effective.busyLimit;
 
   return (
     <section className="nt-panel-enter" aria-label="Reglas generales de Turnos">
       <div className="nt-rules-layout">
         <form className="nt-card nt-rules-card" noValidate onSubmit={(event) => event.preventDefault()}>
-          <div className="nt-card-title">
-            <span className="nt-mini-icon">
-              <Icon paths={ICONS.moduleSymbol} />
-            </span>
-            <div>
-              <h2>La regla general</h2>
-              <p>Se aplica a los valores que cada fila deja sin personalizar.</p>
-            </div>
-          </div>
+          <fieldset className="nt-rule-group">
+            <legend>Numeración de turnos</legend>
           <div className="nt-field">
             <label htmlFor="nt-prefix-mode">Prefijo del número de turno</label>
             <select id="nt-prefix-mode" value={form.prefixMode} onChange={(event) => store.setRulesField("prefixMode", event.target.value as PrefixMode)}>
@@ -61,6 +55,9 @@ export const RulesPanel = observer(() => {
             <input type="checkbox" checked={form.dailyReset} onChange={(event) => store.setRulesField("dailyReset", event.target.checked)} />
             <span className="nt-switch" aria-hidden="true" />
           </label>
+          </fieldset>
+          <fieldset className="nt-rule-group">
+            <legend>Espera y capacidad</legend>
           <div className="nt-field">
             <label htmlFor="nt-urgent">Tiempo para marcar un turno como urgente</label>
             <div className="nt-input-unit">
@@ -85,47 +82,36 @@ export const RulesPanel = observer(() => {
               </div>
             </div>
           </div>
+          </fieldset>
           <p className="nt-error" role="status" hidden={!store.rulesError}>
             {store.rulesError}
           </p>
         </form>
         <aside className="nt-rule-preview">
-          <div className="nt-ticket-scene" aria-hidden="true">
-            <div className="nt-ticket">
-              <span>
-                <NectoLogo variant="mark" width={64} height={64} />
-              </span>
-              <small>TU TURNO</small>
-              <strong>{code}</strong>
-              <span>{sample.name}</span>
-              <i />
-              <small>Una conexión a la vez.</small>
-            </div>
-            <span className="nt-ticket-orbit" />
-            <span className="nt-ticket-spark">✦</span>
-          </div>
+          <ArtStage label={`Ejemplo de turno ${code} para ${sample.name}`}>
+            <PassArt label="TU TURNO" value={code} detail={sample.name} chip={form.dailyReset ? "Reinicio diario" : "Serie continua"} icon="ticket" />
+          </ArtStage>
           <div className="nt-preview-copy">
-            <span className="nt-eyebrow">ASÍ SE VERÍA</span>
+            <span className="nt-eyebrow">VISTA PREVIA</span>
             <h2>
-              Un orden claro.
-              <br />
-              Una mejor atención.
+              Así se identifica el turno
             </h2>
-            <p>Los valores propios de cada fila se conservan. Cambiar la regla general actualiza solo los campos que la heredan.</p>
+            <p>El tiquete muestra la numeración de «{sample.name}». Los límites de esta fila combinan las reglas generales con sus ajustes propios.</p>
           </div>
           <div className="nt-load-legend">
-            <span>
+            <span key={`available-${effective.busyLimit}`} className="art-value-change">
               <i />
-              Disponible
+              Disponible{validThresholds && ` · Menos de ${effective.busyLimit} en espera`}
             </span>
-            <span>
+            <span key={`busy-${effective.busyLimit}`} className="art-value-change">
               <i />
-              Ocupada
+              Ocupada{validThresholds && ` · Desde ${effective.busyLimit} en espera`}
             </span>
-            <span>
+            <span key={`full-${effective.fullLimit}`} className="art-value-change">
               <i />
-              Llena
+              Llena{validThresholds && ` · Desde ${effective.fullLimit} en espera`}
             </span>
+            {Number.isFinite(effective.urgentMinutes) && <span key={`urgent-${effective.urgentMinutes}`} className="art-value-change">Urgente desde {effective.urgentMinutes} min</span>}
           </div>
         </aside>
       </div>

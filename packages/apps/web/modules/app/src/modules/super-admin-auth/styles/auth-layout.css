@@ -173,14 +173,7 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
  * fades and moves 10px, like the messages. All slides share the 460×350 box, so the panel never changes height.
  * Colors only through these variables: orange panel in light, indigo panel in dark.
  */
-.sa-brand-side,
-.sa-code-hero {
-  --sa-art-paper: #fff;
-  --sa-art-line: #dfe4ef;
-  --sa-art-blue: #190088;
-  --sa-art-cyan: #97d6df;
-  --sa-art-accent: #ff3f1a;
-}
+
 
 .sa-register-scene { position: relative; width: 100%; max-width: 460px; aspect-ratio: 460 / 350; margin: 0 auto 6px; }
 .sa-register-scene > div { position: absolute; inset: 0; }
@@ -189,28 +182,7 @@ html:not(.dark) .necto-logo--on-brand .necto-logo__orange { fill: #fff; }
 @media (min-width: 1600px) { .sa-register-scene { max-width: 510px; } }
 
 .sa-slide-art { display: block; width: 100%; height: 100%; font-family: "DM Sans", Arial, sans-serif; }
-.sa-art-orbit { fill: none; stroke: #ffffff4d; stroke-dasharray: 3 7; }
-.sa-art-orbit-solid { fill: none; stroke: #ffffff4d; opacity: 0.6; }
-.sa-art-link { fill: none; stroke: #fff; stroke-opacity: 0.5; stroke-width: 1.2; stroke-linecap: round; }
-.sa-art-spark { fill: #fff; opacity: 0.85; }
-.sa-art-shadow { fill: #8a1d0833; }
-.sa-art-card { fill: var(--sa-art-paper); stroke: var(--sa-art-line); stroke-width: 1.3; }
-.sa-art-soft { fill: color-mix(in srgb, var(--sa-art-line) 40%, var(--sa-art-paper)); }
-.sa-art-rule { fill: none; stroke: var(--sa-art-line); stroke-width: 1; }
-.sa-art-wire { fill: none; stroke: var(--sa-art-line); stroke-width: 1.3; stroke-linecap: round; }
-.sa-art-icon { fill: none; stroke: var(--sa-art-blue); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.sa-art-icon-accent { fill: none; stroke: var(--sa-art-accent); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.sa-art-text { fill: var(--sa-art-blue); font-weight: 500; }
-.sa-art-label { fill: var(--sa-art-blue); opacity: 0.5; font-weight: 500; letter-spacing: 0.12em; }
-.sa-art-ink { fill: var(--sa-art-blue); }
-.sa-art-orange { fill: var(--sa-art-accent); }
-.sa-art-orange-tint { fill: color-mix(in srgb, var(--sa-art-accent) 10%, var(--sa-art-paper)); }
-.sa-art-cyan { fill: var(--sa-art-cyan); }
-.sa-art-cyan-halo { fill: var(--sa-art-cyan); opacity: 0.25; }
-.sa-art-check { fill: none; stroke: #190088; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.sa-art-on-accent { fill: #fff; stroke: none; }
-.sa-art-dash-accent { stroke: var(--sa-art-accent); stroke-width: 1.3; stroke-dasharray: 4 4; }
-.dark .sa-art-shadow { fill: #0003; }
+
 
 /*
  * ── Register code step (RegisterCodeStep.tsx) ────────────────────────────────

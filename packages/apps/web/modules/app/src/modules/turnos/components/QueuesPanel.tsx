@@ -80,7 +80,7 @@ export const QueuesPanel = observer(() => {
             <i>+</i>
           </div>
           <h2>Tu primera fila, a tu manera</h2>
-          <p>Organiza tus servicios en colas de atención. Después podrás asignarlas a tus operadores.</p>
+          <p>Crea una fila para continuar a las reglas de turnos y asignar operadores.</p>
           <button ref={emptyButton} type="button" className="nt-primary" onClick={() => setEditing({ queue: null })}>
             Crear primera fila
           </button>

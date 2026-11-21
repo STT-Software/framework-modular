@@ -1,3 +1,4 @@
+import { Button } from "@/elements/ui/button";
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef, type FormEvent } from "react";
 import { initialsOf } from "../initials";
@@ -6,36 +7,35 @@ import { SETUP_STEPS, type SetupStep } from "../types";
 import { categoryLabel } from "@/modules/businesses";
 import { CategoryPanel } from "./CategoryPanel";
 import { DataPanel } from "./DataPanel";
-import { MiniMark } from "./MiniMark";
 import { ReviewPanel } from "./ReviewPanel";
 import { SchedulePanel } from "./SchedulePanel";
 
 const STEP_COPY: Record<SetupStep, { nav: string; hint: string; title: string; description: string; document: string }> = {
   data: {
     nav: "Datos del negocio",
-    hint: "Tu identidad en Necto",
-    title: "La identidad de tu negocio",
+    hint: "Identificación y contacto",
+    title: "Datos del negocio",
     description: "Tus datos ya están aquí. Revísalos y completa lo que haga falta.",
     document: "Datos del negocio",
   },
   schedule: {
     nav: "Horarios",
     hint: "Cuándo estás disponible",
-    title: "Cada conexión, a su tiempo",
+    title: "Horarios de atención",
     description: "Define el horario del negocio y las excepciones que necesite cada módulo.",
     document: "Horarios",
   },
   category: {
     nav: "Tipo de negocio",
-    hint: "Una base a tu medida",
-    title: "Un negocio con identidad propia",
+    hint: "Actividad principal",
+    title: "Tipo de negocio",
     description: "Confirma el tipo de negocio que registraste desde superadministración.",
     document: "Tipo de negocio",
   },
   review: {
     nav: "Revisión",
-    hint: "Conecta todos los detalles",
-    title: "Conecta todos los detalles",
+    hint: "Resumen de ajustes",
+    title: "Revisar configuración base",
     description: "Revisa la base de tu negocio antes de preparar sus módulos.",
     document: "Revisión de la base",
   },
@@ -108,15 +108,6 @@ export const Wizard = observer(({ step, onGo, onSubmit, onViewModule, categoryPa
             );
           })}
         </nav>
-        <div className="no-sidebar-bottom">
-          <MiniMark />
-          <p>
-            Unos pocos detalles.
-            <br />
-            Muchas posibilidades.
-          </p>
-          <span>Después: ajustes de cada módulo</span>
-        </div>
       </aside>
       <div className="no-stage">
         <div className="no-stage-heading">
@@ -139,13 +130,13 @@ export const Wizard = observer(({ step, onGo, onSubmit, onViewModule, categoryPa
           <footer className="no-form-footer">
             <span>Paso {index + 1} de 4</span>
             <div>
-              <button type="button" className="no-secondary" disabled={store.saving} onClick={() => onGo(index === 0 ? "modules" : SETUP_STEPS[index - 1])}>
+              <Button variant="outline" type="button" className="no-secondary" disabled={store.saving} onClick={() => onGo(index === 0 ? "modules" : SETUP_STEPS[index - 1])}>
                 {index === 0 ? "Volver a módulos" : "← Atrás"}
-              </button>
-              <button type="submit" className="no-primary" disabled={store.saving}>
+              </Button>
+              <Button type="submit" className="no-primary" disabled={store.saving}>
                 {store.saving ? "Guardando…" : index === 3 ? "Guardar configuración base " : "Siguiente "}
                 {!store.saving && <span aria-hidden="true">{index === 3 ? "✓" : "→"}</span>}
-              </button>
+              </Button>
             </div>
           </footer>
         </form>

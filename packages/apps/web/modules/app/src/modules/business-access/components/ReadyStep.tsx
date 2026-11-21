@@ -1,15 +1,15 @@
 import { observer } from "mobx-react-lite";
-import { useId } from "react";
-import { Link } from "react-router";
-import { categoryLabel, moduleInfo, type CategoryId } from "@/modules/businesses";
+import { useEffect, useId, useState } from "react";
+import { useNavigate } from "react-router";
 import { useFocusHeading } from "../hooks/useFocusHeading";
-import { businessInitials } from "../initials";
 import { adminAccessStore } from "../stores/adminAccess.store";
+import { SlideArt } from "./BrandScenes";
 
 /**
- * Step 5: the person is in. It shows the access the server authorized: for an administrator, the business and the modules it
- * has enabled; for an operator, the business and only the module they work in. The operation of each module is not part of
- * this screen yet.
+ * Step 5: automated loading/transition screen.
+ * Replaces the redundant static confirmation step with a cinematic 8-second animated transition:
+ * the white canvas displaces the orange side panel, the vector illustration glides to the center,
+ * and a flat, pure-orange progress bar fills below it without glow or shine effects.
  */
 export const ReadyStep = observer(() => {
   const store = adminAccessStore;
@@ -17,78 +17,119 @@ export const ReadyStep = observer(() => {
   const business = store.business;
   const headingRef = useFocusHeading();
   const baseId = useId();
+  const navigate = useNavigate();
+
+  const [progress, setProgress] = useState(0);
+  const [stageIndex, setStageIndex] = useState(0);
+
+  const isOperator = access?.role === "operator";
+  const name = isOperator
+    ? access?.businessName
+    : business?.name ?? access?.businessName ?? "tu negocio";
+  const target = isOperator
+    ? `/business/turnos/${access?.businessId}/operator`
+    : `/business/setup/${access?.businessId}`;
+
+  const stageMessages = [
+    "Verificando credenciales de acceso…",
+    `Cargando configuración de ${name}…`,
+    `Sincronizando módulos de ${isOperator ? "Operador" : "Administrador"}…`,
+    "¡Todo listo! Ingresando a tu espacio…",
+  ];
+
+  // Exactly 8 seconds (8000ms) with staggered natural pacing:
+  // avanza (0-32%), se detiene (32-35%), avanza con fuerza (35-72%), se detiene (72-75%), avanza al final (75-100%)
+  useEffect(() => {
+    if (!access) return;
+
+    const DURATION = 8000;
+    const startTime = Date.now();
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      let pct = 0;
+      let stage = 0;
+
+      if (elapsed < 1600) {
+        // Surge 1: arranque inicial decidido hasta ~32%
+        pct = (elapsed / 1600) * 32;
+        stage = 0;
+      } else if (elapsed < 3200) {
+        // Pausa 1: se detiene / verificación de credenciales (~32% a 35%)
+        pct = 32 + ((elapsed - 1600) / 1600) * 3;
+        stage = 0;
+      } else if (elapsed < 5200) {
+        // Surge 2: avance con fuerza cargando el entorno (~35% a 72%)
+        pct = 35 + ((elapsed - 3200) / 2000) * 37;
+        stage = 1;
+      } else if (elapsed < 6600) {
+        // Pausa 2: se detiene sincronizando módulos (~72% a 75%)
+        pct = 72 + ((elapsed - 5200) / 1400) * 3;
+        stage = 2;
+      } else if (elapsed < 8000) {
+        // Surge 3: avance fluido y continuo hasta 100%
+        pct = 75 + ((elapsed - 6600) / 1400) * 25;
+        stage = 3;
+      } else {
+        pct = 100;
+        stage = 3;
+      }
+
+      setProgress(Math.min(pct, 100));
+      setStageIndex(stage);
+
+      if (elapsed >= DURATION) {
+        clearInterval(interval);
+        navigate(target, { replace: true });
+      }
+    }, 40);
+
+    return () => clearInterval(interval);
+  }, [access, navigate, target]);
+
   if (!access) return null;
-  const isOperator = access.role === "operator";
-  if (!isOperator && !business) return null;
-  const name = isOperator ? access.businessName : business!.name;
-  const category = isOperator ? access.category : business!.category;
-  const categoryOther = isOperator ? access.categoryOther : business!.categoryOther;
-  const modules = isOperator ? access.modules : business!.modules;
 
   return (
-    <section className="na-view-enter" aria-labelledby={`${baseId}-title`}>
-      <div className="na-ready-icon" aria-hidden="true">
-        <svg viewBox="0 0 56 56">
-          <circle cx="28" cy="28" r="24" />
-          <path d="m17 28 8 8 15-17" />
-        </svg>
+    <section className="na-dispatch-view" aria-labelledby={`${baseId}-title`}>
+      {/* Centered vector from the brand panel, styled cleanly for the white canvas */}
+      <div className="na-dispatch-vector-wrap">
+        <div className="na-dispatch-vector" aria-hidden="true">
+          <SlideArt slide="negocios" />
+        </div>
       </div>
-      <span className="na-eyebrow">
-        <i />
-        UNA NUEVA JORNADA
-      </span>
-      <h1 id={`${baseId}-title`} ref={headingRef} tabIndex={-1}>
-        Ya estás
-        <br />
-        en tu negocio<span>.</span>
-      </h1>
-      <p className="na-description">Todo listo para seguir conectando, compartiendo y creciendo.</p>
-      <div className="na-ready-business">
-        <div>
-          <span className="na-business-avatar" aria-hidden="true">
-            {businessInitials(name)}
+
+      {/* Copy: "Ingresando a [Negocio]" */}
+      <div className="na-dispatch-copy">
+        <span className="na-eyebrow na-dispatch-eyebrow">
+          <i />
+          CONECTANDO CON TU ESPACIO
+        </span>
+        <h1 id={`${baseId}-title`} ref={headingRef} tabIndex={-1} className="na-dispatch-title">
+          Ingresando a <span>{name}</span>
+        </h1>
+        <p className="na-dispatch-stage">
+          {stageMessages[stageIndex]}
+        </p>
+      </div>
+
+      {/* Progress bar directly below the vector and copy: flat solid orange, no shine or glow */}
+      <div className="na-dispatch-bar-wrap">
+        <div
+          className="na-dispatch-bar"
+          role="progressbar"
+          aria-valuenow={Math.round(progress)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div className="na-dispatch-fill" style={{ width: `${progress}%` }} />
+        </div>
+        <div className="na-dispatch-meta">
+          <span className="na-dispatch-role">
+            {isOperator ? "Perfil: Operador" : "Perfil: Administrador"}
           </span>
-          <div>
-            <strong>{name}</strong>
-            <span>{categoryLabel(category as CategoryId, categoryOther)}</span>
-          </div>
-          <span className="na-role-badge">{isOperator ? "Operador" : "Administrador"}</span>
-        </div>
-        <p>{store.email}</p>
-        <div className="na-ready-modules">
-          {modules.length === 0 ? (
-            <span>Sin módulos habilitados todavía</span>
-          ) : (
-            modules.map((id) => <span key={id}>{moduleInfo(id)?.name ?? id}</span>)
-          )}
+          <span className="na-dispatch-pct">{Math.round(progress)}%</span>
         </div>
       </div>
-      <div className="na-ready-device">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="4" y="3" width="16" height="13" rx="2" />
-          <path d="M2 20h20m-13-4-1 4m7-4 1 4" />
-        </svg>
-        <span>{store.remember ? "Elegiste recordar este dispositivo personal durante 30 días." : "Acceso verificado para esta sesión."}</span>
-      </div>
-      <Link to={isOperator ? `/business/turnos/${access.businessId}/operator` : `/business/setup/${access.businessId}`} className="na-primary">
-        {isOperator ? "Ver mis filas" : "Preparar mi negocio"}
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5 12h14m-6-6 6 6-6 6" />
-        </svg>
-      </Link>
-      {store.accesses.length > 1 && (
-        <button type="button" className="na-secondary" onClick={() => store.backToBusinesses()}>
-          Cambiar de negocio o de rol
-        </button>
-      )}
-      <button
-        type="button"
-        className="na-help-link"
-        disabled={store.busy}
-        onClick={() => void store.leave("Sesión cerrada. Verifica tu correo para volver a entrar.")}
-      >
-        Cerrar sesión
-      </button>
     </section>
   );
 });

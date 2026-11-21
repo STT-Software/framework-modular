@@ -1,7 +1,6 @@
-import "@fontsource/dm-sans/400.css";
-import "@fontsource/dm-sans/500.css";
-import "@fontsource/dm-sans/600.css";
+import { Button } from "@/elements/ui/button";
 import "../styles/turnos.css";
+import "@/css/business-configuration.css";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -16,6 +15,7 @@ import { OperatorsPanel } from "../components/OperatorsPanel";
 import { ProfilePanel } from "../components/ProfilePanel";
 import { QueuesPanel } from "../components/QueuesPanel";
 import { ReviewPanel } from "../components/ReviewPanel";
+import { TurnosGuide } from "../components/TurnosGuide";
 import { RulesPanel } from "../components/RulesPanel";
 import { SavedDialog } from "../components/SavedDialog";
 import { operatorStore } from "../stores/operator.store";
@@ -29,16 +29,16 @@ const COPY: Record<TurnosStep, { nav: string; short: string; hint: string; title
   profile: {
     nav: "Perfil del negocio",
     short: "Perfil",
-    hint: "Una base para tus filas",
-    title: "Una atención a tu medida.",
+    hint: "Filas sugeridas",
+    title: "Perfil de atención",
     description: "El perfil de tu negocio nos ayuda a sugerir las primeras filas. Tú decides cuáles conservar.",
     document: "Perfil de Turnos",
   },
   queues: {
     nav: "Filas de atención",
     short: "Filas",
-    hint: "Tu servicio, organizado",
-    title: "Cada servicio, en su lugar.",
+    hint: "Servicios y prioridades",
+    title: "Filas de atención",
     description: "Revisa las filas sugeridas, personalízalas o crea otras para organizar tu atención.",
     document: "Filas de atención",
   },
@@ -46,23 +46,23 @@ const COPY: Record<TurnosStep, { nav: string; short: string; hint: string; title
     nav: "Reglas de turnos",
     short: "Reglas",
     hint: "Valores predeterminados",
-    title: "Las reglas que dan orden.",
+    title: "Reglas de turnos",
     description: "Define la numeración, la urgencia y cuándo una fila está ocupada o llena.",
     document: "Reglas de Turnos",
   },
   operators: {
     nav: "Operadores",
     short: "Equipo",
-    hint: "Las personas que conectan",
-    title: "Las personas que conectan.",
+    hint: "Asignaciones por fila",
+    title: "Operadores de turnos",
     description: "Asigna una o varias filas a cada operador. Su acceso pertenece solo a Turnos.",
     document: "Operadores de Turnos",
   },
   review: {
     nav: "Revisión",
     short: "Revisión",
-    hint: "Todo en su lugar",
-    title: "Todo listo para el siguiente paso.",
+    hint: "Resumen de ajustes",
+    title: "Revisar configuración de turnos",
     description: "Revisa tus filas, las reglas y el equipo antes de guardar la configuración de Turnos.",
     document: "Revisión de Turnos",
   },
@@ -221,6 +221,25 @@ const TurnosPage = observer(() => {
             </label>
           )}
           <ThemeIconButton className="nt-icon-button" />
+          <button
+            type="button"
+            className="nt-signout-btn"
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+            disabled={signingOut}
+            onClick={() => void signOut()}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="nt-signout-label">Cerrar sesión</span>
+          </button>
         </div>
       </header>
 
@@ -229,19 +248,25 @@ const TurnosPage = observer(() => {
       ) : (
         <main className="nt-layout">
           <aside className="nt-sidebar">
-            <Link className="nt-back" to={businessId ? `/business/setup/${businessId}` : "/business/access"} onClick={(event) => { event.preventDefault(); void goModules(); }}>
-              Mis módulos
+            <Link
+              className="nt-back"
+              to={businessId ? `/business/setup/${businessId}` : "/business/access"}
+              onClick={(event) => {
+                event.preventDefault();
+                void goModules();
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+              <span>Volver a módulos</span>
             </Link>
             <div className="nt-sidebar-title">
               <span className="nt-module-symbol">
                 <Icon paths={ICONS.queue} />
               </span>
               <div>
-                <strong>
-                  Un buen turno
-                  <br />
-                  empieza aquí.
-                </strong>
+                <strong>Turnos</strong>
                 <p>{state?.business.name ?? ""}</p>
               </div>
             </div>
@@ -256,23 +281,11 @@ const TurnosPage = observer(() => {
                       <span className="nt-nav-short" aria-hidden="true">
                         {COPY[id].short}
                       </span>
-                      <small>{COPY[id].hint}</small>
                     </div>
                   </button>
                 );
               })}
             </nav>
-            <div className="nt-sidebar-note">
-              <span aria-hidden="true">
-                <NectoLogo variant="mark" width={64} height={64} />
-              </span>
-              <p>
-                Menos espera.
-                <br />
-                Más conexiones.
-              </p>
-              <small>Configuración exclusiva de este negocio y de su módulo de Turnos.</small>
-            </div>
           </aside>
           <div className="nt-stage">
             {store.status === "blocked" ? (
@@ -307,7 +320,8 @@ const TurnosPage = observer(() => {
                   <p>{copy.description}</p>
                 </header>
                 {ready ? (
-                  <div>
+                  <div className={view === "rules" ? undefined : "config-step-workspace"}>
+                    {view !== "rules" && state && <TurnosGuide step={view} state={state} />}
                     {view === "profile" && <ProfilePanel />}
                     {view === "queues" && <QueuesPanel />}
                     {view === "rules" && <RulesPanel />}
@@ -321,17 +335,19 @@ const TurnosPage = observer(() => {
                     <footer className="nt-form-footer">
                       <span>{`Paso ${index + 1} de 5`}</span>
                       <div>
-                        <button type="button" className="nt-secondary" disabled={store.saving} onClick={() => (index === 0 ? void goModules() : void go(TURNOS_STEPS[index - 1]))}>
-                          {index === 0 ? "Volver a módulos" : "Atrás"}
-                        </button>
+                        {index > 0 && (
+                          <Button variant="outline" type="button" className="nt-secondary" disabled={store.saving} onClick={() => void go(TURNOS_STEPS[index - 1])}>
+                            Atrás
+                          </Button>
+                        )}
                         {view === "operators" && (state?.operators.length ?? 0) === 0 && (
                           <button type="button" className="nt-text-button" disabled={store.saving} onClick={() => void go("review")}>
                             Continuar sin agregar
                           </button>
                         )}
-                        <button type="button" className="nt-primary" disabled={store.saving} onClick={() => void next()}>
+                        <Button type="button" className="nt-primary" disabled={store.saving} onClick={() => void next()}>
                           {store.saving ? "Guardando…" : index === 4 ? "Guardar configuración" : "Siguiente"}
-                        </button>
+                        </Button>
                       </div>
                     </footer>
                   </div>
@@ -347,10 +363,7 @@ const TurnosPage = observer(() => {
       )}
 
       <footer className="nt-footer">
-        <span>© 2026 Necto · Conecta. Comparte. Crece.</span>
-        <button type="button" className="nt-text-button" disabled={signingOut} onClick={() => void signOut()}>
-          Cerrar sesión
-        </button>
+        <span>© 2026 Necto</span>
       </footer>
       <SavedDialog
         open={saved}

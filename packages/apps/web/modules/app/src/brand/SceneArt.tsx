@@ -18,6 +18,7 @@ export function ArtMark({ x, y, size }: { x: number; y: number; size: number }) 
 export function ArtCheckBadge({ cx, cy, r = 10 }: { cx: number; cy: number; r?: number }) {
   return (
     <g transform={`translate(${cx} ${cy}) scale(${r / 10})`}>
+      <circle className="sa-art-cyan-halo" r="10" />
       <circle className="sa-art-cyan" r="10" />
       <path className="sa-art-check" d="m-4.5 0 3 3 6-6.2" />
     </g>

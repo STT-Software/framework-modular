@@ -68,87 +68,163 @@
 }
 
 .config-art-stage .sa-art-label { opacity: .78; }
-.art-route { fill: none; stroke: #fff; stroke-width: 2; opacity: .9; }
-.art-route[data-active="false"] { stroke-dasharray: 2 5; opacity: .38; }
+.art-route { fill: none; stroke: #fff; stroke-width: 2; opacity: .9; transition: all 0.35s ease; }
+.art-route[data-active="false"] { stroke-dasharray: 2 6; opacity: .22; animation: none; }
+.art-route[data-active="true"] {
+  stroke-width: 2.4;
+  filter: drop-shadow(0 0 5px rgba(151, 214, 223, 0.7));
+}
 .art-dial-track { fill: none; stroke: var(--sa-art-line); stroke-width: 2; }
-.art-dial-hand { fill: var(--sa-art-accent); }
+.art-dial-hand { fill: var(--sa-art-accent); transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) !important; }
+
+/* Inactive option card presentation */
+.art-card-arrive[data-inactive="true"] {
+  opacity: 0.38;
+  filter: grayscale(0.7);
+  transition: opacity 320ms ease, filter 320ms ease;
+}
+.art-card-arrive[data-inactive="true"] .sa-art-card {
+  stroke-dasharray: 4 4;
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .art-route, .art-card-arrive { transition: opacity 240ms ease; }
-  .art-card-arrive { animation: art-arrive 400ms cubic-bezier(.18,.73,.24,1) backwards; }
-  .art-stamp { transform-box: fill-box; transform-origin: center; animation: art-stamp 360ms ease-out both; }
-  .art-ticket-feed { animation: art-feed 420ms cubic-bezier(.2,.72,.25,1) backwards; }
-  .art-value-change { animation: art-update 310ms ease-out backwards; }
-  .art-dial-hand { transition: transform 420ms cubic-bezier(.22,.75,.27,1); }
+  .art-route, .art-card-arrive { transition: opacity 280ms ease, transform 350ms ease; }
+  .art-card-arrive { animation: art-arrive 480ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }
+  .art-stamp { transform-box: fill-box; transform-origin: center; animation: art-stamp 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+  .art-ticket-feed { animation: art-feed 520ms cubic-bezier(0.2, 0.9, 0.3, 1) backwards; }
+  .art-value-change { animation: art-update 380ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }
 
   /* Flujo lógico de datos en enlaces y rutas */
   .sa-art-link {
     stroke-dasharray: 4 6;
-    animation: art-stream-flow 10s linear infinite;
+    animation: art-stream-flow 4.5s linear infinite;
   }
   .art-route[data-active="true"] {
     stroke-dasharray: 6 6;
-    animation: art-stream-flow 3.8s linear infinite;
+    animation: art-stream-flow 1.8s linear infinite;
   }
 
   /* Órbita celestial de fondo */
   .sa-art-orbit {
     transform-origin: 230px 174px;
-    animation: art-orbit-spin 65s linear infinite;
+    animation: art-orbit-spin 26s linear infinite;
   }
   .sa-art-orbit-solid {
-    animation: art-orbit-pulse 6s ease-in-out infinite alternate;
+    animation: art-orbit-pulse 4.5s ease-in-out infinite alternate;
   }
 
   /* Destellos y brillos */
   .sa-art-spark {
     transform-box: fill-box;
     transform-origin: center;
-    animation: art-sparkle 3.2s ease-in-out infinite alternate;
+    animation: art-sparkle 2.2s ease-in-out infinite alternate;
   }
   .sa-art-spark:nth-of-type(2) {
-    animation-delay: -1.6s;
+    animation-delay: -0.6s;
+  }
+  .sa-art-spark:nth-of-type(3) {
+    animation-delay: -1.2s;
+  }
+  .sa-art-spark:nth-of-type(4) {
+    animation-delay: -1.8s;
   }
 
   /* Halo de radar cian */
   .sa-art-cyan-halo {
     transform-box: fill-box;
     transform-origin: center;
-    animation: art-halo-pulse 2.8s ease-in-out infinite alternate;
+    animation: art-halo-pulse 2s ease-out infinite;
   }
 
   /* Fichas e iconos flotantes satélite */
   .art-glyph-tile {
     transform-box: fill-box;
     transform-origin: center;
-    animation: art-glyph-float 4.8s ease-in-out infinite alternate;
+    animation: art-glyph-float 3.4s ease-in-out infinite alternate;
   }
   .art-glyph-tile:nth-of-type(even) {
-    animation-duration: 5.4s;
-    animation-delay: -2.4s;
+    animation-duration: 3.8s;
+    animation-delay: -1.7s;
   }
 
   /* Levitación suave de la tarjeta/tiquete central */
   .art-floating-card {
     transform-box: fill-box;
     transform-origin: center;
-    animation: art-card-levitate 5.8s ease-in-out infinite alternate;
+    animation: art-card-levitate 3.6s ease-in-out infinite alternate;
   }
   .sa-art-shadow {
     transform-origin: 232px 302px;
-    animation: art-shadow-breathe 5.8s ease-in-out infinite alternate;
+    animation: art-shadow-breathe 3.6s ease-in-out infinite alternate;
   }
 
   /* Caja de preparación en envíos */
   .art-prep-box {
     transform-box: fill-box;
     transform-origin: center;
-    animation: art-prep-float 4s ease-in-out infinite alternate;
+    animation: art-prep-float 2.8s ease-in-out infinite alternate;
   }
 }
-@keyframes art-arrive { from { opacity: .25; transform: translateX(12px); } }
-@keyframes art-stamp { from { opacity: .1; transform: scale(1.35); } }
-@keyframes art-feed { from { opacity: .2; transform: translateY(-15px); } }
-@keyframes art-update { from { opacity: .25; transform: translateY(5px); } }
+
+@keyframes art-arrive {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes art-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(0.25) rotate(-22deg);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.3) rotate(4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes art-feed {
+  0% {
+    opacity: 0;
+    transform: translateY(-32px) scaleY(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(4px) scaleY(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes art-update {
+  0% {
+    opacity: 0.2;
+    transform: scale(0.85) translateY(6px);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.1) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
 
 @keyframes art-stream-flow {
   to {
@@ -168,43 +244,45 @@
 @keyframes art-orbit-pulse {
   from {
     opacity: 0.35;
+    transform: scale(0.98);
   }
   to {
-    opacity: 0.75;
+    opacity: 0.85;
+    transform: scale(1.02);
   }
 }
 
 @keyframes art-sparkle {
   0% {
-    transform: scale(0.8) rotate(0deg);
-    opacity: 0.5;
+    transform: scale(0.65) rotate(0deg);
+    opacity: 0.35;
   }
   50% {
     opacity: 1;
   }
   100% {
-    transform: scale(1.2) rotate(20deg);
-    opacity: 0.95;
+    transform: scale(1.35) rotate(28deg);
+    opacity: 1;
   }
 }
 
 @keyframes art-halo-pulse {
   0% {
-    transform: scale(0.85);
-    opacity: 0.15;
+    transform: scale(0.8);
+    opacity: 0.75;
   }
   100% {
-    transform: scale(1.3);
-    opacity: 0.45;
+    transform: scale(2.4);
+    opacity: 0;
   }
 }
 
 @keyframes art-glyph-float {
   0% {
-    transform: translateY(0);
+    transform: translateY(0) rotate(0deg);
   }
   100% {
-    transform: translateY(-6px);
+    transform: translateY(-8px) rotate(-1.5deg);
   }
 }
 
@@ -213,26 +291,26 @@
     transform: translateY(0) rotate(0deg);
   }
   100% {
-    transform: translateY(-5px) rotate(0.4deg);
+    transform: translateY(-7px) rotate(0.7deg);
   }
 }
 
 @keyframes art-shadow-breathe {
   0% {
     transform: scaleX(1);
-    opacity: 0.22;
+    opacity: 0.24;
   }
   100% {
-    transform: scaleX(0.92);
-    opacity: 0.14;
+    transform: scaleX(0.88);
+    opacity: 0.12;
   }
 }
 
 @keyframes art-prep-float {
   0% {
-    transform: translateY(0) scale(1);
+    transform: translateY(0) scale(1) rotate(0deg);
   }
   100% {
-    transform: translateY(-4px) scale(1.02);
+    transform: translateY(-6px) scale(1.03) rotate(1.4deg);
   }
 }

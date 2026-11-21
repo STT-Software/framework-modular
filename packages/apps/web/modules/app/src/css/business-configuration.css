@@ -477,27 +477,72 @@
 }
 
 /* --------------------------------------------------------------------------
-   5. Consistent Sticky Baseline Layout & Bottom-Right Footer Alignment
+   5. Consistent Sticky Baseline Layout & Workspace Floating Shell Architecture
    -------------------------------------------------------------------------- */
 :is(.no-root, .nt-root, .oc-root) {
   display: flex !important;
   flex-direction: column !important;
   min-height: 100svh !important;
+  background: #ECECEC !important; /* Canonical NECTO Gris Claro token */
+  color: #212121 !important;
+  box-sizing: border-box !important;
 }
 
+.dark :is(.no-root, .nt-root, .oc-root) {
+  background: #0c111d !important;
+  color: #f2f4f7 !important;
+}
+
+/* Floating rounded top navbar matching workspace BaseAppHeader */
+:is(.no-header, .nt-header, .oc-header) {
+  margin: 16px clamp(16px, 2.5vw, 40px) 0 !important;
+  padding: 14px clamp(18px, 2.5vw, 36px) !important;
+  border-radius: 16px !important; /* rounded-2xl */
+  border: 1px solid rgba(228, 231, 236, 0.9) !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05), 0 1px 2px rgba(16, 24, 40, 0.03) !important;
+  box-sizing: border-box !important;
+  width: auto !important;
+  max-width: none !important;
+  z-index: 30 !important;
+}
+
+.dark :is(.no-header, .nt-header, .oc-header) {
+  background: #141e30 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Floating rounded main panel matching workspace .necto-panel */
 :is(.no-main, .nt-layout, .oc-layout) {
   flex: 1 0 auto !important;
+  margin: 16px clamp(16px, 2.5vw, 40px) 0 !important;
+  padding: clamp(24px, 2.5vw, 44px) !important;
+  border-radius: 24px !important; /* rounded-3xl */
+  border: 1px solid rgba(228, 231, 236, 0.9) !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05), 0 1px 2px rgba(16, 24, 40, 0.03) !important;
+  box-sizing: border-box !important;
+  width: auto !important;
+  max-width: none !important;
 }
 
+.dark :is(.no-main, .nt-layout, .oc-layout) {
+  background: #141e30 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Bottom-right unified footer */
 :is(.no-footer, .nt-footer, .oc-footer, .na-auth-footer) {
   margin-top: auto !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important; /* Bottom-right corner */
-  padding: 16px clamp(20px, 3.5vw, 48px) !important;
+  padding: 16px clamp(20px, 3.5vw, 48px) 24px !important;
   width: 100% !important;
   box-sizing: border-box !important;
-  border-top: 1px solid #ECECEC !important;
+  border-top: none !important;
   font-size: 12px !important;
   color: #667085 !important;
   background: transparent !important;
@@ -509,6 +554,19 @@
 }
 
 .dark :is(.no-footer, .nt-footer, .oc-footer, .na-auth-footer) {
-  border-top-color: #1d2939 !important;
   color: #98a2b3 !important;
+}
+
+@media (max-width: 768px) {
+  :is(.no-header, .nt-header, .oc-header) {
+    margin: 12px 12px 0 !important;
+    padding: 12px 16px !important;
+    border-radius: 14px !important;
+  }
+
+  :is(.no-main, .nt-layout, .oc-layout) {
+    margin: 12px 12px 0 !important;
+    padding: 20px 16px !important;
+    border-radius: 18px !important;
+  }
 }

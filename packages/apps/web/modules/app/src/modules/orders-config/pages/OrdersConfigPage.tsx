@@ -9,6 +9,7 @@ import { adminAccessStore } from "@/modules/business-access";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
 import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
+import { WorkspaceSupportDropdown, WorkspaceSupportWidget } from "@/modules/workspace";
 import { OrdersGuide } from "../components/OrdersGuide";
 import { PROFILE_DEFAULTS } from "../constants";
 import { ordersConfigStore } from "../ordersConfig.store";
@@ -168,6 +169,7 @@ export const OrdersConfigPage = observer(() => {
             </select>
           </label>
           <ThemeIconButton className="oc-icon-button" />
+          <WorkspaceSupportDropdown triggerClassName="w-10 h-10" />
           <button
             type="button"
             className="oc-signout-btn"
@@ -564,6 +566,7 @@ export const OrdersConfigPage = observer(() => {
       <footer className="oc-footer">
         <span>© 2026 Necto</span>
       </footer>
+      <WorkspaceSupportWidget />
     </section>
   );
 });

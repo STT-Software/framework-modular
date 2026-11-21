@@ -9,6 +9,7 @@ import { adminAccessStore } from "@/modules/business-access";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
 import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
+import { WorkspaceSupportDropdown, WorkspaceSupportWidget } from "@/modules/workspace";
 import { Icon } from "../components/Icon";
 import { ICONS } from "../components/icons";
 import { OperatorAccess } from "../components/OperatorAccess";
@@ -223,6 +224,7 @@ const TurnosPage = observer(() => {
             </label>
           )}
           <ThemeIconButton className="nt-icon-button" />
+          <WorkspaceSupportDropdown triggerClassName="w-10 h-10" />
           <button
             type="button"
             className="nt-signout-btn"
@@ -383,6 +385,7 @@ const TurnosPage = observer(() => {
       <p className="nt-sr-only" role="status" aria-live="polite">
         {store.announcement}
       </p>
+      <WorkspaceSupportWidget />
     </section>
   );
 });

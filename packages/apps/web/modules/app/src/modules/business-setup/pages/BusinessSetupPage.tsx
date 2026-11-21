@@ -9,6 +9,7 @@ import type { ModuleId } from "@/modules/businesses";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
 import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
+import { WorkspaceSupportDropdown, WorkspaceSupportWidget } from "@/modules/workspace";
 import { ModulesView } from "../components/ModulesView";
 import { SavedDialog } from "../components/SavedDialog";
 import { STEP_TITLES, Wizard } from "../components/Wizard";
@@ -143,6 +144,7 @@ const BusinessSetupPage = observer(() => {
             </select>
           </label>
           <ThemeIconButton className="no-icon-button" />
+          <WorkspaceSupportDropdown triggerClassName="w-10 h-10" />
           <button
             type="button"
             className="no-signout-btn"
@@ -240,6 +242,7 @@ const BusinessSetupPage = observer(() => {
       <p className="no-sr-only" role="status" aria-live="polite">
         {store.announcement}
       </p>
+      <WorkspaceSupportWidget />
     </section>
   );
 });

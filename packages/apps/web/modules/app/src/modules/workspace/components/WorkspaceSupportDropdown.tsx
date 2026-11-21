@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { NectoLogo } from "@/brand/NectoLogo";
 import { ShellDropdown } from "@/shell";
+import { cn } from "@/utils";
+import "../styles/workspace.css";
 import { TutorialArt } from "./workspaceArt";
 import { openSupportWidget } from "./WorkspaceSupportWidget";
 
@@ -100,12 +102,20 @@ function ArrowTopRightOnSquareIcon({
   );
 }
 
+interface WorkspaceSupportDropdownProps {
+  className?: string;
+  triggerClassName?: string;
+}
+
 /**
  * Help and support dropdown for the workspace topbar: minimal rows (line icon + label), the tutorials card with the
  * Necto video illustration (`TutorialArt`, colored through the `ws-art-scope` variables) and direct
  * contact (WhatsApp support, live chat).
  */
-export function WorkspaceSupportDropdown() {
+export function WorkspaceSupportDropdown({
+  className,
+  triggerClassName,
+}: WorkspaceSupportDropdownProps = {}) {
   const { pathname } = useLocation();
   const menuId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -149,12 +159,15 @@ export function WorkspaceSupportDropdown() {
   };
 
   return (
-    <div className="relative inline-block text-left">
+    <div className={cn("relative inline-block text-left", className)}>
       <button
         ref={triggerRef}
         type="button"
         onClick={handleToggle}
-        className="relative flex items-center justify-center text-gray-600 transition-colors bg-white border border-gray-200/90 rounded-full hover:text-gray-900 h-11 w-11 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white cursor-pointer shadow-theme-xs shrink-0"
+        className={cn(
+          "relative flex items-center justify-center text-gray-600 transition-colors bg-white border border-gray-200/90 rounded-full hover:text-gray-900 h-10 w-10 sm:h-11 sm:w-11 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white cursor-pointer shadow-theme-xs shrink-0",
+          triggerClassName
+        )}
         title="Centro de ayuda y soporte"
         aria-label="Ayuda y soporte"
         aria-expanded={isOpen}

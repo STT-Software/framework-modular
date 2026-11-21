@@ -1,0 +1,615 @@
+/* Módulo pedidos: portado de la arquitectura de Turnos (prefijo `oc-`), respetando el grid y diseño de Necto. */
+.oc-root {
+  --oc-bg: #ffffff;
+  --oc-card: #fff;
+  --oc-text: #182230;
+  --oc-muted: #667085;
+  --oc-border: #e4e7ec;
+  --oc-soft: #f2f4f7;
+  --oc-orange: #f04420;
+  --oc-orange-soft: #fff0eb;
+  --oc-purple: #4438a2;
+  --oc-purple-soft: #f0edff;
+  --oc-green: #067647;
+  --oc-green-soft: #ecfdf3;
+  --oc-cyan: #026aa2;
+  --oc-cyan-soft: #f0f9ff;
+  min-height: 100vh;
+  background: var(--oc-bg);
+  color: var(--oc-text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.dark .oc-root {
+  --oc-bg: #0c111d;
+  --oc-card: #131a2b;
+  --oc-text: #f3f4f8;
+  --oc-muted: #a4aec2;
+  --oc-border: #293246;
+  --oc-soft: #1b2436;
+  --oc-orange: #ff6b48;
+  --oc-orange-soft: #302126;
+  --oc-purple: #c1b4ff;
+  --oc-purple-soft: #292542;
+  --oc-green: #75e0a7;
+  --oc-green-soft: #15362f;
+  --oc-cyan: #7cd4fd;
+  --oc-cyan-soft: #183044;
+}
+
+.oc-root [hidden] {
+  display: none !important;
+}
+
+.oc-root * {
+  box-sizing: border-box;
+}
+
+.oc-root h1,
+.oc-root h2,
+.oc-root h3,
+.oc-root p {
+  margin: 0;
+}
+
+.oc-root button,
+.oc-root input,
+.oc-root select {
+  font: inherit;
+}
+
+.oc-root button,
+.oc-root a,
+.oc-root input,
+.oc-root select {
+  outline-offset: 4px;
+}
+
+.oc-root :focus-visible {
+  outline: 3px solid var(--oc-purple);
+}
+
+.oc-root button {
+  cursor: pointer;
+}
+
+.oc-root button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.oc-root svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oc-root a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.oc-root .oc-logo svg,
+.oc-sidebar-note>span svg {
+  fill: revert;
+  stroke: none;
+}
+
+.oc-root .oc-logo svg {
+  width: 180px;
+  height: auto;
+}
+
+.oc-root .oc-logo svg path {
+  stroke: none;
+}
+
+.oc-header {
+  padding: 24px max(32px, calc((100vw - 1440px) / 2));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: var(--oc-card);
+  border-bottom: 1px solid var(--oc-border);
+}
+
+.oc-header-context {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.oc-module-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--oc-muted);
+  padding-right: 24px;
+  border-right: 1px solid var(--oc-border);
+}
+
+.oc-module-label svg {
+  width: 20px;
+  color: var(--oc-cyan);
+}
+
+.oc-header-context label>span {
+  font-size: 11px;
+  letter-spacing: .1em;
+  color: var(--oc-muted);
+  display: block;
+  margin-bottom: 3px;
+}
+
+.oc-header-context select {
+  max-width: 220px;
+  min-height: 30px;
+  background-color: transparent;
+  border: 0;
+  color: var(--oc-text);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0 26px 0 0;
+}
+
+.oc-signout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--oc-border);
+  border-radius: 9px;
+  background: var(--oc-card);
+  color: var(--oc-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.oc-signout-btn:hover {
+  color: #d92d20;
+  border-color: #fda29b;
+  background: #fef3f2;
+}
+
+.dark .oc-signout-btn:hover {
+  color: #f97066;
+  border-color: #55160c;
+  background: #3b1008;
+}
+
+.oc-signout-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.oc-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--oc-border);
+  border-radius: 50%;
+  background: var(--oc-card);
+  color: var(--oc-muted);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.oc-icon-button svg {
+  width: 21px;
+  height: 21px;
+}
+
+.oc-layout {
+  display: grid;
+  grid-template-columns: 235px minmax(0, 1fr);
+  gap: 56px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 48px 32px 64px;
+}
+
+.oc-sidebar {
+  min-width: 0;
+}
+
+.oc-back {
+  display: inline-block;
+  color: var(--oc-muted) !important;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+
+.oc-back:hover {
+  color: var(--oc-orange) !important;
+}
+
+.oc-sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 30px;
+}
+
+.oc-module-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--oc-cyan-soft);
+  color: var(--oc-cyan);
+  border-radius: 14px;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.oc-module-symbol svg {
+  width: 26px;
+  height: 26px;
+}
+
+.oc-sidebar-title strong {
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.oc-sidebar-title p {
+  font-size: 13px;
+  margin-top: 6px;
+  color: var(--oc-muted);
+}
+
+.oc-step-nav {
+  display: grid;
+  gap: 7px;
+}
+
+.oc-step-nav button {
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 12px;
+  color: var(--oc-muted);
+}
+
+.oc-step-nav button>span {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--oc-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.oc-step-nav button strong {
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+  color: var(--oc-text);
+}
+
+.oc-step-nav button small {
+  font-size: 12px;
+  display: block;
+  margin-top: 3px;
+}
+
+.oc-step-nav button[aria-current=step] {
+  background: var(--oc-cyan-soft);
+}
+
+.oc-step-nav button[aria-current=step]>span {
+  background: var(--oc-cyan);
+  color: #fff;
+  border-color: transparent;
+}
+
+.oc-step-nav button.is-complete>span {
+  background: var(--oc-purple-soft);
+  color: var(--oc-purple);
+  border-color: transparent;
+}
+
+.oc-sidebar-note {
+  margin-top: 36px;
+  padding: 30px 12px 0;
+  border-top: 1px solid var(--oc-border);
+}
+
+.oc-sidebar-note>span svg {
+  width: 38px;
+  height: 38px;
+}
+
+.oc-sidebar-note p {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 12px 0;
+}
+
+.oc-sidebar-note small {
+  font-size: 12px;
+  display: block;
+  max-width: 190px;
+  color: var(--oc-muted);
+}
+
+.oc-stage {
+  min-width: 0;
+}
+
+.oc-stage-heading {
+  margin-bottom: 28px;
+  max-width: 760px;
+}
+
+.oc-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .13em;
+  color: var(--oc-muted);
+  display: block;
+}
+
+.oc-stage-heading h1 {
+  font-size: clamp(28px, 3vw, 38px);
+  line-height: 1.2;
+  letter-spacing: -1.1px;
+  font-weight: 600;
+  margin: 12px 0;
+}
+
+.oc-stage-heading h1 span {
+  color: var(--oc-orange);
+}
+
+.oc-stage-heading>p {
+  color: var(--oc-muted);
+  font-size: 16px;
+  max-width: 720px;
+}
+
+.oc-card {
+  background: var(--oc-card);
+  border: 1px solid var(--oc-border);
+  border-radius: 18px;
+  padding: 28px;
+}
+
+.oc-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.oc-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.oc-select-card {
+  position: relative;
+  display: block;
+  cursor: pointer;
+  border: 1px solid var(--oc-border);
+  background: var(--oc-card);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: left;
+  transition: border-color .2s, background .2s, transform .2s;
+  min-width: 0;
+}
+
+.oc-select-card:hover {
+  border-color: var(--oc-cyan);
+}
+
+.oc-select-card.is-selected {
+  border-color: var(--oc-cyan);
+  box-shadow: 0 0 0 1px var(--oc-cyan);
+  background: var(--oc-cyan-soft);
+}
+
+.oc-select-card strong {
+  font-size: 17px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.oc-select-card p {
+  font-size: 14px;
+  color: var(--oc-muted);
+  line-height: 1.5;
+}
+
+.oc-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin-bottom: 20px;
+}
+
+.oc-field label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.oc-field input,
+.oc-field select {
+  min-width: 0;
+  width: 100%;
+  height: 46px;
+  padding: 10px 13px;
+  background: var(--oc-card);
+  color: var(--oc-text);
+  border: 1px solid var(--oc-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px #10182805;
+  font-size: 15px;
+}
+
+.oc-primary,
+.oc-secondary,
+.oc-danger {
+  min-height: 44px;
+  border-radius: 9px;
+  padding: 10px 18px;
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  transition: background .2s, transform .2s;
+}
+
+.oc-primary {
+  background: #f04420;
+  color: #fff;
+}
+
+.oc-primary:hover {
+  background: #d93615;
+}
+
+.oc-secondary {
+  background: var(--oc-card);
+  border-color: var(--oc-border);
+  color: var(--oc-text);
+}
+
+.oc-secondary:hover {
+  background: var(--oc-soft);
+}
+
+.oc-text-button {
+  padding: 8px 0;
+  background: transparent;
+  border: 0;
+  color: var(--oc-purple);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.oc-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid var(--oc-border);
+  margin-top: 32px;
+  padding-top: 24px;
+}
+
+.oc-form-footer>span {
+  font-size: 12px;
+  color: var(--oc-muted);
+}
+
+.oc-form-footer>div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.oc-footer {
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  max-width: 1440px;
+  padding: 20px 32px;
+  margin: 0 auto;
+  color: var(--oc-muted);
+  font-size: 11px;
+}
+
+@media (max-width: 1100px) {
+  .oc-layout {
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 32px;
+    padding: 36px 24px;
+  }
+}
+
+@media (max-width: 800px) {
+  .oc-header {
+    padding: 20px 24px;
+  }
+
+  .oc-layout {
+    display: block;
+    padding: 28px 24px 48px;
+  }
+
+  .oc-sidebar-title,
+  .oc-sidebar-note {
+    display: none;
+  }
+
+  .oc-back {
+    margin-bottom: 20px;
+  }
+
+  .oc-step-nav {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 28px;
+    border: 1px solid var(--oc-border);
+    background: var(--oc-card);
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .oc-step-nav button {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+    padding: 10px 3px;
+    border-radius: 8px;
+  }
+
+  .oc-step-nav button strong {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .oc-step-nav button small {
+    display: none;
+  }
+
+  .oc-step-nav button>span {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+  }
+
+  .oc-module-label {
+    display: none;
+  }
+}

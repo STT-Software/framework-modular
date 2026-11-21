@@ -1,4 +1,5 @@
 import "../styles/business-setup.css";
+import "@/css/business-configuration.css";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -124,7 +125,7 @@ const BusinessSetupPage = observer(() => {
         </Link>
         <div className="no-header-actions">
           <label className="no-context">
-            <span>ESTÁS CONFIGURANDO</span>
+            <span>NEGOCIO</span>
             <select
               aria-label="Negocio actual"
               value={businessId ?? ""}
@@ -140,6 +141,27 @@ const BusinessSetupPage = observer(() => {
             </select>
           </label>
           <ThemeIconButton className="no-icon-button" />
+          <button
+            type="button"
+            className="no-signout-btn"
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+            disabled={store.saving}
+            onClick={() => {
+              void adminAccessStore.leave("Sesión cerrada. Verifica tu correo para volver a entrar.").then(() => navigate("/business/access", { replace: true }));
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="no-signout-label">Cerrar sesión</span>
+          </button>
         </div>
       </header>
       <main className="no-main">
@@ -175,9 +197,13 @@ const BusinessSetupPage = observer(() => {
           <ModulesView
             onStart={() => void go(startStep)}
             onConfigure={(moduleId) => {
-              // Turnos se configura en su propio módulo; los demás empiezan por la base, en el horario de ese módulo.
+              // Turnos y Pedidos se configuran en sus propios asistentes; los demás empiezan por la base.
               if (moduleId === "turnos" && businessId) {
                 navigate(`/business/turnos/${businessId}/profile`);
+                return;
+              }
+              if (moduleId === "pedidos" && businessId) {
+                navigate(`/business/pedidos/${businessId}/profile`);
                 return;
               }
               store.setHoursScope(moduleId as ModuleId);
@@ -199,17 +225,7 @@ const BusinessSetupPage = observer(() => {
         )}
       </main>
       <footer className="no-footer">
-        <span>© 2026 Necto · Conecta. Comparte. Crece.</span>
-        <button
-          type="button"
-          className="no-text-button"
-          disabled={store.saving}
-          onClick={() => {
-            void adminAccessStore.leave("Sesión cerrada. Verifica tu correo para volver a entrar.").then(() => navigate("/business/access", { replace: true }));
-          }}
-        >
-          Cerrar sesión
-        </button>
+        <span>© 2026 Necto</span>
       </footer>
       <SavedDialog
         hasTurnos={state?.turnos != null}

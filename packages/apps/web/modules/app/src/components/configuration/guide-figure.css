@@ -1,0 +1,229 @@
+.config-guide {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(225px, 1fr);
+  border: 1px solid var(--nt-border, var(--oc-border));
+  border-radius: 14px;
+  overflow: hidden;
+  margin: 0 0 24px;
+  background: var(--nt-card, var(--oc-card));
+}
+.config-art-stage {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background-color: var(--nt-card, #ffffff);
+  background-image: radial-gradient(circle, #e4e7ec 1.2px, transparent 1.5px);
+  background-size: 20px 20px;
+  border-bottom: 1px solid var(--nt-border, #e4e7ec);
+}
+.dark .config-art-stage {
+  background-color: #131a2b;
+  background-image: radial-gradient(circle, #293246 1.2px, transparent 1.5px);
+  border-bottom-color: var(--nt-border, #293246);
+}
+.config-art-stage::before, .config-art-stage::after {
+  display: none;
+}
+:is(.nt-root, .oc-root) .config-art-stage > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 430 / 295;
+  fill: none;
+  stroke: none;
+}
+.config-guide figcaption { align-self: center; padding: clamp(20px, 3vw, 36px); }
+:is(.nt-root, .oc-root) .config-guide h2 {
+  font-size: clamp(18px, 1.65vw, 23px);
+  line-height: 1.23;
+  letter-spacing: -.025em;
+  font-weight: 650;
+  margin: 0 0 9px;
+}
+:is(.nt-root, .oc-root) .config-guide p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--nt-muted, var(--oc-muted));
+  overflow-wrap: anywhere;
+}
+.nt-rule-preview:has(> .config-art-stage) { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; }
+.nt-rule-preview > .config-art-stage { width: 100%; }
+.nt-rule-preview > .config-art-stage ~ .nt-preview-copy { padding: 20px 22px 0; }
+.nt-rule-preview > .config-art-stage ~ .nt-load-legend { margin: 18px 22px 22px; }
+@media (max-width: 620px) {
+  .config-guide { grid-template-columns: 1fr; }
+  .config-guide figcaption { padding: 17px 20px 19px; }
+  .config-guide .config-art-stage > svg { width: 100%; }
+}
+
+.config-art-stage .sa-art-label { opacity: .78; }
+.art-route { fill: none; stroke: #fff; stroke-width: 2; opacity: .9; }
+.art-route[data-active="false"] { stroke-dasharray: 2 5; opacity: .38; }
+.art-dial-track { fill: none; stroke: var(--sa-art-line); stroke-width: 2; }
+.art-dial-hand { fill: var(--sa-art-accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .art-route, .art-card-arrive { transition: opacity 240ms ease; }
+  .art-card-arrive { animation: art-arrive 400ms cubic-bezier(.18,.73,.24,1) backwards; }
+  .art-stamp { transform-box: fill-box; transform-origin: center; animation: art-stamp 360ms ease-out both; }
+  .art-ticket-feed { animation: art-feed 420ms cubic-bezier(.2,.72,.25,1) backwards; }
+  .art-value-change { animation: art-update 310ms ease-out backwards; }
+  .art-dial-hand { transition: transform 420ms cubic-bezier(.22,.75,.27,1); }
+
+  /* Flujo lógico de datos en enlaces y rutas */
+  .sa-art-link {
+    stroke-dasharray: 4 6;
+    animation: art-stream-flow 10s linear infinite;
+  }
+  .art-route[data-active="true"] {
+    stroke-dasharray: 6 6;
+    animation: art-stream-flow 3.8s linear infinite;
+  }
+
+  /* Órbita celestial de fondo */
+  .sa-art-orbit {
+    transform-origin: 230px 174px;
+    animation: art-orbit-spin 65s linear infinite;
+  }
+  .sa-art-orbit-solid {
+    animation: art-orbit-pulse 6s ease-in-out infinite alternate;
+  }
+
+  /* Destellos y brillos */
+  .sa-art-spark {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: art-sparkle 3.2s ease-in-out infinite alternate;
+  }
+  .sa-art-spark:nth-of-type(2) {
+    animation-delay: -1.6s;
+  }
+
+  /* Halo de radar cian */
+  .sa-art-cyan-halo {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: art-halo-pulse 2.8s ease-in-out infinite alternate;
+  }
+
+  /* Fichas e iconos flotantes satélite */
+  .art-glyph-tile {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: art-glyph-float 4.8s ease-in-out infinite alternate;
+  }
+  .art-glyph-tile:nth-of-type(even) {
+    animation-duration: 5.4s;
+    animation-delay: -2.4s;
+  }
+
+  /* Levitación suave de la tarjeta/tiquete central */
+  .art-floating-card {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: art-card-levitate 5.8s ease-in-out infinite alternate;
+  }
+  .sa-art-shadow {
+    transform-origin: 232px 302px;
+    animation: art-shadow-breathe 5.8s ease-in-out infinite alternate;
+  }
+
+  /* Caja de preparación en envíos */
+  .art-prep-box {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: art-prep-float 4s ease-in-out infinite alternate;
+  }
+}
+@keyframes art-arrive { from { opacity: .25; transform: translateX(12px); } }
+@keyframes art-stamp { from { opacity: .1; transform: scale(1.35); } }
+@keyframes art-feed { from { opacity: .2; transform: translateY(-15px); } }
+@keyframes art-update { from { opacity: .25; transform: translateY(5px); } }
+
+@keyframes art-stream-flow {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+@keyframes art-orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes art-orbit-pulse {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 0.75;
+  }
+}
+
+@keyframes art-sparkle {
+  0% {
+    transform: scale(0.8) rotate(0deg);
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.2) rotate(20deg);
+    opacity: 0.95;
+  }
+}
+
+@keyframes art-halo-pulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.15;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0.45;
+  }
+}
+
+@keyframes art-glyph-float {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes art-card-levitate {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-5px) rotate(0.4deg);
+  }
+}
+
+@keyframes art-shadow-breathe {
+  0% {
+    transform: scaleX(1);
+    opacity: 0.22;
+  }
+  100% {
+    transform: scaleX(0.92);
+    opacity: 0.14;
+  }
+}
+
+@keyframes art-prep-float {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    transform: translateY(-4px) scale(1.02);
+  }
+}

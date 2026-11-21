@@ -1,4 +1,5 @@
 import "../styles/business-access.css";
+import "@/css/business-configuration.css";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
@@ -31,6 +32,7 @@ const TITLES: Record<Exclude<AccessView, "loading">, string> = {
 const BusinessAccessPage = observer(() => {
   const store = adminAccessStore;
   const [help, setHelp] = useState<HelpKind | null>(null);
+
   useEffect(() => {
     void store.start();
   }, [store]);
@@ -44,7 +46,23 @@ const BusinessAccessPage = observer(() => {
           <Link to="/business/access" className="na-logo" aria-label="Necto, acceso a mi negocio">
             <NectoLogo width={161} height={23} />
           </Link>
-          <ThemeIconButton className="na-theme" />
+          <div className="na-header-actions">
+            {(view === "negocios" || view === "regreso") && (
+              <button
+                type="button"
+                className="na-signout-btn"
+                disabled={store.busy}
+                onClick={() => void store.leave("Sesión cerrada. Verifica tu correo para volver a entrar.")}
+                aria-label="Cerrar sesión"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                </svg>
+                <span className="na-signout-label">Cerrar sesión</span>
+              </button>
+            )}
+            <ThemeIconButton className="na-theme" />
+          </div>
         </header>
         <main className="na-main">
           {view === "loading" && (

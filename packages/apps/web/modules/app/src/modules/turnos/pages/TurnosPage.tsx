@@ -8,6 +8,7 @@ import { NectoLogo } from "@/brand/NectoLogo";
 import { adminAccessStore } from "@/modules/business-access";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
+import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
 import { Icon } from "../components/Icon";
 import { ICONS } from "../components/icons";
 import { OperatorAccess } from "../components/OperatorAccess";
@@ -203,6 +204,7 @@ const TurnosPage = observer(() => {
           <NectoLogo width={161} height={23} />
         </Link>
         <div className="nt-header-context">
+          <RoleShieldBadge role={isOperator ? "Operador" : "Administrador"} />
           <span className="nt-module-label">
             <Icon paths={ICONS.queue} />
             Turnos

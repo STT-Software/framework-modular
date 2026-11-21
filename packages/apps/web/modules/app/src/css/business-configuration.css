@@ -570,3 +570,57 @@
     border-radius: 18px !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   6. Role Shield Indicator Badge (matching WorkspaceTopbar)
+   -------------------------------------------------------------------------- */
+.config-role-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(228, 231, 236, 0.9) !important;
+  background: rgba(249, 250, 251, 0.85) !important;
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #344054 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+
+.config-role-shield-icon {
+  width: 14px !important;
+  height: 14px !important;
+  color: #190088 !important;
+  flex-shrink: 0 !important;
+}
+
+.dark .config-role-badge {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #d0d5dd !important;
+}
+
+.dark .config-role-shield-icon {
+  color: #b7adff !important;
+}
+
+@media (max-width: 640px) {
+  .config-role-badge {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    gap: 4px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .config-role-badge span {
+    display: none !important;
+  }
+  .config-role-badge {
+    padding: 6px !important;
+  }
+}
+

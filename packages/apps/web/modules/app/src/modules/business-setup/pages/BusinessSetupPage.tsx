@@ -8,6 +8,7 @@ import { adminAccessStore } from "@/modules/business-access";
 import type { ModuleId } from "@/modules/businesses";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
+import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
 import { ModulesView } from "../components/ModulesView";
 import { SavedDialog } from "../components/SavedDialog";
 import { STEP_TITLES, Wizard } from "../components/Wizard";
@@ -124,6 +125,7 @@ const BusinessSetupPage = observer(() => {
           <NectoLogo width={161} height={23} />
         </Link>
         <div className="no-header-actions">
+          <RoleShieldBadge role="Administrador" />
           <label className="no-context">
             <span>NEGOCIO</span>
             <select

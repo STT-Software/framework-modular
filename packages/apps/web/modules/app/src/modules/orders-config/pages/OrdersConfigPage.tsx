@@ -8,6 +8,7 @@ import { NectoLogo } from "@/brand/NectoLogo";
 import { adminAccessStore } from "@/modules/business-access";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
+import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
 import { OrdersGuide } from "../components/OrdersGuide";
 import { PROFILE_DEFAULTS } from "../constants";
 import { ordersConfigStore } from "../ordersConfig.store";
@@ -153,6 +154,7 @@ export const OrdersConfigPage = observer(() => {
           <NectoLogo width={161} height={23} />
         </Link>
         <div className="oc-header-context">
+          <RoleShieldBadge role="Administrador" />
           <span className="oc-module-label">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 7h14l1 14H4L5 7Zm3 0V5a4 4 0 0 1 8 0v2m-8 7 3 3 5-5" />

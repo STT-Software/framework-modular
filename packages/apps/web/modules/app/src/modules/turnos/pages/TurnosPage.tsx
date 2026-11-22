@@ -10,6 +10,7 @@ import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
 import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
 import { ConfigBusinessSwitcher } from "@/components/configuration/ConfigBusinessSwitcher";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { WorkspaceSupportDropdown, WorkspaceSupportWidget } from "@/modules/workspace";
 import { Icon } from "../components/Icon";
 import { ICONS } from "../components/icons";
@@ -297,6 +298,7 @@ const TurnosPage = observer(() => {
           <div className="nt-stage">
             {store.status === "blocked" ? (
               <div className="nt-card nt-empty">
+                <BrandCardDecor />
                 <h2>Turnos no está asignado a este negocio</h2>
                 <p>Consulta con tu superadministrador para habilitar este módulo.</p>
                 <Link className="nt-secondary" to={businessId ? `/business/setup/${businessId}` : "/business/access"}>
@@ -305,6 +307,7 @@ const TurnosPage = observer(() => {
               </div>
             ) : store.status === "unavailable" ? (
               <div className="nt-card nt-empty">
+                <BrandCardDecor />
                 <h2>Este negocio ya no está disponible para ti</h2>
                 <p>Pudo haberse pausado o asignarse a otra persona. Entra de nuevo para ver los negocios a los que tienes acceso.</p>
                 <Link className="nt-primary" to="/business/access">
@@ -313,6 +316,7 @@ const TurnosPage = observer(() => {
               </div>
             ) : store.status === "error" ? (
               <div className="nt-card nt-empty">
+                <BrandCardDecor />
                 <h2>No pudimos abrir la configuración</h2>
                 <p>{store.error}</p>
                 <button type="button" className="nt-primary" onClick={() => businessId && void store.load(businessId)}>

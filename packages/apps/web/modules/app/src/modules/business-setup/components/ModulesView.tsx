@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { NectoLogo } from "@/brand/NectoLogo";
 import { useElementVisibility } from "@/hooks";
 import { businessSetupStore } from "../stores/businessSetup.store";
@@ -130,6 +131,7 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
             const isOpening = openingModuleId === module.id;
             return (
               <article key={module.id} className="no-module-card">
+                <BrandCardDecor />
                 <div className="no-module-card-top">
                   <ModuleIcon id={module.id} />
                   <span className="no-module-assigned">Asignado</span>

@@ -54,6 +54,7 @@ export const ReviewPanel = observer(({ onEdit }: { onEdit: (step: TurnosStep) =>
         ))}
       </div>
       <div className="nt-card">
+        <BrandCardDecor />
         <div className="nt-review-heading">
           <h2>Filas de atención</h2>
           <button className="nt-text-button" type="button" onClick={() => onEdit("queues")}>
@@ -77,6 +78,7 @@ export const ReviewPanel = observer(({ onEdit }: { onEdit: (step: TurnosStep) =>
       </div>
       <div className="nt-review-columns">
         <div className="nt-card">
+          <BrandCardDecor />
           <div className="nt-review-heading">
             <h2>Reglas generales</h2>
             <button className="nt-text-button" type="button" onClick={() => onEdit("rules")}>
@@ -93,6 +95,7 @@ export const ReviewPanel = observer(({ onEdit }: { onEdit: (step: TurnosStep) =>
           </dl>
         </div>
         <div className="nt-card">
+          <BrandCardDecor />
           <div className="nt-review-heading">
             <h2>Equipo de Turnos</h2>
             <button className="nt-text-button" type="button" onClick={() => onEdit("operators")}>

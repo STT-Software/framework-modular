@@ -67,6 +67,7 @@ export const CategoryPanel = observer(() => {
       </p>
       {turnos && (
         <div className="no-card" style={{ marginTop: 24 }}>
+          <BrandCardDecor />
           <div className="no-field">
             <label htmlFor="no-turnos-profile">Perfil de atención de Turnos</label>
             <select id="no-turnos-profile" value={store.turnosProfileDraft ?? turnos.profile} onChange={(event) => store.chooseTurnosProfile(event.target.value)}>

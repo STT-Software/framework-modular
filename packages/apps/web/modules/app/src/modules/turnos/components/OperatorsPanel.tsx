@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { turnosStore } from "../stores/turnos.store";
 import type { TurnosOperator } from "../types";
 import { initialsOf } from "../validation";
@@ -36,6 +37,7 @@ export const OperatorsPanel = observer(() => {
       </div>
       {count === 0 && (
         <div className="nt-card nt-empty nt-operators-empty">
+          <BrandCardDecor />
           <div className="nt-team-scene" aria-hidden="true">
             <span>LM</span>
             <span>+</span>

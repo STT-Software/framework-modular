@@ -676,12 +676,12 @@
    Subtle Brand Geometry Backdrop for White Cards (Setup, Turnos, Pedidos)
    Maximum 3 shapes (Ring, Wave, Arc) inspired by /welcome/ready
    -------------------------------------------------------------------------- */
-:is(.no-card, .nt-card, .oc-card) {
+:is(.no-card, .nt-card, .oc-card, .no-module-card) {
   position: relative !important;
   overflow: hidden !important;
 }
 
-:is(.no-card, .nt-card, .oc-card) > :not(.card-brand-decor) {
+:is(.no-card, .nt-card, .oc-card, .no-module-card) > :not(.card-brand-decor) {
   position: relative;
   z-index: 1;
 }

@@ -54,6 +54,7 @@ export const ReviewPanel = observer(({ onEdit, onViewModule }: { onEdit: (step: 
         </dl>
       </div>
       <div className="no-card no-review-hours">
+        <BrandCardDecor />
         <header className="no-card-header">
           <div>
             <h2>Horario del negocio</h2>
@@ -73,6 +74,7 @@ export const ReviewPanel = observer(({ onEdit, onViewModule }: { onEdit: (step: 
         </div>
       </div>
       <div className="no-card no-review-modules">
+        <BrandCardDecor />
         <header className="no-card-header">
           <div>
             <h2>Módulos y horarios</h2>

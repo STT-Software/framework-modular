@@ -63,6 +63,74 @@
 .no-enter .no-connect-line {animation:no-connect 1.3s ease-out .1s both;}
 .no-enter .no-motion-node {animation:no-node-float 1.6s .2s 2 ease-in-out;}
 .no-enter .no-motion-node:nth-child(even) {animation-delay:.5s;animation-direction:reverse;}
+
+/* Modo oscuro: las tarjetas vectoriales se mantienen blancas y las órbitas en blanco nítido */
+.dark .no-module-motion > svg > circle {
+  stroke: #ffffff !important;
+  opacity: 0.7 !important;
+  stroke-dasharray: 4 6 !important;
+}
+.dark .no-module-motion > svg > ellipse:not(.no-motion-shadow) {
+  stroke: #ffffff !important;
+  opacity: 0.5 !important;
+  stroke-dasharray: none !important;
+}
+.dark .no-connect-line {
+  stroke: #97d6df !important;
+  stroke-opacity: 0.75 !important;
+  stroke-width: 1.5 !important;
+}
+.dark .no-motion-spark {
+  fill: #ff3f1a !important;
+  opacity: 0.9 !important;
+}
+.dark .no-motion-shadow {
+  fill: rgba(0, 0, 0, 0.6) !important;
+}
+
+.dark .no-motion-center,
+.dark .no-motion-node,
+.dark .no-motion-chip {
+  background: #ffffff !important;
+  border: 1px solid #d8dee8 !important;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.4) !important;
+}
+.dark .no-motion-center > span {
+  color: #667085 !important;
+}
+.dark .no-motion-chip {
+  color: #190088 !important;
+}
+.dark .no-motion-chip i {
+  background: #97d6df !important;
+}
+
+.dark .no-motion-node .no-module-icon {
+  background: #eff4ff !important;
+  color: #465fff !important;
+}
+.dark .no-motion-node .no-module-icon[data-color="orange"] {
+  background: #ff3f1a12 !important;
+  color: #ff3f1a !important;
+  border: 1px solid #ff3f1a26 !important;
+}
+.dark .no-motion-node .no-module-icon[data-color="purple"] {
+  background: #f0ecff !important;
+  color: #6938b9 !important;
+}
+.dark .no-motion-node .no-module-icon[data-color="green"] {
+  background: #ecfdf3 !important;
+  color: #027a48 !important;
+}
+.dark .no-motion-node .no-module-icon[data-color="amber"] {
+  background: #fffaeb !important;
+  color: #b54708 !important;
+}
+.dark .no-motion-node .no-module-icon[data-color="cyan"] {
+  background: #97d6df24 !important;
+  color: #190088 !important;
+  border: 1px solid #97d6df60 !important;
+}
 .no-section-heading {display:flex;align-items:center;justify-content:space-between;gap:20px;margin:24px 0 20px;}
 .no-section-heading h2 {display:flex;align-items:center;gap:10px;font-size:22px;letter-spacing:-.02em;font-weight:600;margin:0 0 6px;}
 .no-section-heading h2>span {display:grid;place-items:center;min-width:26px;height:24px;padding:0 6px;border-radius:6px;border:1px solid var(--no-border);background:var(--no-paper);font-size:12px;color:var(--no-muted);font-weight:600;}

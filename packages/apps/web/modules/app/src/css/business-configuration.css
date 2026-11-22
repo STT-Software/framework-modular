@@ -686,6 +686,42 @@
   z-index: 1;
 }
 
+/* Static thread and vector lines (no movement) */
+.no-connect-line {
+  animation: none !important;
+}
+
+/* Compact, well-proportioned module cards on wide screens */
+.no-assigned-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 420px)) !important;
+  gap: 20px !important;
+}
+
+.no-module-card {
+  max-width: 440px !important;
+  padding: 22px 24px !important;
+}
+
+.no-module-card-top {
+  margin-bottom: 14px !important;
+}
+
+.no-module-card h3 {
+  font-size: 18px !important;
+  margin: 0 0 6px !important;
+}
+
+.no-module-card>p {
+  font-size: 13.5px !important;
+  line-height: 1.5 !important;
+  margin: 0 0 18px !important;
+}
+
+.no-module-card-footer {
+  padding-top: 16px !important;
+}
+
 .card-brand-decor {
   position: absolute;
   inset: 0;

@@ -9,6 +9,7 @@ import { adminAccessStore } from "@/modules/business-access";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
 import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
+import { ConfigBusinessSwitcher } from "@/components/configuration/ConfigBusinessSwitcher";
 import { WorkspaceSupportDropdown, WorkspaceSupportWidget } from "@/modules/workspace";
 import { Icon } from "../components/Icon";
 import { ICONS } from "../components/icons";
@@ -211,17 +212,19 @@ const TurnosPage = observer(() => {
             Turnos
           </span>
           {!isOperator && (
-            <label>
-              <span>NEGOCIO</span>
-              <select aria-label="Negocio de Turnos" value={businessId ?? ""} disabled={withTurnos.length < 2 || store.saving} onChange={(event) => void switchBusiness(event.target.value)}>
-                {withTurnos.length === 0 && <option value={businessId ?? ""}>{state?.business.name ?? "Tu negocio"}</option>}
-                {withTurnos.map((business) => (
-                  <option key={business.id} value={business.id}>
-                    {business.id === businessId && state ? state.business.name : business.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <ConfigBusinessSwitcher
+              currentBusinessId={businessId ?? ""}
+              currentBusinessName={state?.business.name ?? "Tu negocio"}
+              subtitle="Módulo de Turnos"
+              businesses={withTurnos.map((business) => ({
+                id: business.id,
+                name: business.id === businessId && state ? state.business.name : business.name,
+                category: business.category,
+                categoryOther: business.categoryOther,
+              }))}
+              disabled={store.saving}
+              onSelect={(id) => void switchBusiness(id)}
+            />
           )}
           <ThemeIconButton className="nt-icon-button" />
           <WorkspaceSupportDropdown triggerClassName="config-icon-button" />

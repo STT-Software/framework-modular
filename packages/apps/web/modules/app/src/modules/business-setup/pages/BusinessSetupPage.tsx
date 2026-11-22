@@ -9,6 +9,7 @@ import type { ModuleId } from "@/modules/businesses";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
 import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
+import { ConfigBusinessSwitcher } from "@/components/configuration/ConfigBusinessSwitcher";
 import { WorkspaceSupportDropdown, WorkspaceSupportWidget } from "@/modules/workspace";
 import { ModulesView } from "../components/ModulesView";
 import { SavedDialog } from "../components/SavedDialog";
@@ -127,22 +128,19 @@ const BusinessSetupPage = observer(() => {
         </Link>
         <div className="no-header-actions">
           <RoleShieldBadge role="Administrador" />
-          <label className="no-context">
-            <span>NEGOCIO</span>
-            <select
-              aria-label="Negocio actual"
-              value={businessId ?? ""}
-              disabled={administered.length < 2 || store.saving}
-              onChange={(event) => void switchBusiness(event.target.value)}
-            >
-              {administered.length === 0 && <option value={businessId ?? ""}>{name}</option>}
-              {administered.map((business) => (
-                <option key={business.id} value={business.id}>
-                  {business.id === businessId && state ? state.profile.name : business.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ConfigBusinessSwitcher
+            currentBusinessId={businessId ?? ""}
+            currentBusinessName={state ? state.profile.name : name}
+            subtitle="Configuración base"
+            businesses={administered.map((business) => ({
+              id: business.id,
+              name: business.id === businessId && state ? state.profile.name : business.name,
+              category: business.category,
+              categoryOther: business.categoryOther,
+            }))}
+            disabled={store.saving}
+            onSelect={(id) => void switchBusiness(id)}
+          />
           <ThemeIconButton className="no-icon-button" />
           <WorkspaceSupportDropdown triggerClassName="config-icon-button" />
           <button

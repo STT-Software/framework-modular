@@ -9,6 +9,7 @@ import { adminAccessStore } from "@/modules/business-access";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
 import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
+import { ConfigBusinessSwitcher } from "@/components/configuration/ConfigBusinessSwitcher";
 import { WorkspaceSupportDropdown, WorkspaceSupportWidget } from "@/modules/workspace";
 import { OrdersGuide } from "../components/OrdersGuide";
 import { PROFILE_DEFAULTS } from "../constants";
@@ -162,12 +163,18 @@ export const OrdersConfigPage = observer(() => {
             </svg>
             Pedidos
           </span>
-          <label>
-            <span>NEGOCIO</span>
-            <select aria-label="Negocio de Pedidos" value={businessId ?? ""} disabled>
-              <option value={businessId ?? ""}>{business?.name ?? "Tu negocio"}</option>
-            </select>
-          </label>
+          <ConfigBusinessSwitcher
+            currentBusinessId={businessId ?? ""}
+            currentBusinessName={business?.name ?? "Tu negocio"}
+            subtitle="Módulo de Pedidos"
+            businesses={adminAccessStore.businesses.map((b) => ({
+              id: b.id,
+              name: b.name,
+              category: b.category,
+              categoryOther: b.categoryOther,
+            }))}
+            onSelect={(id) => navigate(`/business/orders/${id}`)}
+          />
           <ThemeIconButton className="oc-icon-button" />
           <WorkspaceSupportDropdown triggerClassName="config-icon-button" />
           <button

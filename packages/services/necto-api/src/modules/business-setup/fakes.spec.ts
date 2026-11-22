@@ -11,6 +11,7 @@ import type { BusinessSetup } from './domain/business-setup';
 import { BusinessSetupRepository, type SetupPatch } from './domain/business-setup.repository';
 import type { LogoFile } from './domain/logo';
 import { BusinessSetupService } from './application/business-setup.service';
+import { ModuleSetupStatusRegistry } from './application/module-setup-status.registry';
 import type { WeekSchedule } from './domain/week-schedule';
 
 export const BOSS_EMAIL = 'ana@cafecentral.co';
@@ -161,10 +162,11 @@ export function setupBusinessSetup() {
   profiles.add(aProfile(), BOSS_EMAIL);
   profiles.add(aProfile({ id: OTHER_BUSINESS_ID, name: 'Librería Sur', modules: ['inventario'] }), 'luis@libreriasur.co');
   const turnos = new FakeTurnosBaseSetup(profiles);
-  const service = new BusinessSetupService(profiles, repository, clock, turnos);
+  const statusRegistry = new ModuleSetupStatusRegistry();
+  const service = new BusinessSetupService(profiles, repository, clock, turnos, statusRegistry);
   /** The same persisted data seen from a brand new service, as after signing out and coming back. */
-  const reopen = () => new BusinessSetupService(profiles, repository, clock, turnos);
-  return { service, reopen, profiles, repository, clock, turnos };
+  const reopen = () => new BusinessSetupService(profiles, repository, clock, turnos, statusRegistry);
+  return { service, reopen, profiles, repository, clock, turnos, statusRegistry };
 }
 
 export const NIGHT_SHIFT: WeekSchedule['mon'] = { open: true, ranges: [{ start: '18:00', end: '23:00' }] };

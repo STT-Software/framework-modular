@@ -6,7 +6,10 @@ import { BusinessAccessModule } from '../business-access/public';
 import { BusinessesModule } from '../businesses/public';
 import { TurnosModule } from '../turnos/public';
 import { BusinessSetupController } from './api/business-setup.controller';
+import { BusinessScheduleReaderService } from './application/business-schedule-reader.service';
 import { BusinessSetupService } from './application/business-setup.service';
+import { ModuleSetupStatusRegistry } from './application/module-setup-status.registry';
+import { BusinessScheduleReader } from './domain/business-schedule-reader';
 import { BusinessSetupRepository } from './domain/business-setup.repository';
 import { BusinessSetupRecord, BusinessSetupSchema } from './infrastructure/business-setup.schema';
 import { MongoBusinessSetupRepository } from './infrastructure/mongo-business-setup.repository';
@@ -26,6 +29,12 @@ import { MongoBusinessSetupRepository } from './infrastructure/mongo-business-se
     MongooseModule.forFeature([{ name: BusinessSetupRecord.name, schema: BusinessSetupSchema }]),
   ],
   controllers: [BusinessSetupController],
-  providers: [BusinessSetupService, { provide: BusinessSetupRepository, useClass: MongoBusinessSetupRepository }],
+  providers: [
+    BusinessSetupService,
+    ModuleSetupStatusRegistry,
+    { provide: BusinessScheduleReader, useClass: BusinessScheduleReaderService },
+    { provide: BusinessSetupRepository, useClass: MongoBusinessSetupRepository },
+  ],
+  exports: [ModuleSetupStatusRegistry, BusinessScheduleReader],
 })
 export class BusinessSetupModule {}

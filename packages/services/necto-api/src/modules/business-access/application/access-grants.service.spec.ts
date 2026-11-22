@@ -30,7 +30,7 @@ describe('what a person may enter (administrator and operator in one identity)',
     const [grant] = await grants.list(LAURA);
     assert.deepEqual(
       { key: grant.key, role: grant.role, modules: grant.modules, person: grant.personName },
-      { key: `${business.id}:operator`, role: 'operator', modules: ['turnos'], person: 'Laura Gómez' },
+      { key: `${business.id}:operator:turnos`, role: 'operator', modules: ['turnos'], person: 'Laura Gómez' },
     );
   });
 
@@ -41,7 +41,26 @@ describe('what a person may enter (administrator and operator in one identity)',
     memberSource.assign(business.boss.email, turnosOperator(second.id, 'Ana Gómez'));
     memberSource.assign(business.boss.email, turnosOperator(business.id, 'Ana Gómez'));
     const keys = (await grants.list(business.boss.email)).map((grant) => grant.key);
-    assert.deepEqual(keys, [`${business.id}:admin`, `${business.id}:operator`, `${second.id}:operator`]);
+    assert.deepEqual(keys, [`${business.id}:admin`, `${business.id}:operator:turnos`, `${second.id}:operator:turnos`]);
+  });
+
+  it('emits one distinct AccessGrant per (businessId, moduleId) when an operator works in both turnos and pedidos in the same business, and deduplicates duplicates', async () => {
+    const { grants, directory, memberSource, business } = setup();
+    directory.set({ ...business, modules: ['reservas', 'turnos', 'pedidos'] });
+    memberSource.assign(LAURA, { businessId: business.id, moduleId: 'pedidos', role: 'operator', personName: 'Laura Pedidos' });
+    // Duplicate emission for the same (businessId, moduleId) must be ignored.
+    memberSource.assign(LAURA, { businessId: business.id, moduleId: 'pedidos', role: 'operator', personName: 'Duplicate Ignored' });
+
+    const list = await grants.list(LAURA);
+    assert.deepEqual(
+      list.map((grant) => ({ key: grant.key, role: grant.role, modules: grant.modules, personName: grant.personName })),
+      [
+        { key: `${business.id}:operator:pedidos`, role: 'operator', modules: ['pedidos'], personName: 'Laura Pedidos' },
+        { key: `${business.id}:operator:turnos`, role: 'operator', modules: ['turnos'], personName: 'Laura Gómez' },
+      ],
+    );
+    assert.equal((await grants.requireOperator(LAURA, business.id, 'pedidos')).key, `${business.id}:operator:pedidos`);
+    assert.equal((await grants.requireOperator(LAURA, business.id, 'turnos')).key, `${business.id}:operator:turnos`);
   });
 
   it('does not let an operator assignment turn into an administrator access, or the other way around', async () => {

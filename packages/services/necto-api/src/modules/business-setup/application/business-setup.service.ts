@@ -22,6 +22,7 @@ import {
 import { inspectLogo, type LogoFile, type LogoInfo } from '../domain/logo';
 import type { SetupStep } from '../domain/setup-steps';
 import { defaultWeekSchedule, isOpenAt, parseWeekSchedule, type WeekSchedule } from '../domain/week-schedule';
+import { ModuleSetupStatusRegistry } from './module-setup-status.registry';
 
 /** One assigned module as the setup shows it. Its own settings (queues, rules, staff...) are not part of this stage. */
 export interface SetupModuleView {
@@ -36,7 +37,7 @@ export interface SetupModuleView {
   ownSchedule: WeekSchedule | null;
   openNow: boolean | null;
   /** Its own settings (queues, rules...). "ready" only for a module whose configuration is already saved as ready. */
-  settings: { status: 'pending' | 'ready'; summary: { queueCount: number; operatorCount: number } | null };
+  settings: { status: 'pending' | 'ready'; summary: Record<string, number> | null };
 }
 
 /** The Turnos part of the base setup: the attention profile that suggests its queues. Only for a business that has Turnos. */
@@ -86,6 +87,7 @@ export class BusinessSetupService {
     private readonly setups: BusinessSetupRepository,
     private readonly clock: Clock,
     private readonly turnos: TurnosBaseSetup,
+    private readonly statusRegistry: ModuleSetupStatusRegistry,
   ) {}
 
   /** Everything needed to open the setup again where the person left it. Reading creates nothing. */
@@ -221,27 +223,39 @@ export class BusinessSetupService {
     const now = this.clock.now();
     const turnosStatus = business.modules.includes('turnos') ? await this.turnos.statusOf(business.id) : null;
     const baseSchedule = setup?.baseSchedule ?? defaultWeekSchedule();
-    const modules = BUSINESS_MODULES.filter((module) => business.modules.includes(module.id)).map((module): SetupModuleView => {
-      const entry = setup?.moduleSchedules[module.id];
-      const inherit = entry?.inherit ?? true;
-      const effectiveSchedule = inherit || !entry?.schedule ? baseSchedule : entry.schedule;
-      return {
-        id: module.id,
-        name: module.name,
-        description: module.description,
-        inherit,
-        effectiveSchedule,
-        ownSchedule: entry?.schedule ?? null,
-        openNow: isOpenAt(effectiveSchedule, business.timezone, now),
-        settings:
-          module.id === 'turnos' && turnosStatus
-            ? {
-                status: turnosStatus.ready ? 'ready' : 'pending',
-                summary: { queueCount: turnosStatus.queueCount, operatorCount: turnosStatus.operatorCount },
-              }
-            : { status: 'pending', summary: null },
-      };
-    });
+    const enabledModules = BUSINESS_MODULES.filter((module) => business.modules.includes(module.id));
+    const modules = await Promise.all(
+      enabledModules.map(async (module): Promise<SetupModuleView> => {
+        const entry = setup?.moduleSchedules[module.id];
+        const inherit = entry?.inherit ?? true;
+        const effectiveSchedule = inherit || !entry?.schedule ? baseSchedule : entry.schedule;
+        let settings: SetupModuleView['settings'] = { status: 'pending', summary: null };
+        if (module.id === 'turnos' && turnosStatus) {
+          settings = {
+            status: turnosStatus.ready ? 'ready' : 'pending',
+            summary: { queueCount: turnosStatus.queueCount, operatorCount: turnosStatus.operatorCount },
+          };
+        } else {
+          const registeredStatus = await this.statusRegistry.statusOf(module.id, business.id);
+          if (registeredStatus) {
+            settings = {
+              status: registeredStatus.ready ? 'ready' : 'pending',
+              summary: registeredStatus.summary ?? null,
+            };
+          }
+        }
+        return {
+          id: module.id,
+          name: module.name,
+          description: module.description,
+          inherit,
+          effectiveSchedule,
+          ownSchedule: entry?.schedule ?? null,
+          openNow: isOpenAt(effectiveSchedule, business.timezone, now),
+          settings,
+        };
+      }),
+    );
     return {
       business,
       description: setup?.description ?? null,

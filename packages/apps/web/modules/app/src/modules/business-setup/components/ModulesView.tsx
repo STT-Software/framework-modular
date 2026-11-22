@@ -117,17 +117,7 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
       {count > 0 ? (
         <div className={`no-assigned-grid${count === 1 ? " is-single" : ""}`}>
           {state.modules.map((module) => {
-            const isOrdersReady =
-              module.id === "pedidos" &&
-              (() => {
-                try {
-                  const raw = localStorage.getItem(`necto.orders_config.v1.${businessSetupStore.businessId}`);
-                  return raw ? JSON.parse(raw).status === "ready" : false;
-                } catch {
-                  return false;
-                }
-              })();
-            const isModuleReady = module.settings.status === "ready" || isOrdersReady;
+            const isModuleReady = module.settings.status === "ready";
             const isOpening = openingModuleId === module.id;
             return (
               <article key={module.id} className="no-module-card">

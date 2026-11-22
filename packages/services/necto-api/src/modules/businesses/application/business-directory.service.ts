@@ -12,6 +12,7 @@ function toView(business: Business): BusinessAccessView {
     status: business.status,
     category: business.category,
     categoryOther: business.categoryOther,
+    timezone: business.timezone,
     modules: business.modules,
     boss: { assignmentId: business.boss.assignmentId, name: business.boss.name, email: business.boss.email },
   };

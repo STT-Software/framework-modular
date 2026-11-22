@@ -10,6 +10,7 @@ export interface BusinessAccessView {
   category: BusinessCategoryId;
   /** Only when the category is "other". */
   categoryOther: string | null;
+  timezone?: string;
   modules: readonly BusinessModuleId[];
   boss: {
     assignmentId: string;

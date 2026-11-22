@@ -49,9 +49,23 @@ export const BusinessPicker = observer(() => {
       <div className="na-business-picker">
         {store.accesses.map((access) => {
           const isOperator = access.role === "operator";
+          const operatorModule = isOperator ? access.modules[0] : undefined;
+          const isPedidosOperator = isOperator && operatorModule === "pedidos";
           const isSelected = selectedKey === access.key;
           const isDimmed = selectedKey !== null && !isSelected;
           const status = isSelected ? choiceStatus : "idle";
+
+          const operatorBadge = isPedidosOperator ? "Operador · Pedidos" : "Operador · Turnos";
+          const cardTitle = isOperator
+            ? isPedidosOperator
+              ? "Gestión de Pedidos"
+              : "Atención y Turnos"
+            : "Gestión y Configuración";
+          const cardDesc = isOperator
+            ? isPedidosOperator
+              ? "Confirmación, preparación y despacho de pedidos."
+              : "Control de filas, llamado de tickets y atención."
+            : "Módulos, catálogo, inventario y administración general.";
 
           return (
             <button
@@ -60,12 +74,18 @@ export const BusinessPicker = observer(() => {
               className={`na-business-card ${isOperator ? "is-operator" : "is-admin"}${
                 isDimmed ? " is-dimmed" : ""
               }${status === "loading" ? " is-loading" : ""}${status === "success" ? " is-success" : ""}`}
-              aria-label={`Entrar a ${access.businessName} como ${isOperator ? "operador" : "administrador"}`}
+              aria-label={`Entrar a ${access.businessName} como ${
+                isOperator ? (isPedidosOperator ? "operador de Pedidos" : "operador de Turnos") : "administrador"
+              }`}
               disabled={store.busy || choiceStatus !== "idle"}
               onClick={() => void handleSelect(access.key)}
             >
               <div className={`na-card-icon-wrap ${isOperator ? "is-operator" : "is-admin"}`}>
-                {isOperator ? (
+                {isPedidosOperator ? (
+                  <svg viewBox="0 0 24 24" aria-hidden="true" className="na-icon-svg">
+                    <path d="M5 7h14l1 14H4L5 7Zm3 0V5a4 4 0 0 1 8 0v2m-8 7 3 3 5-5" />
+                  </svg>
+                ) : isOperator ? (
                   <svg viewBox="0 0 24 24" aria-hidden="true" className="na-icon-svg">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
@@ -84,19 +104,14 @@ export const BusinessPicker = observer(() => {
                   <span className="na-card-business-name">{access.businessName}</span>
                   <span className={`na-role-badge ${isOperator ? "na-role-operator" : "na-role-admin"}`}>
                     <i className="na-badge-dot" />
-                    {isOperator ? "Operador" : "Administrador"}
+                    {isOperator ? operatorBadge : "Administrador"}
                   </span>
                 </div>
 
-                <h3 className="na-card-title">
-                  {isOperator ? "Atención y Turnos" : "Gestión y Configuración"}
-                </h3>
+                <h3 className="na-card-title">{cardTitle}</h3>
 
                 <p className="na-card-desc">
-                  {categoryLabel(access.category as CategoryId, access.categoryOther)} ·{" "}
-                  {isOperator
-                    ? "Control de filas, llamado de tickets y atención."
-                    : "Módulos, catálogo, inventario y administración general."}
+                  {categoryLabel(access.category as CategoryId, access.categoryOther)} · {cardDesc}
                 </p>
               </div>
 

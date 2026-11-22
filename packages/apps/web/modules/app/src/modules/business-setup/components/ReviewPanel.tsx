@@ -92,7 +92,10 @@ export const ReviewPanel = observer(({ onEdit, onViewModule }: { onEdit: (step: 
                 <ModuleIcon id={module.id} />
                 <div>
                   <strong>{module.name}</strong>
-                  <p>{inherits ? "Hereda el horario del negocio" : "Horario personalizado"} · Ajustes específicos pendientes</p>
+                  <p>
+                    {inherits ? "Hereda el horario del negocio" : "Horario personalizado"} ·{" "}
+                    {module.settings.status === "ready" ? "Configuración preparada" : "Ajustes específicos pendientes"}
+                  </p>
                 </div>
                 <button type="button" className="no-text-button" aria-label={`Ver horario de ${module.name}`} onClick={() => onViewModule(module.id)}>
                   Ver horario ↗

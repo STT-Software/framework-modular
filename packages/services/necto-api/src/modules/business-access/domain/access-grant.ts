@@ -3,11 +3,11 @@ export type AccessRole = 'admin' | 'operator';
 
 /**
  * One thing a signed-in person may enter right now: a business in a role. An email can hold several (it can be the
- * boss of one business, an operator of another, and both in the same one). It is decided from the data as it is at this
- * moment, never from the token.
+ * boss of one business, an operator of another, and both in the same one — or operate multiple modules in the same
+ * business). It is decided from the data as it is at this moment, never from the token.
  */
 export interface AccessGrant {
-  /** Stable key of the choice: `<businessId>:<role>`. */
+  /** Stable key of the choice: `<businessId>:admin` or `<businessId>:operator:<moduleId>`. */
   key: string;
   businessId: string;
   businessName: string;
@@ -21,4 +21,8 @@ export interface AccessGrant {
   personName: string;
 }
 
-export const grantKey = (businessId: string, role: AccessRole): string => `${businessId}:${role}`;
+export function grantKey(businessId: string, role: 'admin'): string;
+export function grantKey(businessId: string, role: 'operator', moduleId: string): string;
+export function grantKey(businessId: string, role: AccessRole, moduleId?: string): string {
+  return role === 'operator' && moduleId ? `${businessId}:operator:${moduleId}` : `${businessId}:${role}`;
+}

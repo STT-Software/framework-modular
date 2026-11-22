@@ -23,17 +23,25 @@ export const ReadyStep = observer(() => {
   const [stageIndex, setStageIndex] = useState(0);
 
   const isOperator = access?.role === "operator";
+  const operatorModule = isOperator ? access?.modules[0] : undefined;
+  const isPedidosOperator = isOperator && operatorModule === "pedidos";
   const name = isOperator
     ? access?.businessName
     : business?.name ?? access?.businessName ?? "tu negocio";
   const target = isOperator
-    ? `/business/turnos/${access?.businessId}/operator`
+    ? isPedidosOperator
+      ? `/business/pedidos/${access?.businessId}/operator`
+      : `/business/turnos/${access?.businessId}/operator`
     : `/business/setup/${access?.businessId}`;
 
   const stageMessages = [
     "Verificando credenciales de acceso…",
-    `Cargando configuración de ${name}…`,
-    `Sincronizando módulos de ${isOperator ? "Operador" : "Administrador"}…`,
+    isOperator
+      ? `Cargando acceso de ${isPedidosOperator ? "Pedidos" : "Turnos"} en ${name}…`
+      : `Cargando configuración de ${name}…`,
+    isOperator
+      ? `Sincronizando módulo de Operador (${isPedidosOperator ? "Pedidos" : "Turnos"})…`
+      : "Sincronizando módulos de Administrador…",
     "¡Todo listo! Ingresando a tu espacio…",
   ];
 
@@ -125,7 +133,11 @@ export const ReadyStep = observer(() => {
         </div>
         <div className="na-dispatch-meta">
           <span className="na-dispatch-role">
-            {isOperator ? "Perfil: Operador" : "Perfil: Administrador"}
+            {isOperator
+              ? isPedidosOperator
+                ? "Perfil: Operador de Pedidos"
+                : "Perfil: Operador de Turnos"
+              : "Perfil: Administrador"}
           </span>
           <span className="na-dispatch-pct">{Math.round(progress)}%</span>
         </div>

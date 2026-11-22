@@ -9,6 +9,7 @@ import {
   SetupIncompleteError,
   TurnosNotAssignedError,
 } from '../domain/errors';
+import { ModuleSetupStatusSource, type ModuleSetupStatus } from '../domain/module-setup-status';
 import { defaultWeekSchedule } from '../domain/week-schedule';
 import { aWeek, BOSS_EMAIL, BUSINESS_ID, NIGHT_SHIFT, OTHER_BUSINESS_ID, setupBusinessSetup } from '../fakes.spec';
 
@@ -454,5 +455,35 @@ describe('setup: the attention profile of Turnos (chosen here, stored by Turnos)
     await service.complete(BOSS_EMAIL, BUSINESS_ID);
     const state = await service.saveCategory(BOSS_EMAIL, BUSINESS_ID, 'gastronomy', null, 'bank');
     assert.equal(state.progress.baseReady, false);
+  });
+});
+
+describe('setup: registered module status sources (IoC registry)', () => {
+  it('populates settings.status and settings.summary for pedidos from a registered ModuleSetupStatusSource', async () => {
+    const { service, profiles, statusRegistry } = setupBusinessSetup();
+    profiles.businesses.get(BUSINESS_ID)!.modules = ['pedidos', 'reservas'];
+
+    let pedidosStatus: ModuleSetupStatus = { ready: false, summary: { modalityCount: 2, operatorCount: 0 } };
+    class FakePedidosStatusSource extends ModuleSetupStatusSource {
+      readonly moduleId = 'pedidos';
+      async statusOf(_businessId: string): Promise<ModuleSetupStatus> {
+        return pedidosStatus;
+      }
+    }
+    statusRegistry.register(new FakePedidosStatusSource());
+
+    const before = (await service.get(BOSS_EMAIL, BUSINESS_ID)).modules;
+    assert.deepEqual(before.find((module) => module.id === 'pedidos')!.settings, {
+      status: 'pending',
+      summary: { modalityCount: 2, operatorCount: 0 },
+    });
+    assert.deepEqual(before.find((module) => module.id === 'reservas')!.settings, { status: 'pending', summary: null });
+
+    pedidosStatus = { ready: true, summary: { modalityCount: 3, operatorCount: 2 } };
+    const after = (await service.get(BOSS_EMAIL, BUSINESS_ID)).modules;
+    assert.deepEqual(after.find((module) => module.id === 'pedidos')!.settings, {
+      status: 'ready',
+      summary: { modalityCount: 3, operatorCount: 2 },
+    });
   });
 });

@@ -336,7 +336,7 @@ Datos: colección `businesses`, índices `{ ownerId, idempotencyKey }` (único),
 
 ## Módulo business-access
 
-Acceso de los **administradores de negocio** (el jefe asignado de cada negocio) y de los **operadores** de un módulo (hoy, Turnos),
+Acceso de los **administradores de negocio** (el jefe asignado de cada negocio) y de los **operadores** de un módulo (`turnos` y `pedidos`),
 **sin contraseña**: el correo asignado y un código de 6 dígitos enviado a ese correo. **Es el mismo login para los dos roles**: la
 identidad es el correo, y una misma persona puede administrar varios negocios y ser operadora de otros; entra una vez y elige.
 
@@ -356,11 +356,11 @@ identidad es el correo, y una misma persona puede administrar varios negocios y 
    menos un acceso y abre una **sesión de servidor**. Responde con `accessToken` (corto), `expiresInSeconds`,
    `admin { email, remember }`, `accesses[]` (todo lo que la persona puede abrir, en cualquier rol) y `businesses[]` (solo los que
    **administra**, por compatibilidad con las pantallas anteriores a los roles), y pone la cookie de sesión.
-   Cada elemento de `accesses`: `{ key: "<businessId>:<role>", businessId, businessName, category, categoryOther, role: "admin" | "operator", modules, personName }`.
+   Cada elemento de `accesses`: `{ key, businessId, businessName, category, categoryOther, role: "admin" | "operator", modules, personName }`, donde `key` es `<businessId>:admin` para administradores y `<businessId>:operator:<moduleId>` para operadores (un correo puede operar distintos módulos del mismo negocio y aparecen como accesos independientes).
    Para un administrador, `modules` son los módulos habilitados del negocio; para un operador, **solo** el módulo al que está asignado.
 3. Con un solo acceso el cliente entra directo; con varios muestra el selector de **negocio y rol** (un correo puede ser jefe y operador
    del mismo negocio: son dos elementos). Un administrador entra a `/business/setup/<id>`; un operador, a la vista de su módulo
-   (`GET /turnos/businesses/:businessId/operator`). `GET /business-access/accesses` devuelve la misma lista con la sesión abierta.
+   (`GET /turnos/businesses/:businessId/operator` o `GET /pedidos/businesses/:businessId/operator`). `GET /business-access/accesses` devuelve la misma lista con la sesión abierta.
 
 **Conocer el correo nunca basta**: sin un código válido no se crea ninguna sesión, y `GET /session` sin la cookie responde `401`.
 
@@ -509,7 +509,7 @@ tipo de negocio y la revisión. **No** incluye los ajustes propios de cada módu
 }
 ```
 - `modules`: **solo** los módulos habilitados para el negocio, en el orden del catálogo (`reservas`, `turnos`, `agendamiento`, `referidos`,
-  `inventario`, `pedidos`). Puede ser `[]`. `schedule.mode` es `inherited` o `custom`; `settings.status` es `pending` hasta que el módulo diga que su configuración está preparada: hoy solo Turnos lo hace (`ready`, con `settings.summary { queueCount, operatorCount }`; ver el módulo `turnos`).
+  `inventario`, `pedidos`). Puede ser `[]`. `schedule.mode` es `inherited` o `custom`; `settings.status` es `pending` hasta que el módulo informe que su configuración está preparada: hoy Turnos (`ready`, con `settings.summary { queueCount, operatorCount }`) y Pedidos (`ready`, con `settings.summary { modalityCount, operatorCount }`, registrado por IoC en `ModuleSetupStatusRegistry`) lo reportan desde el servidor.
 - `turnos`: `null` si el negocio no tiene Turnos. Si lo tiene, `profile` es el perfil de atención vigente (el elegido o, si nadie eligió, el que sugiere la categoría), `suggested` el que sugiere la categoría y `profiles[]` las cinco opciones con los nombres de las filas que sugiere cada una.
 - `profile` y `category` son los datos del negocio tal como están ahora (precarga del formulario). `description` es de este módulo.
 - `logo`: `null` o `{ contentType, sizeBytes, updatedAt, url }`. **Los bytes nunca vienen en el JSON**: se piden a `url` (ver Logo).
@@ -742,6 +742,101 @@ elige el perfil debe ser el jefe vigente de un negocio activo con Turnos, compro
 | Siguiente / Atrás entre pasos | `PUT /progress` |
 Las claves del HTML (`average`, `queueIds`, `urgent`, `busy`, `full`, `prefixMode: 'initial'`) se traducen a las del contrato en el cliente del módulo.
 
+## Módulo pedidos
+La **configuración** de Pedidos de un negocio en 7 pasos: perfil operativo, modalidades de entrega, despacho y logística, pagos y políticas, tiempos y alertas (SLA), operadores por etapa y revisión final. **Todavía no** recibe ni gestiona pedidos operativos, tableros de preparación ni métricas de entrega.
+Colección propia: `pedidos_configurations` (un documento por negocio, índices `{ businessId }` único y `{ operators.email }`).
+
+- **Dos roles, dos controladores.** La configuración (`/pedidos/businesses/:businessId/…`) pertenece al **administrador** del negocio (`@RequiresBusinessModule('pedidos')`: jefe vigente de un negocio activo con Pedidos habilitado). La vista del operador (`/pedidos/businesses/:businessId/operator`) pertenece al **operador** (`@OperatesModule('pedidos')`). Cada petición valida sesión, negocio y rol contra la base; sin token `401`, token de superadmin `403`, negocio ajeno/inexistente/pausado o rol incorrecto `404`, módulo no habilitado `403` con `code: "module-not-enabled"`.
+- **Un documento versionado por negocio.** Modalidades, logística, pagos, SLA, operadores y progreso viven dentro de un único documento (`version` con bloqueo optimista y reintentos; si se agotan, `409 concurrent-change`).
+- **Primera apertura y horario efectivo.** El primer `GET` inicializa una vez la configuración con la plantilla del perfil sugerido por la categoría del negocio (`gastronomy` → `food`, `retail`/`other` → `general`, `professional-services`/`health-wellness` → `services`) y la persiste (`seeded: true`). Además consulta a `business-setup` (`BusinessScheduleReader`) para devolver el horario efectivo del módulo (`timezone`, `inherit`, `openNow`, `days`).
+- Todas las respuestas llevan `Cache-Control: no-store`. **Cada escritura devuelve el estado completo** (la misma forma del `GET`); `POST /operators` responde `201` y añade `created: { id }`.
+
+### Estado completo: `GET /pedidos/businesses/:businessId`
+```json
+{
+  "business": { "id": "…", "name": "Casa Oliva", "category": "gastronomy", "categoryOther": null, "currency": "COP", "timezone": "America/Bogota" },
+  "profile": { "id": "food", "suggested": "food" },
+  "schedule": { "timezone": "America/Bogota", "inherit": true, "openNow": true, "days": { "mon": { "open": true, "ranges": [{ "start": "08:00", "end": "18:00" }] } } },
+  "modalities": ["delivery", "pickup", "on_site"],
+  "onSiteMode": "table_or_zone",
+  "fulfillment": {
+    "hasOwnCourier": true,
+    "carriers": [{ "id": "servientrega", "name": "Servientrega", "enabled": true, "isDefault": true }],
+    "pickupMode": "eventual",
+    "confirmationMode": "manual",
+    "whatsappNumber": "",
+    "riskThresholdActive": false,
+    "maxShippingCostRisk": 15000,
+    "shippingPricingMode": "fixed",
+    "flatShippingFee": 6000,
+    "freeShippingThreshold": 60000,
+    "minimumOrderActive": true,
+    "minimumOrderAmount": 20000
+  },
+  "payments": {
+    "methods": ["cash_on_delivery", "bank_transfer", "in_store"],
+    "requireTransferReceipt": true,
+    "requirePrepaymentBeforePrep": false,
+    "confirmationExpiryAction": "alert_only",
+    "cancellationLimit": "before_preparation"
+  },
+  "sla": {
+    "confirmationMinutes": 5,
+    "preparationMinutes": 25,
+    "dispatchMinutes": 30,
+    "urgencyThresholdMinutes": 15,
+    "outOfHoursPolicy": "reject",
+    "outOfHoursAutoReply": true,
+    "outOfHoursMessage": "Hola, nuestro horario de atención ha finalizado. Te responderemos a primera hora."
+  },
+  "operators": [{ "id": "…", "name": "Camila Ruiz", "email": "camila@example.com", "phone": "+573001234567", "stages": ["confirmation", "preparation", "dispatch"], "createdAt": "…" }],
+  "progress": { "currentStep": "profile", "visitedSteps": ["profile"], "ready": false, "readyAt": null, "touched": false }
+}
+```
+
+### Rutas de la configuración (tras `/pedidos/businesses/:businessId`)
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| `GET` | `` | Estado completo (en la primera apertura inicializa la plantilla del perfil sugerido). |
+| `PUT` | `/profile` | `{ profile }`: aplica la plantilla del perfil (`food`, `fashion`, `general`, `services`), conserva los operadores y reinicia `touched: false` y `ready: false`. |
+| `PUT` | `/modalities` | `{ modalities, onSiteMode }`: guarda modalidades activas (`delivery`, `pickup`, `on_site`) y modo de consumo en sitio (`table_or_zone`, `counter`). |
+| `PUT` | `/fulfillment` | Guarda logística propia/transportadoras, recogida, confirmación, WhatsApp, flete, riesgo y monto mínimo. |
+| `PUT` | `/payments` | Guarda medios de pago, comprobante, prepago antes de preparar, vencimiento de confirmación y límite de cancelación. |
+| `PUT` | `/sla` | Guarda tiempos de confirmación, preparación, despacho, alerta de urgencia y atención fuera de horario. |
+| `POST` | `/operators` | Crea un operador (`201`, devuelve el estado completo + `created: { id }`). |
+| `PUT` | `/operators/:operatorId` | Reemplaza nombre, correo, teléfono y etapas (`confirmation`, `preparation`, `dispatch`) de un operador. |
+| `DELETE` | `/operators/:operatorId` | Retira la asignación del operador en Pedidos para este negocio (sin borrar su identidad ni otros accesos). |
+| `PUT` | `/progress` | `{ currentStep, visitedSteps }`: recuerda paso actual y pasos visitados sin cambiar `touched` ni `ready`. |
+| `POST` | `/complete` | Valida todas las secciones y marca la configuración como preparada (`ready: true`, `readyAt`, `currentStep: "review"`). |
+
+### Reglas de dominio e invariantes
+- **Modalidades:** al menos una modalidad activa (`delivery`, `pickup` u `on_site`). Si `on_site` está activo, `onSiteMode` es `table_or_zone` o `counter`.
+- **Logística (`fulfillment`):** cuando `delivery` está activo y `hasOwnCourier` es `false`, debe haber al menos una transportadora habilitada; cuando `delivery` está activo y `shippingPricingMode` es `"fixed"` o `"free_from"`, `flatShippingFee >= 0`; si `shippingPricingMode === "free_from"`, además `freeShippingThreshold >= 1`; si `minimumOrderActive` es `true`, `minimumOrderAmount >= 1`; si `riskThresholdActive` es `true` (con `delivery` y confirmación no manual), `maxShippingCostRisk >= 0`. Con `confirmationMode === "agent"`, `whatsappNumber` es obligatorio y debe tener entre 7 y 15 dígitos.
+- **Pagos y políticas (`payments`):** al menos un método de pago activo (`cash_on_delivery`, `bank_transfer`, `payment_link`, `in_store`). Activar `requirePrepaymentBeforePrep` exige tener habilitado al menos un método de pago anticipado (`bank_transfer` o `payment_link`).
+- **Tiempos y alertas (`sla`):** `preparationMinutes` y `urgencyThresholdMinutes` en `1..10080`; `confirmationMinutes` en `1..1440` cuando la confirmación no es automática; `dispatchMinutes` en `1..10080` cuando `delivery` está activo; si `outOfHoursAutoReply` está activo, `outOfHoursMessage` es obligatorio (hasta 500 caracteres).
+- **Operadores:** opcionales (hasta 50 por negocio). Cada operador requiere nombre (2 a 80 caracteres), correo único en el negocio (normalizado en minúsculas, hasta 254 caracteres), teléfono opcional (7 a 15 dígitos) y al menos una etapa (`confirmation`, `preparation`, `dispatch`). Correo repetido responde `409` con `code: "duplicate-operator-email"` y `fields.email`.
+- **Completar (`POST /complete`):** revalida todas las secciones; si falta algún requisito responde `409` con `code: "pedidos-incomplete"` y `fields`. Repetir `complete` sobre una configuración ya lista conserva `readyAt`. Cualquier cambio posterior de contenido vuelve `ready: false` (navegar con `PUT /progress` no invalida `ready`).
+
+### Vista del operador: `GET /pedidos/businesses/:businessId/operator`
+```json
+{
+  "business": { "id": "…", "name": "Casa Oliva" },
+  "operator": { "id": "…", "name": "Camila Ruiz", "email": "camila@example.com", "phone": "+573001234567", "stages": ["confirmation", "preparation"] },
+  "schedule": { "timezone": "America/Bogota", "inherit": true, "openNow": true },
+  "modalities": ["delivery", "pickup"],
+  "confirmationMode": "manual"
+}
+```
+El operador se identifica únicamente por el **correo de la sesión**; nunca se exponen otros operadores ni reglas administrativas. Es de solo lectura y, si se retira la asignación, se deshabilita Pedidos o se pausa el negocio, responde `404` en la petición siguiente.
+
+### Integración con login compartido y configuración base (IoC sin ciclos)
+- **Login compartido:** `PedidosOperatorAccessSource` se registra en `MemberAccessRegistry` (`business-access/public`) al iniciar el módulo y solo expone operadores con al menos una etapa asignada en negocios activos con `pedidos` habilitado.
+- **Estado en `business-setup`:** `PedidosSetupStatusSource` se registra en `ModuleSetupStatusRegistry` (`business-setup/public`) y reporta `{ ready, summary: { modalityCount, operatorCount } }` para que el directorio de módulos muestre el estado real desde el servidor.
+- **Puerta pública (`pedidos/public.ts`):** exporta `PedidosModule`, `PEDIDOS_MODULE_ID`, `PEDIDOS_PROFILE_IDS` y `PedidosProfileId`.
+
+### Errores del módulo
+`400` validación (`code: "invalid-pedidos-data"` y `fields`) · `401` sin token o sesión terminada (`session-expired`) · `403` token de superadmin o `module-not-enabled` · `404` negocio u operador inaccesible · `409` `duplicate-operator-email`, `pedidos-incomplete`, `concurrent-change`.
+
 ## Estructura
 
 ```
@@ -776,7 +871,8 @@ src/
     ├── businesses/              Negocios, jefe vigente y módulos habilitados (colección `businesses`)
     ├── business-access/         Acceso de administradores por OTP, sesiones y permisos (`access_challenges`, `access_rate_limits`, `admin_sessions`)
     ├── business-setup/          Configuración inicial del negocio por su administrador (`business_setups`)
-    └── turnos/                  Configuración de Turnos: perfil, filas, reglas y operadores (`turnos_configurations`)
+    ├── turnos/                  Configuración de Turnos: perfil, filas, reglas y operadores (`turnos_configurations`)
+    └── pedidos/                 Configuración de Pedidos: perfil, modalidades, despacho, pagos, SLA y operadores (`pedidos_configurations`)
 ```
 
 Dentro de un módulo, las capas dependen en una sola dirección: `api` y `infrastructure` -> `application` y `domain`;
@@ -793,6 +889,7 @@ habla con un repositorio abstracto (`domain/*.repository.ts`) que implementa `in
 | `business-access` | Invitación por correo, acceso de administradores con OTP, sesiones y permisos por negocio/módulo | `access_challenges`, `access_rate_limits`, `admin_sessions` | `/business-access/*`, `/businesses/:id/invitation*` |
 | `business-setup` | Configuración inicial del negocio por su administrador: datos, logo, horarios (propios o heredados), tipo y progreso | `business_setups` | `/business-setup/businesses/:businessId/*` |
 | `turnos` | Configuración de Turnos: perfil de atención, filas, reglas generales y operadores (que entran por el login compartido) | `turnos_configurations` | `/turnos/businesses/:businessId/*` |
+| `pedidos` | Configuración de Pedidos: perfil operativo, modalidades, logística, pagos/políticas, SLA y operadores (con login compartido y estado en `business-setup`) | `pedidos_configurations` | `/pedidos/businesses/:businessId/*` |
 
 - **Puertas públicas.** `modules/<módulo>/public.ts` es lo único que otro código puede importar de un módulo. Hoy exporta
   el módulo de Nest (para que `app.module.ts` lo registre) y, si otro módulo lo necesita, contratos: `businesses` exporta
@@ -842,8 +939,8 @@ Son tres cosas distintas y viven en lugares distintos:
   (se invalida con cualquier cambio, no con el paso), DTOs y los guards declarados en los controladores. Con `NECTO_TEST_MONGODB_URI` apuntando a la base de desarrollo,
   `mongo-business-setup.repository.spec.ts` también prueba el repositorio contra MongoDB real (usa ids propios y los borra al terminar):
   `NECTO_TEST_MONGODB_URI="$(grep ^MONGODB_URI= .env | cut -d= -f2-)" npm test`.
-- **Login compartido** (`business-access/application/access-grants.service.spec.ts`, `turnos/shared-login.spec.ts`): una identidad con varios roles
-  (jefe de un negocio y operadora de otro, o ambos en el mismo), el flujo OTP real de un operador (código por correo, un solo uso, bloqueo por intentos, el
+- **Login compartido** (`business-access/application/access-grants.service.spec.ts`, `turnos/shared-login.spec.ts`, `pedidos/shared-login.spec.ts`): una identidad con varios roles
+  (jefe de un negocio y operadora de otro, o ambos en el mismo, e incluso operadora simultánea de Turnos y Pedidos), el flujo OTP real de un operador (código por correo, un solo uso, bloqueo por intentos, el
   código de demostración `123456` no abre nada), el guard de operador (otro negocio, otro módulo, un jefe que no es operador) y cómo se cierra el acceso
   al retirar la asignación, deshabilitar el módulo, pausar el negocio o reemplazar al jefe, sin borrar la identidad ni los demás accesos.
 - **`turnos`:** reglas y herencia campo por campo (incluida la combinación de límites heredados y propios), validación de filas y operadores, perfil
@@ -852,6 +949,7 @@ Son tres cosas distintas y viven en lugares distintos:
   vista del operador (solo sus filas), contrato con la configuración base, DTOs, guards declarados en los controladores y la forma de las respuestas.
   `mongo-turnos-configuration.repository.spec.ts` prueba el repositorio contra MongoDB real con `NECTO_TEST_MONGODB_URI` (versión, dos escritores, borrar fila y
   reasignar en una escritura, búsqueda por correo de operador).
+- **`pedidos`:** inicialización única por perfil sugerido, validación de dominio por sección (modalidades, logística/transportadoras/flete, pagos/políticas, SLA/fuera de horario, operadores por etapa y unicidad de correo), cambio de perfil conservando operadores, progreso sin invalidar `ready`, concurrencia optimista, `complete` con `pedidos-incomplete`, vista acotada del operador, fuentes IoC (`PedidosOperatorAccessSource` y `PedidosSetupStatusSource`), DTOs con whitelist estricto y guards declarados en los controladores. Suite total del backend: **491 pruebas** pasando con `npm run test:api`.
 - **Arquitectura** (`src/architecture.spec.ts`): lee los imports reales y comprueba que `platform/` no depende de los
   módulos, que los módulos solo se alcanzan por `public.ts`, que las capas respetan su sentido, que Mongoose solo está en
   `infrastructure`, que `@nestjs/jwt` solo está en `platform/security` y `nodemailer` solo en `platform/mail`, y que no hay ciclos entre archivos ni entre módulos.

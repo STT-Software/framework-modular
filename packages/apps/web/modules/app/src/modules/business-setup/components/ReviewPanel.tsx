@@ -1,4 +1,5 @@
 import { observer } from "mobx-react-lite";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { categoryLabel } from "@/modules/businesses";
 import { initialsOf } from "../initials";
 import { dayText } from "../schedule";
@@ -29,6 +30,7 @@ export const ReviewPanel = observer(({ onEdit, onViewModule }: { onEdit: (step: 
   return (
     <section className="no-panel no-panel-enter" aria-label="Revisión de la configuración base">
       <div className="no-card no-review-identity">
+        <BrandCardDecor />
         <div className="no-review-logo">
           {store.logoUrl ? <img src={store.logoUrl} alt="Logo del negocio" /> : <span>{initialsOf(name)}</span>}
         </div>

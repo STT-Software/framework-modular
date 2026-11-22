@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { useRef, type ReactNode } from "react";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { Input } from "@/elements/form/input";
 import { Button } from "@/elements/ui/button";
 import { categoryLabel } from "@/modules/businesses";
@@ -45,6 +46,7 @@ export const DataPanel = observer(({ categoryPath, onOpenCategory }: { categoryP
   return (
     <section className="no-panel no-panel-enter" aria-label="Datos del negocio">
       <div className="no-card no-data-card">
+        <BrandCardDecor />
         <header className="no-card-header">
           <div>
             <h2>Datos del negocio</h2>

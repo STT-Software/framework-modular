@@ -17,7 +17,6 @@ import { STEP_TITLES, Wizard } from "../components/Wizard";
 import { businessSetupStore } from "../stores/businessSetup.store";
 import { SETUP_STEPS, type SetupStep } from "../types";
 import { Skeleton, SkeletonGroup } from "@/components/skeleton";
-import { BrandBackdrop } from "@/components/configuration/BrandBackdrop";
 
 type View = SetupStep | "modules";
 const isStep = (value: string | undefined): value is SetupStep => SETUP_STEPS.includes(value as SetupStep);
@@ -122,7 +121,6 @@ const BusinessSetupPage = observer(() => {
 
   return (
     <section className="no-root" aria-label="Configuración inicial del negocio">
-      <BrandBackdrop />
       <PageMeta title={view === "modules" ? `Necto · Los módulos de ${name}` : `Necto · ${STEP_TITLES[view]}`} />
       <header className="no-header">
         <Link to={businessId ? pathOf(businessId, "modules") : "/business/access"} className="no-logo" aria-label="Necto, módulos de mi negocio">

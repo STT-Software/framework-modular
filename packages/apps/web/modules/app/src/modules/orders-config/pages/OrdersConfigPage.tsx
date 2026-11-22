@@ -10,7 +10,7 @@ import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
 import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
 import { ConfigBusinessSwitcher } from "@/components/configuration/ConfigBusinessSwitcher";
-import { BrandBackdrop } from "@/components/configuration/BrandBackdrop";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { WorkspaceSupportDropdown, WorkspaceSupportWidget } from "@/modules/workspace";
 import { OrdersGuide } from "../components/OrdersGuide";
 import { ORDERS_PROFILE_ICONS } from "../components/icons";
@@ -150,7 +150,6 @@ export const OrdersConfigPage = observer(() => {
 
   return (
     <section className="oc-root" aria-label="Configuración del módulo de Pedidos">
-      <BrandBackdrop />
       <PageMeta title={`Necto · ${copy.document}`} />
 
       {/* HEADER */}
@@ -259,6 +258,7 @@ export const OrdersConfigPage = observer(() => {
           <div className="config-step-workspace">
             <div className="config-form-col">
               <div className="oc-card">
+                <BrandCardDecor />
             {/* PASO 1: PERFIL */}
             {currentStep === "profile" && (
               <div>

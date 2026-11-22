@@ -673,144 +673,134 @@
 }
 
 /* --------------------------------------------------------------------------
-   Subtle Brand Geometry Backdrop for Configuration Modules
+   Subtle Brand Geometry Backdrop for White Cards (Setup, Turnos, Pedidos)
+   Maximum 3 shapes (Ring, Wave, Arc) inspired by /welcome/ready
    -------------------------------------------------------------------------- */
-.config-brand-backdrop {
-  position: fixed;
+:is(.no-card, .nt-card, .oc-card) {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+:is(.no-card, .nt-card, .oc-card) > :not(.card-brand-decor) {
+  position: relative;
+  z-index: 1;
+}
+
+.card-brand-decor {
+  position: absolute;
   inset: 0;
-  z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  contain: strict;
+  border-radius: inherit;
+  z-index: 0;
 }
 
-.config-brand-piece {
+.card-brand-shape {
   position: absolute;
-  left: var(--x);
-  top: var(--y);
-  transform: translate(-50%, -50%) rotate(var(--angle));
-  opacity: 0.12;
-  transition: opacity 0.3s ease;
+  pointer-events: none;
+  opacity: 0.07;
+  transition: opacity 0.25s ease;
 }
 
-.dark .config-brand-piece {
-  opacity: 0.08;
+.dark .card-brand-shape {
+  opacity: 0.05;
 }
 
-.config-brand-piece > .ob-shape {
-  --w: calc(var(--size) * 1vmin);
-  position: relative;
-  width: var(--w);
-  height: var(--w);
-}
-
-.config-brand-piece .tone-indigo {
-  color: #190088;
-}
-
-.dark .config-brand-piece .tone-indigo {
-  color: #b7adff;
-}
-
-.config-brand-piece .tone-orange {
-  color: #ff3f1a;
-}
-
-.dark .config-brand-piece .tone-orange {
-  color: #ff6b48;
-}
-
-.config-brand-piece .tone-cyan {
-  color: #97d6df;
-}
-
-.dark .config-brand-piece .tone-cyan {
-  color: #97d6df;
-}
-
-.config-brand-piece .is-ring {
-  border: calc(var(--w) * 0.16) solid currentColor;
+/* Shape 1: Ring (indigo) in top-right */
+.card-brand-shape.is-ring {
+  top: -24px;
+  right: -24px;
+  width: 120px;
+  height: 120px;
+  border: 14px solid currentColor;
   border-radius: 50%;
+  transform: rotate(15deg);
 }
 
-.config-brand-piece .is-capsule {
-  height: calc(var(--w) * 0.42);
-  border: calc(var(--w) * 0.1) solid currentColor;
-  border-radius: 999px;
+/* Shape 2: Wave (cyan) in bottom-left */
+.card-brand-shape.is-wave {
+  bottom: 16px;
+  left: -20px;
+  width: 110px;
+  height: 32px;
+  transform: rotate(-6deg);
 }
 
-.config-brand-piece .is-square {
-  border: calc(var(--w) * 0.17) solid currentColor;
-  border-radius: 28%;
-}
-
-.config-brand-piece .is-quarter {
-  background: currentColor;
-  border-radius: 100% 0 0 0;
-}
-
-.config-brand-piece .is-arc {
-  border: calc(var(--w) * 0.15) solid transparent;
-  border-top-color: currentColor;
-  border-right-color: currentColor;
-  border-radius: 50%;
-}
-
-.config-brand-piece .is-wave {
-  height: calc(var(--w) * 0.3);
-}
-
-.config-brand-piece .is-wave svg {
+.card-brand-shape.is-wave svg {
   display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
 }
 
-.config-brand-piece .is-wave path {
+.card-brand-shape.is-wave path {
   stroke: currentColor;
-  stroke-width: 7;
+  stroke-width: 8;
   stroke-linecap: round;
 }
 
-.config-brand-piece .is-dots {
-  height: calc(var(--w) * 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.config-brand-piece .is-dots b {
-  width: calc(var(--w) * 0.28);
-  height: calc(var(--w) * 0.28);
+/* Shape 3: Arc (orange) in bottom-right */
+.card-brand-shape.is-arc {
+  bottom: -20px;
+  right: 32px;
+  width: 80px;
+  height: 80px;
+  border: 12px solid transparent;
+  border-top-color: currentColor;
+  border-right-color: currentColor;
   border-radius: 50%;
-  background: currentColor;
+  transform: rotate(35deg);
 }
 
-.config-brand-piece .is-plus b {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: calc(var(--w) * 0.3);
-  height: 100%;
-  border-radius: 999px;
-  background: currentColor;
+.card-brand-shape.tone-indigo {
+  color: #190088;
 }
 
-.config-brand-piece .is-plus b + b {
-  width: 100%;
-  height: calc(var(--w) * 0.3);
+.dark .card-brand-shape.tone-indigo {
+  color: #b7adff;
 }
 
-.config-brand-piece .is-disc {
-  border-radius: 50%;
-  background: currentColor;
+.card-brand-shape.tone-cyan {
+  color: #97d6df;
 }
 
-@media (max-width: 900px) {
-  .config-brand-piece.is-wide-only {
-    display: none;
+.dark .card-brand-shape.tone-cyan {
+  color: #97d6df;
+}
+
+.card-brand-shape.tone-orange {
+  color: #ff3f1a;
+}
+
+.dark .card-brand-shape.tone-orange {
+  color: #ff6b48;
+}
+
+@media (max-width: 600px) {
+  .card-brand-shape.is-ring {
+    width: 90px;
+    height: 90px;
+    border-width: 10px;
+    top: -18px;
+    right: -18px;
+  }
+  .card-brand-shape.is-wave {
+    width: 85px;
+    height: 24px;
+    bottom: 12px;
+    left: -14px;
+  }
+  .card-brand-shape.is-arc {
+    width: 60px;
+    height: 60px;
+    border-width: 9px;
+    bottom: -15px;
+    right: 18px;
   }
 }
+
+.config-brand-backdrop {
+  display: none !important;
+}
+
 
 

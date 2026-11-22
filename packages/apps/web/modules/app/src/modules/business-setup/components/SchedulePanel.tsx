@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef } from "react";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { moduleInfo } from "@/modules/businesses";
 import { dayText } from "../schedule";
 import { businessSetupStore, type HoursScope } from "../stores/businessSetup.store";
@@ -57,6 +58,7 @@ export const SchedulePanel = observer(() => {
   return (
     <section className="no-panel no-panel-enter" aria-label="Horarios de atención">
       <div className="no-card no-hours-card">
+        <BrandCardDecor />
         <header className="no-card-header">
           <div>
             <h2>Disponibilidad semanal</h2>

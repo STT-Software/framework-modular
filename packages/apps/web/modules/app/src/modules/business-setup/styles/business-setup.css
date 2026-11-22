@@ -399,7 +399,7 @@
   opacity: .5;
   transform-box: fill-box;
   transform-origin: center;
-  animation: no-sparkle 2.4s ease-in-out infinite alternate;
+
 }
 
 .no-motion-center {

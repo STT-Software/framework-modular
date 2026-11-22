@@ -10,6 +10,7 @@ import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
 import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
 import { ConfigBusinessSwitcher } from "@/components/configuration/ConfigBusinessSwitcher";
+import { BrandBackdrop } from "@/components/configuration/BrandBackdrop";
 import { WorkspaceSupportDropdown, WorkspaceSupportWidget } from "@/modules/workspace";
 import { Icon } from "../components/Icon";
 import { ICONS } from "../components/icons";
@@ -200,6 +201,7 @@ const TurnosPage = observer(() => {
 
   return (
     <section ref={rootRef} className="nt-root" aria-label="Configuración del módulo de Turnos">
+      <BrandBackdrop />
       <PageMeta title={title} />
       <header className="nt-header">
         <Link to={isOperator || !businessId ? "/business/access" : `/business/setup/${businessId}`} className="nt-logo" aria-label={isOperator ? "Necto, mi acceso de operador" : "Necto, mis módulos"}>

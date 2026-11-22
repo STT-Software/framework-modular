@@ -430,16 +430,16 @@
 }
 
 .oc-select-card.is-selected {
-  border-color: var(--oc-cyan);
-  box-shadow: 0 0 0 1px var(--oc-cyan);
-  background: var(--oc-cyan-soft);
+  border-color: var(--oc-orange);
+  box-shadow: 0 0 0 1px var(--oc-orange);
+  background: var(--oc-orange-soft);
 }
 
 .oc-profile-icon {
   width: 44px;
   height: 44px;
-  background: var(--oc-cyan-soft);
-  color: var(--oc-cyan);
+  background: var(--oc-orange-soft);
+  color: var(--oc-orange);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -459,13 +459,13 @@
 }
 
 .oc-select-card.is-selected .oc-profile-icon {
-  background: var(--oc-cyan);
-  color: #fff;
+  background: var(--oc-orange-soft);
+  color: var(--oc-orange);
 }
 
 .dark .oc-select-card.is-selected .oc-profile-icon {
-  background: var(--oc-cyan);
-  color: #0c111d;
+  background: var(--oc-orange-soft);
+  color: var(--oc-orange);
 }
 
 .oc-select-card i {
@@ -486,15 +486,15 @@
 }
 
 .oc-select-card.is-selected i {
-  background: var(--oc-cyan);
+  background: var(--oc-orange);
   border-color: transparent;
   color: #fff;
 }
 
 .dark .oc-select-card.is-selected i {
-  background: var(--oc-cyan);
+  background: var(--oc-orange);
   border-color: transparent;
-  color: #0c111d;
+  color: #fff;
 }
 
 .oc-select-card strong {

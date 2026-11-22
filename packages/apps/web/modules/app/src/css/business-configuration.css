@@ -672,4 +672,145 @@
   background: #1d2939 !important;
 }
 
+/* --------------------------------------------------------------------------
+   Subtle Brand Geometry Backdrop for Configuration Modules
+   -------------------------------------------------------------------------- */
+.config-brand-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  contain: strict;
+}
+
+.config-brand-piece {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  transform: translate(-50%, -50%) rotate(var(--angle));
+  opacity: 0.12;
+  transition: opacity 0.3s ease;
+}
+
+.dark .config-brand-piece {
+  opacity: 0.08;
+}
+
+.config-brand-piece > .ob-shape {
+  --w: calc(var(--size) * 1vmin);
+  position: relative;
+  width: var(--w);
+  height: var(--w);
+}
+
+.config-brand-piece .tone-indigo {
+  color: #190088;
+}
+
+.dark .config-brand-piece .tone-indigo {
+  color: #b7adff;
+}
+
+.config-brand-piece .tone-orange {
+  color: #ff3f1a;
+}
+
+.dark .config-brand-piece .tone-orange {
+  color: #ff6b48;
+}
+
+.config-brand-piece .tone-cyan {
+  color: #97d6df;
+}
+
+.dark .config-brand-piece .tone-cyan {
+  color: #97d6df;
+}
+
+.config-brand-piece .is-ring {
+  border: calc(var(--w) * 0.16) solid currentColor;
+  border-radius: 50%;
+}
+
+.config-brand-piece .is-capsule {
+  height: calc(var(--w) * 0.42);
+  border: calc(var(--w) * 0.1) solid currentColor;
+  border-radius: 999px;
+}
+
+.config-brand-piece .is-square {
+  border: calc(var(--w) * 0.17) solid currentColor;
+  border-radius: 28%;
+}
+
+.config-brand-piece .is-quarter {
+  background: currentColor;
+  border-radius: 100% 0 0 0;
+}
+
+.config-brand-piece .is-arc {
+  border: calc(var(--w) * 0.15) solid transparent;
+  border-top-color: currentColor;
+  border-right-color: currentColor;
+  border-radius: 50%;
+}
+
+.config-brand-piece .is-wave {
+  height: calc(var(--w) * 0.3);
+}
+
+.config-brand-piece .is-wave svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.config-brand-piece .is-wave path {
+  stroke: currentColor;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.config-brand-piece .is-dots {
+  height: calc(var(--w) * 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.config-brand-piece .is-dots b {
+  width: calc(var(--w) * 0.28);
+  height: calc(var(--w) * 0.28);
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.config-brand-piece .is-plus b {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: calc(var(--w) * 0.3);
+  height: 100%;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.config-brand-piece .is-plus b + b {
+  width: 100%;
+  height: calc(var(--w) * 0.3);
+}
+
+.config-brand-piece .is-disc {
+  border-radius: 50%;
+  background: currentColor;
+}
+
+@media (max-width: 900px) {
+  .config-brand-piece.is-wide-only {
+    display: none;
+  }
+}
+
 

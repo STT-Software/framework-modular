@@ -1,6 +1,7 @@
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
 import { NectoLogo } from "@/brand/NectoLogo";
+import { useElementVisibility } from "@/hooks";
 import { businessSetupStore } from "../stores/businessSetup.store";
 import { ModuleIcon } from "./ModuleIcon";
 
@@ -22,6 +23,7 @@ interface ModulesViewProps {
 export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps) => {
   const state = businessSetupStore.state;
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const { ref: motionRef, isVisible: isMotionVisible } = useElementVisibility<HTMLDivElement>();
   const [openingModuleId, setOpeningModuleId] = useState<string | null>(null);
   const [startingBase, setStartingBase] = useState(false);
 
@@ -65,7 +67,7 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
             {!startingBase && <span aria-hidden="true">→</span>}
           </button>
         </div>
-        <div className="no-module-motion" aria-hidden="true">
+        <div ref={motionRef} className="no-module-motion" data-visible={isMotionVisible} aria-hidden="true">
           <svg viewBox="0 0 390 280" fill="none">
             <circle cx="196" cy="136" r="99" />
             <ellipse cx="196" cy="136" rx="155" ry="72" transform="rotate(-22 196 136)" />

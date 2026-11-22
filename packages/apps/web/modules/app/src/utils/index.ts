@@ -70,3 +70,5 @@ const twMerge = extendTailwindMerge({
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(...inputs));
 }
+
+export { optimizeImage, type ImageOptimizationOptions } from "./imageOptimizer";

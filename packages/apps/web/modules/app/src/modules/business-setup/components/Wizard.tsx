@@ -9,6 +9,7 @@ import { CategoryPanel } from "./CategoryPanel";
 import { DataPanel } from "./DataPanel";
 import { ReviewPanel } from "./ReviewPanel";
 import { SchedulePanel } from "./SchedulePanel";
+import { SetupGuide } from "./SetupGuide";
 
 const STEP_COPY: Record<SetupStep, { nav: string; hint: string; title: string; description: string; document: string }> = {
   data: {
@@ -78,7 +79,10 @@ export const Wizard = observer(({ step, onGo, onSubmit, onViewModule, categoryPa
             onGo("modules");
           }}
         >
-          ← Mis módulos
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+          <span>Volver a módulos</span>
         </a>
         <div className="no-sidebar-business">
           <span className="no-avatar">{initialsOf(name)}</span>
@@ -117,29 +121,38 @@ export const Wizard = observer(({ step, onGo, onSubmit, onViewModule, categoryPa
           </h1>
           <p>{copy.description}</p>
         </div>
-        <form onSubmit={submit} noValidate>
-          {step === "data" && <DataPanel categoryPath={categoryPath} onOpenCategory={() => onGo("category")} />}
-          {step === "schedule" && <SchedulePanel />}
-          {step === "category" && <CategoryPanel />}
-          {step === "review" && <ReviewPanel onEdit={(target) => onGo(target)} onViewModule={onViewModule} />}
-          {store.error && (
-            <p className="no-error" role="alert">
-              {store.error}
-            </p>
+        <div className={step === "schedule" ? "config-step-workspace is-single-col" : "config-step-workspace"}>
+          <div className="config-form-col">
+            <form onSubmit={submit} noValidate>
+              {step === "data" && <DataPanel categoryPath={categoryPath} onOpenCategory={() => onGo("category")} />}
+              {step === "schedule" && <SchedulePanel />}
+              {step === "category" && <CategoryPanel />}
+              {step === "review" && <ReviewPanel onEdit={(target) => onGo(target)} onViewModule={onViewModule} />}
+              {store.error && (
+                <p className="no-error" role="alert">
+                  {store.error}
+                </p>
+              )}
+              <footer className="no-form-footer">
+                <span>Paso {index + 1} de 4</span>
+                <div>
+                  <Button variant="outline" type="button" className="no-secondary" disabled={store.saving} onClick={() => onGo(index === 0 ? "modules" : SETUP_STEPS[index - 1])}>
+                    {index === 0 ? "Volver a módulos" : "← Atrás"}
+                  </Button>
+                  <Button type="submit" className="no-primary" disabled={store.saving}>
+                    {store.saving ? "Guardando…" : index === 3 ? "Guardar configuración base " : "Siguiente "}
+                    {!store.saving && <span aria-hidden="true">{index === 3 ? "✓" : "→"}</span>}
+                  </Button>
+                </div>
+              </footer>
+            </form>
+          </div>
+          {step !== "schedule" && (
+            <aside className="config-guide-col">
+              <SetupGuide step={step} />
+            </aside>
           )}
-          <footer className="no-form-footer">
-            <span>Paso {index + 1} de 4</span>
-            <div>
-              <Button variant="outline" type="button" className="no-secondary" disabled={store.saving} onClick={() => onGo(index === 0 ? "modules" : SETUP_STEPS[index - 1])}>
-                {index === 0 ? "Volver a módulos" : "← Atrás"}
-              </Button>
-              <Button type="submit" className="no-primary" disabled={store.saving}>
-                {store.saving ? "Guardando…" : index === 3 ? "Guardar configuración base " : "Siguiente "}
-                {!store.saving && <span aria-hidden="true">{index === 3 ? "✓" : "→"}</span>}
-              </Button>
-            </div>
-          </footer>
-        </form>
+        </div>
       </div>
     </div>
   );

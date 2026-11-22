@@ -101,7 +101,10 @@ export class MongoBusinessRepository extends BusinessRepository {
   }
 
   async findActiveByBossEmail(email: string): Promise<Business[]> {
-    const records = await this.model.find({ 'boss.email': email, status: 'active' }).sort({ createdAt: 1, _id: 1 }).lean<Lean[]>();
+    const records = await this.model
+      .find({ 'boss.email': email, status: 'active' }, { bossHistory: 0 })
+      .sort({ createdAt: 1, _id: 1 })
+      .lean<Lean[]>();
     return records.map(toDomain);
   }
 
@@ -116,7 +119,7 @@ export class MongoBusinessRepository extends BusinessRepository {
     }
     const [records, total] = await Promise.all([
       this.model
-        .find(filter)
+        .find(filter, { bossHistory: 0 })
         .sort({ createdAt: -1, _id: -1 })
         .skip((query.page - 1) * query.pageSize)
         .limit(query.pageSize)

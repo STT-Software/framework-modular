@@ -1,5 +1,7 @@
 import { observer } from "mobx-react-lite";
 import { useRef, type ReactNode } from "react";
+import { Input } from "@/elements/form/input";
+import { Button } from "@/elements/ui/button";
 import { categoryLabel } from "@/modules/businesses";
 import { initialsOf } from "../initials";
 import { businessSetupStore } from "../stores/businessSetup.store";
@@ -96,13 +98,13 @@ export const DataPanel = observer(({ categoryPath, onOpenCategory }: { categoryP
         <div className="no-fields">
           <Field field="name" label={<>Nombre del negocio <span>*</span></>}>
             {(p) => (
-              <input
+              <Input
                 id={p.id}
                 value={p.value}
                 autoComplete="organization"
                 maxLength={80}
                 required
-                aria-invalid={p.invalid || undefined}
+                error={p.invalid}
                 aria-describedby={p.describedBy}
                 onChange={(e) => p.onChange(e.target.value)}
               />
@@ -110,14 +112,14 @@ export const DataPanel = observer(({ categoryPath, onOpenCategory }: { categoryP
           </Field>
           <Field field="phone" label="Teléfono">
             {(p) => (
-              <input
+              <Input
                 id={p.id}
                 type="tel"
                 value={p.value}
                 autoComplete="tel"
                 placeholder="+57 300 123 4567"
                 maxLength={25}
-                aria-invalid={p.invalid || undefined}
+                error={p.invalid}
                 aria-describedby={p.describedBy}
                 onChange={(e) => p.onChange(e.target.value)}
               />
@@ -125,14 +127,14 @@ export const DataPanel = observer(({ categoryPath, onOpenCategory }: { categoryP
           </Field>
           <Field field="supportEmail" label="Correo de contacto">
             {(p) => (
-              <input
+              <Input
                 id={p.id}
                 type="email"
                 value={p.value}
                 autoComplete="email"
                 placeholder="contacto@tunegocio.com"
                 maxLength={160}
-                aria-invalid={p.invalid || undefined}
+                error={p.invalid}
                 aria-describedby={p.describedBy}
                 onChange={(e) => p.onChange(e.target.value)}
               />
@@ -140,12 +142,13 @@ export const DataPanel = observer(({ categoryPath, onOpenCategory }: { categoryP
           </Field>
           <Field field="address" label="Dirección">
             {(p) => (
-              <input
+              <Input
                 id={p.id}
                 value={p.value}
                 autoComplete="street-address"
                 placeholder="Calle, número y ciudad"
                 maxLength={180}
+                error={p.invalid}
                 aria-describedby={p.describedBy}
                 onChange={(e) => p.onChange(e.target.value)}
               />
@@ -153,17 +156,25 @@ export const DataPanel = observer(({ categoryPath, onOpenCategory }: { categoryP
           </Field>
           <Field field="legalName" label="Razón social">
             {(p) => (
-              <input id={p.id} value={p.value} maxLength={120} placeholder="Nombre legal de la empresa" aria-describedby={p.describedBy} onChange={(e) => p.onChange(e.target.value)} />
+              <Input
+                id={p.id}
+                value={p.value}
+                maxLength={120}
+                placeholder="Nombre legal de la empresa"
+                error={p.invalid}
+                aria-describedby={p.describedBy}
+                onChange={(e) => p.onChange(e.target.value)}
+              />
             )}
           </Field>
           <Field field="taxId" label="NIT / ID fiscal">
             {(p) => (
-              <input
+              <Input
                 id={p.id}
                 value={p.value}
                 maxLength={40}
                 placeholder="Ej. 900.123.456-7"
-                aria-invalid={p.invalid || undefined}
+                error={p.invalid}
                 aria-describedby={p.describedBy}
                 onChange={(e) => p.onChange(e.target.value)}
               />
@@ -179,14 +190,14 @@ export const DataPanel = observer(({ categoryPath, onOpenCategory }: { categoryP
             }
           >
             {(p) => (
-              <input
+              <Input
                 id={p.id}
                 type="url"
                 value={p.value}
                 autoComplete="url"
                 placeholder="https://tunegocio.com"
                 maxLength={200}
-                aria-invalid={p.invalid || undefined}
+                error={p.invalid}
                 aria-describedby={p.describedBy}
                 onChange={(e) => p.onChange(e.target.value)}
               />

@@ -121,7 +121,7 @@ export const Wizard = observer(({ step, onGo, onSubmit, onViewModule, categoryPa
           </h1>
           <p>{copy.description}</p>
         </div>
-        <div className={step === "schedule" ? "config-step-workspace is-single-col" : "config-step-workspace"}>
+        <div className="config-step-workspace">
           <div className="config-form-col">
             <form onSubmit={submit} noValidate>
               {step === "data" && <DataPanel categoryPath={categoryPath} onOpenCategory={() => onGo("category")} />}
@@ -147,11 +147,9 @@ export const Wizard = observer(({ step, onGo, onSubmit, onViewModule, categoryPa
               </footer>
             </form>
           </div>
-          {step !== "schedule" && (
-            <aside className="config-guide-col">
-              <SetupGuide step={step} />
-            </aside>
-          )}
+          <aside className="config-guide-col">
+            <SetupGuide step={step} />
+          </aside>
         </div>
       </div>
     </div>

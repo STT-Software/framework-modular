@@ -85,7 +85,45 @@ export const SetupGuide = observer(({ step }: { step: SetupStep }) => {
         </GuideFigure>
       );
 
-    case "schedule":
+    case "schedule": {
+      const schedule = store.scopeSchedule || store.baseDraft;
+      const openCount = schedule
+        ? Object.values(schedule).filter((d) => typeof d === "object" && d !== null && "open" in d && (d as { open: boolean }).open).length
+        : 5;
+      const tzLabel = state.schedule.timezone.split("/")[1]?.replaceAll("_", " ") || state.schedule.timezone.replaceAll("_", " ");
+      return (
+        <GuideFigure
+          title="Disponibilidad y tiempos de atención"
+          description="Define cuándo opera tu negocio y qué módulos tienen turnos o despachos en horarios especiales."
+          alternative={`Horario configurado para ${name}.`}
+        >
+          <BoardArt
+            label="HORARIOS DE ATENCIÓN"
+            title={name}
+            icon="time"
+            metric={`${openCount} días activos`}
+            items={[
+              {
+                label: "Zona horaria",
+                value: tzLabel,
+                icon: "time",
+              },
+              {
+                label: "Esquema semanal",
+                value: openCount > 0 ? `${openCount} de 7 días abiertos` : "Cerrado temporalmente",
+                icon: "check",
+              },
+              {
+                label: "Excepciones",
+                value: `${state.modules.length} módulos sincronizados`,
+                icon: "list",
+              },
+            ]}
+          />
+        </GuideFigure>
+      );
+    }
+
     default:
       return null;
   }

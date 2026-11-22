@@ -12,6 +12,7 @@ import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
 import { ConfigBusinessSwitcher } from "@/components/configuration/ConfigBusinessSwitcher";
 import { WorkspaceSupportDropdown, WorkspaceSupportWidget } from "@/modules/workspace";
 import { OrdersGuide } from "../components/OrdersGuide";
+import { ORDERS_PROFILE_ICONS } from "../components/icons";
 import { PROFILE_DEFAULTS } from "../constants";
 import { ordersConfigStore } from "../ordersConfig.store";
 import type { ModalityType, OrdersConfigStep, OrdersProfileId } from "../types";
@@ -272,8 +273,12 @@ export const OrdersConfigPage = observer(() => {
                         className={`oc-select-card ${isSelected ? "is-selected" : ""}`}
                         onClick={() => store.setProfile(profId)}
                       >
+                        <span className="oc-profile-icon">
+                          <svg viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ORDERS_PROFILE_ICONS[profId] }} />
+                        </span>
                         <strong>{p.name}</strong>
                         <p>{p.description}</p>
+                        <i>✓</i>
                       </button>
                     );
                   })}

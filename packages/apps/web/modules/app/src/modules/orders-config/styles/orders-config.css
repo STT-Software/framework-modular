@@ -435,6 +435,68 @@
   background: var(--oc-cyan-soft);
 }
 
+.oc-profile-icon {
+  width: 44px;
+  height: 44px;
+  background: var(--oc-cyan-soft);
+  color: var(--oc-cyan);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  transition: background .2s, color .2s;
+}
+
+.oc-profile-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oc-select-card.is-selected .oc-profile-icon {
+  background: var(--oc-cyan);
+  color: #fff;
+}
+
+.dark .oc-select-card.is-selected .oc-profile-icon {
+  background: var(--oc-cyan);
+  color: #0c111d;
+}
+
+.oc-select-card i {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  border: 1px solid var(--oc-border);
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-style: normal;
+  color: transparent;
+  font-size: 12px;
+  transition: all .2s ease;
+}
+
+.oc-select-card.is-selected i {
+  background: var(--oc-cyan);
+  border-color: transparent;
+  color: #fff;
+}
+
+.dark .oc-select-card.is-selected i {
+  background: var(--oc-cyan);
+  border-color: transparent;
+  color: #0c111d;
+}
+
 .oc-select-card strong {
   font-size: 17px;
   font-weight: 600;

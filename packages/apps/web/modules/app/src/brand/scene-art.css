@@ -59,9 +59,27 @@
 .config-art-stage .art-route { stroke: #190088 !important; }
 .config-art-stage .art-route[data-active="false"] { stroke: #cbd5e1 !important; opacity: 0.5 !important; }
 
-/* Dark mode stage accents: subtle dark background orbits and shadows, while vector cards remain white */
-.dark .config-art-stage .sa-art-orbit { stroke: rgba(255, 255, 255, 0.12) !important; stroke-dasharray: 4 6 !important; }
-.dark .config-art-stage .sa-art-orbit-solid { stroke: rgba(255, 255, 255, 0.08) !important; opacity: 0.8 !important; }
-.dark .config-art-stage .sa-art-link { stroke: rgba(255, 255, 255, 0.22) !important; stroke-opacity: 0.8 !important; }
-.dark .config-art-stage .sa-art-shadow { fill: rgba(0, 0, 0, 0.45) !important; }
-.dark .config-art-stage .art-route[data-active="false"] { stroke: rgba(255, 255, 255, 0.18) !important; opacity: 0.4 !important; }
+/* Dark mode stage accents: crisp white background orbits and links, while vector cards remain white */
+.dark .config-art-stage .sa-art-orbit {
+  stroke: #ffffff !important;
+  opacity: 0.65 !important;
+  stroke-dasharray: 4 6 !important;
+}
+.dark .config-art-stage .sa-art-orbit-solid {
+  stroke: #ffffff !important;
+  opacity: 0.45 !important;
+}
+.dark .config-art-stage .sa-art-link {
+  stroke: #ffffff !important;
+  opacity: 0.55 !important;
+}
+.dark .config-art-stage .sa-art-shadow {
+  fill: rgba(0, 0, 0, 0.65) !important;
+}
+.dark .config-art-stage .art-route {
+  stroke: #97d6df !important;
+}
+.dark .config-art-stage .art-route[data-active="false"] {
+  stroke: rgba(255, 255, 255, 0.3) !important;
+  opacity: 0.45 !important;
+}

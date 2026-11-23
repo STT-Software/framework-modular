@@ -1,0 +1,85 @@
+.sa-brand-side,
+.sa-code-hero,
+.config-art-stage {
+  --sa-art-paper: #fff;
+  --sa-art-line: #dfe4ef;
+  --sa-art-blue: #190088;
+  --sa-art-cyan: #97d6df;
+  --sa-art-accent: #ff3f1a;
+}
+
+.sa-art-orbit { fill: none; stroke: #ffffff4d; stroke-dasharray: 3 7; }
+.sa-art-orbit-solid { fill: none; stroke: #ffffff4d; opacity: 0.6; }
+.sa-art-link { fill: none; stroke: #fff; stroke-opacity: 0.5; stroke-width: 1.2; stroke-linecap: round; }
+.sa-art-spark { fill: #fff; opacity: 0.85; }
+.sa-art-shadow { fill: #8a1d0833; }
+.sa-art-card { fill: var(--sa-art-paper); stroke: var(--sa-art-line); stroke-width: 1.3; }
+.sa-art-soft { fill: color-mix(in srgb, var(--sa-art-line) 40%, var(--sa-art-paper)); }
+.sa-art-rule { fill: none; stroke: var(--sa-art-line); stroke-width: 1; }
+.sa-art-wire { fill: none; stroke: var(--sa-art-line); stroke-width: 1.3; stroke-linecap: round; }
+.sa-art-icon { fill: none; stroke: var(--sa-art-blue); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.sa-art-icon-accent { fill: none; stroke: var(--sa-art-accent); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.sa-art-text { fill: var(--sa-art-blue); font-weight: 500; }
+.sa-art-label { fill: var(--sa-art-blue); opacity: 0.5; font-weight: 500; letter-spacing: 0.12em; }
+.sa-art-ink { fill: var(--sa-art-blue); }
+.sa-art-orange { fill: var(--sa-art-accent); }
+.sa-art-orange-tint { fill: color-mix(in srgb, var(--sa-art-accent) 10%, var(--sa-art-paper)); }
+.sa-art-cyan { fill: var(--sa-art-cyan); }
+.sa-art-cyan-halo { fill: var(--sa-art-cyan); opacity: 0.25; }
+.sa-art-check { fill: none; stroke: #190088; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sa-art-on-accent { fill: #fff; stroke: none; }
+.sa-art-dash-accent { stroke: var(--sa-art-accent); stroke-width: 1.3; stroke-dasharray: 4 4; }
+.dark .sa-art-shadow { fill: #0003; }
+
+/* Styles scoped for white-background stage - ALWAYS LIGHT CANONICAL COLORS */
+.config-art-stage {
+  --sa-art-paper: #fff;
+  --sa-art-line: #dfe4ef;
+  --sa-art-blue: #190088;
+  --sa-art-cyan: #97d6df;
+  --sa-art-accent: #ff3f1a;
+}
+.config-art-stage .sa-art-orbit { stroke: #e4e7ec !important; stroke-dasharray: 4 6 !important; }
+.config-art-stage .sa-art-orbit-solid { stroke: #eef2f6 !important; opacity: 0.8 !important; }
+.config-art-stage .sa-art-link { stroke: #cbd5e1 !important; stroke-opacity: 0.8 !important; }
+.config-art-stage .sa-art-spark { fill: #ff3f1a !important; opacity: 0.75 !important; }
+.config-art-stage .sa-art-shadow { fill: #0f172a12 !important; }
+.config-art-stage .sa-art-card {
+  fill: #ffffff !important;
+  stroke: #d8dee8 !important;
+  stroke-width: 1.2 !important;
+}
+.config-art-stage .sa-art-icon { stroke: #190088 !important; }
+.config-art-stage .sa-art-icon-accent { stroke: #ff3f1a !important; }
+.config-art-stage .sa-art-text,
+.config-art-stage .sa-art-ink { fill: #190088 !important; }
+.config-art-stage .sa-art-label { fill: #190088 !important; opacity: 0.6 !important; }
+.config-art-stage .sa-art-orange { fill: #ff3f1a !important; }
+.config-art-stage .sa-art-cyan { fill: #97d6df !important; }
+.config-art-stage .art-route { stroke: #190088 !important; }
+.config-art-stage .art-route[data-active="false"] { stroke: #cbd5e1 !important; opacity: 0.5 !important; }
+
+/* Dark mode stage accents: crisp white background orbits and links, while vector cards remain white */
+.dark .config-art-stage .sa-art-orbit {
+  stroke: #ffffff !important;
+  opacity: 0.65 !important;
+  stroke-dasharray: 4 6 !important;
+}
+.dark .config-art-stage .sa-art-orbit-solid {
+  stroke: #ffffff !important;
+  opacity: 0.45 !important;
+}
+.dark .config-art-stage .sa-art-link {
+  stroke: #ffffff !important;
+  opacity: 0.55 !important;
+}
+.dark .config-art-stage .sa-art-shadow {
+  fill: rgba(0, 0, 0, 0.65) !important;
+}
+.dark .config-art-stage .art-route {
+  stroke: #97d6df !important;
+}
+.dark .config-art-stage .art-route[data-active="false"] {
+  stroke: rgba(255, 255, 255, 0.3) !important;
+  opacity: 0.45 !important;
+}

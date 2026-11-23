@@ -14,6 +14,9 @@ import type { AppModule } from "@/app/module";
  */
 export const preloadWorkspacePage = () => import("./pages/WorkspacePage");
 
+export { WorkspaceSupportDropdown } from "./components/WorkspaceSupportDropdown";
+export { WorkspaceSupportWidget, openSupportWidget } from "./components/WorkspaceSupportWidget";
+
 export const workspaceModule: AppModule = {
   id: "workspace",
   requiresSuperAdmin: true,

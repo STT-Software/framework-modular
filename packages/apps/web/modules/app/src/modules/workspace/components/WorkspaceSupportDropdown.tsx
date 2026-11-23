@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { NectoLogo } from "@/brand/NectoLogo";
 import { ShellDropdown } from "@/shell";
+import { cn } from "@/utils";
+import "../styles/workspace.css";
 import { TutorialArt } from "./workspaceArt";
 import { openSupportWidget } from "./WorkspaceSupportWidget";
 
@@ -100,12 +102,20 @@ function ArrowTopRightOnSquareIcon({
   );
 }
 
+interface WorkspaceSupportDropdownProps {
+  className?: string;
+  triggerClassName?: string;
+}
+
 /**
  * Help and support dropdown for the workspace topbar: minimal rows (line icon + label), the tutorials card with the
  * Necto video illustration (`TutorialArt`, colored through the `ws-art-scope` variables) and direct
  * contact (WhatsApp support, live chat).
  */
-export function WorkspaceSupportDropdown() {
+export function WorkspaceSupportDropdown({
+  className,
+  triggerClassName,
+}: WorkspaceSupportDropdownProps = {}) {
   const { pathname } = useLocation();
   const menuId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -149,12 +159,15 @@ export function WorkspaceSupportDropdown() {
   };
 
   return (
-    <div className="relative inline-block text-left">
+    <div className={cn("relative inline-block text-left", className)}>
       <button
         ref={triggerRef}
         type="button"
         onClick={handleToggle}
-        className="relative flex items-center justify-center text-gray-600 transition-colors bg-white border border-gray-200/90 rounded-full hover:text-gray-900 h-11 w-11 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white cursor-pointer shadow-theme-xs shrink-0"
+        className={cn(
+          "relative flex items-center justify-center text-gray-600 transition-colors bg-white border border-gray-200/90 rounded-full hover:text-gray-900 h-10 w-10 sm:h-11 sm:w-11 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white cursor-pointer shadow-theme-xs shrink-0",
+          triggerClassName
+        )}
         title="Centro de ayuda y soporte"
         aria-label="Ayuda y soporte"
         aria-expanded={isOpen}
@@ -215,21 +228,21 @@ export function WorkspaceSupportDropdown() {
           onClick={() => showComingSoon("Tutoriales")}
           className="mt-3.5 w-full p-3.5 rounded-2xl bg-[#F6F6F8] dark:bg-gray-800/60 border border-gray-200/60 dark:border-gray-800 flex items-center justify-between text-left cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
         >
-          {/* Left column: play badge, label, brand logo and CTA */}
+          {/* Left column: play badge, label and CTA */}
           <span className="flex flex-col justify-between self-stretch pr-2 min-w-0">
             <span>
               <span className="w-5 h-5 rounded-md bg-white dark:bg-gray-800 border border-black/10 dark:border-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 mb-1.5 shadow-2xs">
                 <PlayIcon className="w-2.5 h-2.5 fill-current ml-0.5" />
               </span>
-              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium block">
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider block">
                 Tutoriales
               </span>
-              <span className="mt-0.5 block ws-brand dark:[&_path[fill='#190088']]:fill-white">
-                <NectoLogo width={112} height={16} />
+              <span className="mt-0.5 text-xs sm:text-[13px] font-bold text-gray-900 dark:text-white block leading-tight">
+                Aprende en video
               </span>
             </span>
 
-            <span className="mt-3 flex items-center gap-1 text-[11px] font-semibold text-gray-800 dark:text-gray-200 group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors">
+            <span className="mt-2.5 flex items-center gap-1 text-[11px] font-semibold text-[#190088] dark:text-[#97D6DF] group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors">
               <span>Ir a Tutoriales</span>
               <ChevronRightIcon className="w-3 h-3 stroke-[2.5]" />
             </span>

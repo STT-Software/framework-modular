@@ -20,7 +20,7 @@ export const PROFILE_ICONS: Record<TurnosProfileId, string> = {
 
 /** El nombre de cada color de fila y su tono, como en el selector de la referencia. */
 export const QUEUE_COLOR_CHOICES: ReadonlyArray<{ id: QueueColor; name: string; hex: string }> = [
-  { id: "orange", name: "Naranja", hex: "#f04420" },
+  { id: "orange", name: "Naranja", hex: "#FF3F1A" },
   { id: "purple", name: "Morado", hex: "#7a5af8" },
   { id: "blue", name: "Azul", hex: "#2e90fa" },
   { id: "green", name: "Verde", hex: "#12b76a" },

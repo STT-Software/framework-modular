@@ -1,4 +1,5 @@
 import "../styles/business-setup.css";
+import "@/css/business-configuration.css";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -7,6 +8,9 @@ import { adminAccessStore } from "@/modules/business-access";
 import type { ModuleId } from "@/modules/businesses";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
+import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
+import { ConfigBusinessSwitcher } from "@/components/configuration/ConfigBusinessSwitcher";
+import { WorkspaceSupportDropdown, WorkspaceSupportWidget } from "@/modules/workspace";
 import { ModulesView } from "../components/ModulesView";
 import { SavedDialog } from "../components/SavedDialog";
 import { STEP_TITLES, Wizard } from "../components/Wizard";
@@ -123,23 +127,43 @@ const BusinessSetupPage = observer(() => {
           <NectoLogo width={161} height={23} />
         </Link>
         <div className="no-header-actions">
-          <label className="no-context">
-            <span>ESTÁS CONFIGURANDO</span>
-            <select
-              aria-label="Negocio actual"
-              value={businessId ?? ""}
-              disabled={administered.length < 2 || store.saving}
-              onChange={(event) => void switchBusiness(event.target.value)}
-            >
-              {administered.length === 0 && <option value={businessId ?? ""}>{name}</option>}
-              {administered.map((business) => (
-                <option key={business.id} value={business.id}>
-                  {business.id === businessId && state ? state.profile.name : business.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <RoleShieldBadge role="Administrador" />
+          <ConfigBusinessSwitcher
+            currentBusinessId={businessId ?? ""}
+            currentBusinessName={state ? state.profile.name : name}
+            subtitle="Configuración base"
+            businesses={administered.map((business) => ({
+              id: business.id,
+              name: business.id === businessId && state ? state.profile.name : business.name,
+              category: business.category,
+              categoryOther: business.categoryOther,
+            }))}
+            disabled={store.saving}
+            onSelect={(id) => void switchBusiness(id)}
+          />
           <ThemeIconButton className="no-icon-button" />
+          <WorkspaceSupportDropdown triggerClassName="config-icon-button" />
+          <button
+            type="button"
+            className="no-signout-btn"
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+            disabled={store.saving}
+            onClick={() => {
+              void adminAccessStore.leave("Sesión cerrada. Verifica tu correo para volver a entrar.").then(() => navigate("/business/access", { replace: true }));
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="no-signout-label">Cerrar sesión</span>
+          </button>
         </div>
       </header>
       <main className="no-main">
@@ -175,9 +199,13 @@ const BusinessSetupPage = observer(() => {
           <ModulesView
             onStart={() => void go(startStep)}
             onConfigure={(moduleId) => {
-              // Turnos se configura en su propio módulo; los demás empiezan por la base, en el horario de ese módulo.
+              // Turnos y Pedidos se configuran en sus propios asistentes; los demás empiezan por la base.
               if (moduleId === "turnos" && businessId) {
                 navigate(`/business/turnos/${businessId}/profile`);
+                return;
+              }
+              if (moduleId === "pedidos" && businessId) {
+                navigate(`/business/pedidos/${businessId}/profile`);
                 return;
               }
               store.setHoursScope(moduleId as ModuleId);
@@ -199,17 +227,7 @@ const BusinessSetupPage = observer(() => {
         )}
       </main>
       <footer className="no-footer">
-        <span>© 2026 Necto · Conecta. Comparte. Crece.</span>
-        <button
-          type="button"
-          className="no-text-button"
-          disabled={store.saving}
-          onClick={() => {
-            void adminAccessStore.leave("Sesión cerrada. Verifica tu correo para volver a entrar.").then(() => navigate("/business/access", { replace: true }));
-          }}
-        >
-          Cerrar sesión
-        </button>
+        <span>© 2026 Necto</span>
       </footer>
       <SavedDialog
         hasTurnos={state?.turnos != null}
@@ -222,6 +240,7 @@ const BusinessSetupPage = observer(() => {
       <p className="no-sr-only" role="status" aria-live="polite">
         {store.announcement}
       </p>
+      <WorkspaceSupportWidget />
     </section>
   );
 });

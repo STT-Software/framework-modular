@@ -1,5 +1,5 @@
 import { observer } from "mobx-react-lite";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NectoLogo } from "@/brand/NectoLogo";
 import { businessSetupStore } from "../stores/businessSetup.store";
 import { ModuleIcon } from "./ModuleIcon";
@@ -22,6 +22,9 @@ interface ModulesViewProps {
 export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps) => {
   const state = businessSetupStore.state;
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const [openingModuleId, setOpeningModuleId] = useState<string | null>(null);
+  const [startingBase, setStartingBase] = useState(false);
+
   useEffect(() => headingRef.current?.focus({ preventScroll: true }), []);
   if (!state) return null;
   const count = state.modules.length;
@@ -43,13 +46,23 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
           <p>
             Este es el espacio de <strong>{state.profile.name}</strong>. Prepara sus datos, define sus horarios y deja la base lista para tus módulos.
           </p>
-          <div className="no-welcome-meta">
-            <span>{count === 1 ? "1 módulo asignado" : `${count} módulos asignados`}</span>
-            <span className={ready ? "is-ready" : undefined}>{ready ? "Base preparada" : "Base por preparar"}</span>
-          </div>
-          <button className="no-primary" type="button" onClick={onStart}>
-            {ready ? "Revisar configuración base " : started ? "Continuar configuración " : "Preparar mi negocio "}
-            <span aria-hidden="true">→</span>
+          <button
+            className={`no-primary${startingBase ? " is-loading" : ""}`}
+            type="button"
+            disabled={startingBase}
+            onClick={() => {
+              setStartingBase(true);
+              setTimeout(onStart, 450);
+            }}
+          >
+            {startingBase
+              ? "Abriendo configuración base…"
+              : ready
+                ? "Revisar configuración base "
+                : started
+                  ? "Continuar configuración "
+                  : "Preparar mi negocio "}
+            {!startingBase && <span aria-hidden="true">→</span>}
           </button>
         </div>
         <div className="no-module-motion" aria-hidden="true">
@@ -100,22 +113,53 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
       </div>
       {count > 0 ? (
         <div className={`no-assigned-grid${count === 1 ? " is-single" : ""}`}>
-          {state.modules.map((module) => (
-            <article key={module.id} className="no-module-card">
-              <div className="no-module-card-top">
-                <ModuleIcon id={module.id} />
-                <span className="no-module-assigned">Asignado</span>
-              </div>
-              <h3>{module.name}</h3>
-              <p>{module.description}</p>
-              <div className="no-module-card-footer">
-                <span>{module.settings.status === "ready" ? "Configuración preparada" : ready ? "Ajustes específicos pendientes" : "Configuración pendiente"}</span>
-                <button type="button" aria-label={`Configurar ${module.name}`} onClick={() => onConfigure(module.id)}>
-                  {module.settings.status === "ready" ? "Revisar configuración" : module.id === "turnos" ? "Configurar" : ready ? "Revisar base" : "Configurar"}
-                </button>
-              </div>
-            </article>
-          ))}
+          {state.modules.map((module) => {
+            const isOrdersReady =
+              module.id === "pedidos" &&
+              (() => {
+                try {
+                  const raw = localStorage.getItem(`necto.orders_config.v1.${businessSetupStore.businessId}`);
+                  return raw ? JSON.parse(raw).status === "ready" : false;
+                } catch {
+                  return false;
+                }
+              })();
+            const isModuleReady = module.settings.status === "ready" || isOrdersReady;
+            const isOpening = openingModuleId === module.id;
+            return (
+              <article key={module.id} className="no-module-card">
+                <div className="no-module-card-top">
+                  <ModuleIcon id={module.id} />
+                  <span className="no-module-assigned">Asignado</span>
+                </div>
+                <h3>{module.name}</h3>
+                <p>{module.description}</p>
+                <div className="no-module-card-footer">
+                  <span>{isModuleReady ? "Configuración preparada" : ready ? "Ajustes específicos pendientes" : "Configuración pendiente"}</span>
+                  <button
+                    type="button"
+                    className={isOpening ? "is-loading" : undefined}
+                    disabled={openingModuleId !== null}
+                    aria-label={`Configurar ${module.name}`}
+                    onClick={() => {
+                      setOpeningModuleId(module.id);
+                      setTimeout(() => onConfigure(module.id), 450);
+                    }}
+                  >
+                    {isOpening
+                      ? "Abriendo…"
+                      : isModuleReady
+                        ? "Revisar configuración"
+                        : module.id === "turnos" || module.id === "pedidos"
+                          ? "Configurar"
+                          : ready
+                            ? "Revisar base"
+                            : "Configurar"}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
       ) : (
         <div className="no-empty-modules">

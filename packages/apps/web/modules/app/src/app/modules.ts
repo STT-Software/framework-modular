@@ -1,5 +1,6 @@
 import type { AppModule } from "@/app/module";
 import { businessAccessModule } from "@/modules/business-access";
+import { businessDashboardModule } from "@/modules/business-dashboard";
 import { businessSetupModule } from "@/modules/business-setup";
 import { onboardingModule } from "@/modules/onboarding";
 import { ordersConfigModule } from "@/modules/orders-config";
@@ -14,6 +15,7 @@ export const modules: AppModule[] = [
   workspaceModule,
   businessAccessModule,
   businessSetupModule,
+  businessDashboardModule,
   turnosModule,
   ordersConfigModule,
 ];

@@ -41,7 +41,7 @@ function kindOf(status: number, code: string | undefined): AccessErrorKind {
   return "server";
 }
 
-async function call<T>(path: string, token: string, init: { method?: string; json?: unknown } = {}): Promise<T> {
+export async function call<T>(path: string, token: string, init: { method?: string; json?: unknown } = {}): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   let response: Response;
@@ -67,7 +67,7 @@ async function call<T>(path: string, token: string, init: { method?: string; jso
   return (await response.json()) as T;
 }
 
-const root = (businessId: string) => `/turnos/businesses/${encodeURIComponent(businessId)}`;
+export const root = (businessId: string) => `/turnos/businesses/${encodeURIComponent(businessId)}`;
 
 /** Lo que se envía al crear o reemplazar una fila. Un valor propio `null` o ausente usa la regla general. */
 export interface QueueBody {
@@ -76,6 +76,8 @@ export interface QueueBody {
   averageMinutes: number;
   color?: string;
   overrides: { prefix: string | null; urgentMinutes: number | null; busyLimit: number | null; fullLimit: number | null };
+  /** Los datos extra de la fila. Sin enviarlo, la fila conserva los que tiene. */
+  fields?: Array<{ id?: string; label: string; type: string; required: boolean; options: string[] }>;
 }
 
 export interface RulesBody {
@@ -92,6 +94,9 @@ export interface OperatorBody {
   email: string;
   phone: string | null;
   queueIds: string[];
+  /** Sin enviarlo, el operador conserva sus vistas y su estado. */
+  views?: string[];
+  status?: "active" | "inactive";
 }
 
 export const turnosApi = {

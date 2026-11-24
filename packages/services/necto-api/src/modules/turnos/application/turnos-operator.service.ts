@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { OperatorViewId } from '../domain/catalog';
 import type { Operator, Queue } from '../domain/configuration';
-import { ticketExample } from '../domain/rules';
+import { effectiveOf, ticketExample, type EffectiveRules } from '../domain/rules';
 import { TurnosAccessService } from './turnos-access.service';
 /** What an operator sees: who they are in this business, what they may use, and ONLY the queues they are assigned to. */
 export interface OperatorView {
@@ -10,7 +10,7 @@ export interface OperatorView {
   /** The views they may use, in the order to offer them, and the one to open first. */
   views: readonly OperatorViewId[];
   firstView: OperatorViewId | null;
-  queues: Array<Pick<Queue, 'id' | 'name' | 'color' | 'mode' | 'averageMinutes' | 'status' | 'fields'> & { ticketExample: string }>;
+  queues: Array<Pick<Queue, 'id' | 'name' | 'color' | 'mode' | 'averageMinutes' | 'status' | 'fields'> & { ticketExample: string; effective: EffectiveRules }>;
 }
 /**
  * The workspace of an operator of Turnos. The route already requires, on every request, that the signed-in person is an operator of this
@@ -40,6 +40,8 @@ export class TurnosOperatorService {
           status: queue.status,
           fields: queue.fields,
           ticketExample: ticketExample(queue, config.rules),
+          // What the queue really uses (its own values or the general ones): the operator sees the numbers of THEIR queues, never the rules.
+          effective: effectiveOf(queue, config.rules),
         })),
     };
   }

@@ -65,6 +65,11 @@ export interface AccessGrant {
   /** Administrador: los módulos habilitados del negocio. Operador: solo el módulo al que está asignado. */
   modules: string[];
   personName: string;
+  /** Operador: las vistas de su módulo que puede usar, en orden, y la primera (donde aterriza). Administrador: `null`. */
+  views: string[] | null;
+  firstView: string | null;
+  /** Un operador pendiente (todavía no ha iniciado sesión con código) no puede operar. */
+  operable: boolean;
 }
 /** Lo que recibe el navegador al abrir o renovar una sesión. */
 export interface SessionGrant {

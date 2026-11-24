@@ -10,7 +10,7 @@ import {
   type SetupStep,
   type TurnosProfileId,
 } from './catalog';
-import type { Operator, Queue, TurnosConfiguration } from './configuration';
+import type { Queue, TurnosConfiguration } from './configuration';
 import {
   OnlyQueueWithOperatorsError,
   OperatorNotFoundError,

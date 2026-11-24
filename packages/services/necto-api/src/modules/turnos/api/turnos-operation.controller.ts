@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, MessageEvent, Param, Post, Query, Req, Res, Sse, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, MessageEvent, Param, Post, Query, Req, Res, Sse, UseInterceptors } from '@nestjs/common';
 import type { Response } from 'express';
 import { map, type Observable } from 'rxjs';
 import { NoStoreInterceptor } from '../../../platform/http/no-store.interceptor';

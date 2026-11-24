@@ -10,10 +10,11 @@ import { TurnosStreamService } from '../application/turnos-stream.service';
 import { TurnosSurveyService } from '../application/turnos-survey.service';
 import { TurnosTicketService } from '../application/turnos-ticket.service';
 import { TURNOS_MODULE_ID } from '../domain/catalog';
-import { ActivityQueryDto, RangeQueryDto, RoomScreenDto, SurveyConfigDto, SurveyQueryDto, TicketListQueryDto } from './dto/operation.dto';
+import { ActivityQueryDto, CancelTicketDto, CreateTicketDto, RangeQueryDto, RoomScreenDto, SurveyConfigDto, SurveyQueryDto, TicketListQueryDto } from './dto/operation.dto';
 import {
   queueSummary,
   toActivityResponse,
+  toOutcomeResponse,
   toAnalyticsResponse,
   toBoardResponse,
   toOverviewResponse,
@@ -31,8 +32,8 @@ const rangeOf = (query: RangeQueryDto) => ({ preset: query.range, from: query.fr
  * What the ADMINISTRATOR of a business sees of Turnos running: the dashboard numbers, the team, the recent activity, every turn (with
  * search and filters), the CSV report, the room screen and the surveys. Guarded by `@RequiresBusinessModule('turnos')`: on every request
  * the person must be the current boss of that active business with Turnos enabled; an operator is never let in. Everything is real data
- * counted from the turns: an empty range answers zeros and `null`, never invented values. The administrator watches and configures; the
- * operators are the ones who create, call and complete turns.
+ * counted from the turns: an empty range answers zeros and `null`, never invented values. The administrator watches, configures and, like an
+ * operator, can create, call and complete turns: what they do is attributed to them under their own identity (`admin:<email>`).
  */
 @Controller('turnos/businesses/:businessId/insights')
 @UsesAdminScope()
@@ -90,6 +91,44 @@ export class TurnosInsightsController {
     });
     // The BOM makes spreadsheets read the accents as UTF-8.
     return new StreamableFile(Buffer.from(`\uFEFF${report.csv}`, 'utf8'));
+  }
+  /** The turn the administrator has in attention right now (`ticket: null` when none). */
+  @Get('tickets/current')
+  async current(@Scope() scope: TurnosScope) {
+    const ticket = await this.tickets.current(scope);
+    return { ticket: ticket ? toTicketResponse(ticket, { detail: true }) : null };
+  }
+  /** The administrator can also attend: creating, calling and completing turns are attributed to them, under their own identity. */
+  @Post('queues/:queueId/tickets')
+  async create(@Scope() scope: TurnosScope, @Param('queueId') queueId: string, @Body() dto: CreateTicketDto, @Res({ passthrough: true }) response: Response) {
+    const { ticket, created } = await this.tickets.create(scope, queueId, dto);
+    response.status(created ? 201 : 200);
+    return { created, ticket: toTicketResponse(ticket) };
+  }
+  @Post('queues/:queueId/call-next')
+  @HttpCode(200)
+  async callNext(@Scope() scope: TurnosScope, @Param('queueId') queueId: string) {
+    return toOutcomeResponse(await this.tickets.callNext(scope, queueId));
+  }
+  @Post('tickets/:ticketId/call')
+  @HttpCode(200)
+  async call(@Scope() scope: TurnosScope, @Param('ticketId') ticketId: string) {
+    return toOutcomeResponse(await this.tickets.call(scope, ticketId));
+  }
+  @Post('tickets/:ticketId/complete')
+  @HttpCode(200)
+  async complete(@Scope() scope: TurnosScope, @Param('ticketId') ticketId: string) {
+    return toOutcomeResponse(await this.tickets.complete(scope, ticketId));
+  }
+  @Post('tickets/:ticketId/cancel')
+  @HttpCode(200)
+  async cancel(@Scope() scope: TurnosScope, @Param('ticketId') ticketId: string, @Body() dto: CancelTicketDto) {
+    return toOutcomeResponse(await this.tickets.cancel(scope, ticketId, dto.reason ?? null));
+  }
+  @Post('tickets/:ticketId/no-show')
+  @HttpCode(200)
+  async noShow(@Scope() scope: TurnosScope, @Param('ticketId') ticketId: string) {
+    return toOutcomeResponse(await this.tickets.noShow(scope, ticketId));
   }
   @Get('tickets/:ticketId')
   async get(@Scope() scope: TurnosScope, @Param('ticketId') ticketId: string) {

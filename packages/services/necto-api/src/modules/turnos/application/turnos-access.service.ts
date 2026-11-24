@@ -24,6 +24,11 @@ export interface TurnosScope {
   views: readonly OperatorViewId[];
   /** Only for an operator. */
   operator: Pick<Operator, 'id' | 'name' | 'email'> | null;
+  /**
+   * Who is acting on a turn. An operator is themselves; the administrator acts under an identity of their own (`admin:<email>`), so what they
+   * do is attributed to them, they too attend one turn at a time, and the history says it was the administrator.
+   */
+  actor: { operatorId: string; name: string };
   configuration: TurnosConfiguration;
 }
 export const ticketViews: readonly OperatorViewId[] = ['home', 'my-turns', 'create-turn', 'queues'];
@@ -43,7 +48,7 @@ export class TurnosAccessService {
     const { business, config: stored } = await this.load(businessId);
     // A business whose Turnos was never configured has nothing yet: the administrator sees it empty, nothing is created by looking.
     const config = stored ?? newConfiguration(businessId, this.clock.now());
-    return { role: 'admin', businessId, businessName: business.name, email, timezone: business.timezone ?? FALLBACK_TIMEZONE, queueIds: null, views: OPERATOR_VIEWS, operator: null, configuration: config };
+    return { role: 'admin', businessId, businessName: business.name, email, timezone: business.timezone ?? FALLBACK_TIMEZONE, queueIds: null, views: OPERATOR_VIEWS, operator: null, actor: { operatorId: `admin:${email}`, name: business.boss.name }, configuration: config };
   }
   /**
    * @param view the view the route belongs to; without it only "can operate at all" is checked.
@@ -67,6 +72,7 @@ export class TurnosAccessService {
       queueIds,
       views: operator.views,
       operator: { id: operator.id, name: operator.name, email: operator.email },
+      actor: { operatorId: operator.id, name: operator.name },
       configuration: config,
     };
   }

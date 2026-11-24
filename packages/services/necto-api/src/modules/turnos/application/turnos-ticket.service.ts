@@ -8,7 +8,6 @@ import {
   InvalidTicketStateError,
   NotNextInLineError,
   OperatorBusyError,
-  OperatorRequiredError,
   QueueEmptyError,
   QueueNotFoundError,
   QueuePausedError,
@@ -280,9 +279,8 @@ export class TurnosTicketService {
     return existing;
   }
   private requireOperator(scope: TurnosScope, views: OperatorViewId[]): TicketActor {
-    if (scope.role !== 'operator' || !scope.operator) throw new OperatorRequiredError();
     if (!canUse(scope, ...views)) throw new ViewNotAllowedError();
-    return { operatorId: scope.operator.id, name: scope.operator.name };
+    return { ...scope.actor };
   }
   private requireTurnsView(scope: TurnosScope): void {
     if (scope.role === 'operator' && !canUse(scope, 'my-turns')) throw new ViewNotAllowedError();
@@ -319,11 +317,8 @@ export class TurnosTicketService {
       filter.from = range.from;
       filter.to = range.to;
     }
-    if (scope.role === 'operator') {
-      if (query.mine) filter.attendedBy = scope.operator!.id;
-    } else if (query.operatorId) {
-      filter.attendedBy = query.operatorId;
-    }
+    if (query.mine) filter.attendedBy = scope.actor.operatorId;
+    else if (scope.role === 'admin' && query.operatorId) filter.attendedBy = query.operatorId;
     return filter;
   }
   private pageSize(raw: number | undefined): number {

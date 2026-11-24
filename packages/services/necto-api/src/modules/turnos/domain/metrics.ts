@@ -136,7 +136,7 @@ export function teamPerformance(tickets: readonly Ticket[], operators: readonly 
   const blank = (operatorId: string, name: string, status: Operator['status'] | 'removed', queueIds: string[]): TeamMember => ({
     operatorId,
     name,
-    status: status === 'removed' ? 'inactive' : status,
+    status: status === 'removed' ? (operatorId.startsWith('admin:') ? 'active' : 'inactive') : status,
     queueIds,
     attended: 0,
     completed: 0,

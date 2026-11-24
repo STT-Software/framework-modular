@@ -100,14 +100,6 @@ export class ViewNotAllowedError extends DomainError {
     super('You do not have access to this view');
   }
 }
-/** A route that only an operator can use, reached with an administrator access (the administrator watches, the operators attend). */
-export class OperatorRequiredError extends DomainError {
-  readonly kind = 'forbidden';
-  override readonly code = 'operator-required';
-  constructor() {
-    super('Only an operator of this business can do this');
-  }
-}
 /** What only the administrator of the business does (comparing people, reports, settings), reached with an operator access. */
 export class AdministratorRequiredError extends DomainError {
   readonly kind = 'forbidden';

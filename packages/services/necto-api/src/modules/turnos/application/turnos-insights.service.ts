@@ -26,8 +26,8 @@ const MAX_ROWS = LIMITS.reportRows;
 export interface Overview {
   range: DayRange;
   totals: Totals;
-  /** Only for an operator: what they themselves did in the range. */
-  mine: Totals | null;
+  /** What the person themselves did in the range (the administrator too, when they attend). */
+  mine: Totals;
   board: Array<QueueBoardEntry & { metrics: QueueMetrics }>;
   daily: DayPoint[];
   hourly: Array<{ hour: number; created: number }>;
@@ -69,7 +69,7 @@ export class TurnosInsightsService {
     return {
       range,
       totals: totalsOf(inRange),
-      mine: scope.role === 'operator' ? totalsOf(inRange.filter((ticket) => ticket.attendedBy?.operatorId === scope.operator!.id)) : null,
+      mine: totalsOf(inRange.filter((ticket) => ticket.attendedBy?.operatorId === scope.actor.operatorId)),
       board,
       daily: dailySeries(inRange, range, scope.timezone),
       hourly: hourlySeries(inRange, scope.timezone),

@@ -5,7 +5,6 @@ import {
   InvalidTicketStateError,
   NotNextInLineError,
   OperatorBusyError,
-  OperatorRequiredError,
   QueueEmptyError,
   QueueHasOpenTurnsError,
   QueueNotFoundError,
@@ -135,11 +134,12 @@ describe('creating a turn', () => {
 });
 
 describe('who may create turns', () => {
-  it('an operator creates only in their queues and only with the view; the administrator watches and does not create', async () => {
+  it('an operator creates only in their queues and only with the view; the administrator creates anywhere, under their own identity', async () => {
     const { caja, recogida, operator, admin, ticketService } = await operationWorld();
     await assert.rejects(ticketService.create(await operator(MATEO), caja.id, {}), QueueNotFoundError, 'Mateo does not work in that queue: it does not exist for him');
     assert.equal((await ticketService.create(await operator(MATEO), recogida.id, {})).created, true);
-    await assert.rejects(ticketService.create(await admin(), caja.id, {}), OperatorRequiredError);
+    const byAdmin = await ticketService.create(await admin(), caja.id, {});
+    assert.deepEqual([byAdmin.created, byAdmin.ticket.createdBy], [true, { operatorId: 'admin:ana@cafecentral.co', name: 'Ana Gómez' }]);
     await assert.rejects(ticketService.create(await operator(LAURA), 'ghost', {}), QueueNotFoundError);
   });
   it('an operator without the create-turn view cannot, even with queues', async () => {
@@ -287,12 +287,25 @@ describe('calling and attending', () => {
     await assert.rejects(ticketService.callNext(mateo, caja.id), QueueNotFoundError);
     await assert.rejects(ticketService.get(mateo, 'nope'), TicketNotFoundError);
   });
-  it('an operator without the my-turns view cannot attend, and the administrator cannot attend either', async () => {
-    const { issue, caja, operator, admin, ticketService } = await operationWorld();
-    const ticket = await issue(caja.id);
+  it('an operator without the my-turns view cannot attend', async () => {
+    const { issue, caja, operator, ticketService } = await operationWorld();
+    await issue(caja.id);
     await assert.rejects(ticketService.callNext(await operator(SOFIA), caja.id), ViewNotAllowedError);
-    await assert.rejects(ticketService.call(await admin(), ticket.id), OperatorRequiredError);
-    await assert.rejects(ticketService.complete(await admin(), ticket.id), OperatorRequiredError);
+  });
+  it('the administrator attends like an operator, under their own identity, one turn at a time, and sees only their own with "mine"', async () => {
+    const { issue, caja, recogida, operator, admin, ticketService } = await operationWorld();
+    const [a, b, c] = [await issue(caja.id), await issue(recogida.id), await issue(caja.id)];
+    const boss = await admin();
+    const called = await ticketService.call(boss, a.id);
+    assert.deepEqual([called.ticket.attendedBy, called.applied], [{ operatorId: 'admin:ana@cafecentral.co', name: 'Ana Gómez' }, true]);
+    await assert.rejects(ticketService.call(boss, b.id), OperatorBusyError);
+    await assert.rejects(ticketService.call(await operator(LAURA), a.id), TicketAlreadyTakenError, 'an operator cannot take what the administrator is attending');
+    assert.equal((await ticketService.current(boss))?.id, a.id);
+    assert.deepEqual((await ticketService.list(boss, { mine: true })).items.map((ticket) => ticket.id), [a.id]);
+    const done = await ticketService.complete(boss, a.id);
+    assert.deepEqual([done.ticket.status, done.next?.id, done.next?.attendedBy?.operatorId], ['completed', c.id, 'admin:ana@cafecentral.co']);
+    await ticketService.complete(boss, c.id);
+    assert.equal((await ticketService.cancel(boss, b.id, null)).ticket.status, 'cancelled');
   });
 });
 

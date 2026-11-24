@@ -69,7 +69,7 @@ describe('who may reach each route of the operation of Turnos', () => {
     for (const forbidden of ['operators', 'rules', 'profile', 'room-screen', 'surveys/config', 'csv']) assert.ok(!routes.includes(forbidden), forbidden);
     assert.ok(!routesOf(TurnosOperationController).some((route) => route.startsWith('PUT') || route.startsWith('DELETE')));
   });
-  it('the administrator side only reads and configures: it has no route that creates, calls or completes turns', () => {
+  it('the administrator side reads, configures and can attend like an operator, with the same routes for turns', () => {
     assert.deepEqual(routesOf(TurnosInsightsController), [
       'GET activity',
       'GET events',
@@ -83,8 +83,15 @@ describe('who may reach each route of the operation of Turnos', () => {
       'GET tickets',
       'GET tickets.csv',
       'GET tickets/:ticketId',
+      'GET tickets/current',
+      'POST queues/:queueId/call-next',
       'POST queues/:queueId/pause',
       'POST queues/:queueId/resume',
+      'POST queues/:queueId/tickets',
+      'POST tickets/:ticketId/call',
+      'POST tickets/:ticketId/cancel',
+      'POST tickets/:ticketId/complete',
+      'POST tickets/:ticketId/no-show',
       'PUT room-screen',
       'PUT surveys/config',
     ]);

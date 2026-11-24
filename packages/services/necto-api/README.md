@@ -751,7 +751,7 @@ No incluye Reservas, Agendamiento, Referidos, Inventario ni Pedidos.
 ### Quién puede qué (se valida en CADA petición y en cada conexión en vivo)
 | Rol | Rutas | Qué puede |
 |-----|-------|-----------|
-| **Administrador** (jefe vigente, negocio activo, Turnos habilitado) | `/turnos/businesses/:businessId/insights/*` y la configuración | **Mira** todo el negocio (tablero, equipo, turnos, reportes, encuestas) y **configura** (operadores, permisos, pantalla de sala, encuestas, pausar filas). **No** crea, llama ni completa turnos: eso lo hacen los operadores. |
+| **Administrador** (jefe vigente, negocio activo, Turnos habilitado) | `/turnos/businesses/:businessId/insights/*` y la configuración | **Mira** todo el negocio (tablero, equipo, turnos, reportes, encuestas), **configura** (operadores, permisos, pantalla de sala, encuestas, pausar filas) y **también atiende**: crea, llama, completa, cancela y marca ausente con las mismas rutas de turnos bajo `/insights`, atribuido a su propia identidad (`admin:<correo>`, con el nombre del jefe), con la misma regla de un turno a la vez. |
 | **Operador** (asignado, `active`, con al menos una vista y una fila) | `/turnos/businesses/:businessId/operation/*` | Solo lo que su administrador le dio: **vistas** (Inicio, Mis turnos, Crear turno, Filas, Encuestas) y **filas**. Nunca configura nada. |
 - **Dos controladores, dos pares de guards.** Operación: `@OperatesModule('turnos')` (operador de ESE negocio, negocio activo, módulo habilitado) + `TurnosOperatorScopeGuard`,
   que busca su asignación **por el correo de la sesión**, exige que esté `active` y con la **vista** que declara la ruta (`@RequiresView`). Administrador: `@RequiresBusinessModule('turnos')`
@@ -766,8 +766,7 @@ No incluye Reservas, Agendamiento, Referidos, Inventario ni Pedidos.
 - **Vistas** (`views`, en el orden en que se ofrecen): `home` (Inicio), `my-turns` (Mis turnos: ver, buscar, llamar, completar, cancelar, ausente), `create-turn` (Crear turno), `queues`
   (Filas: ver estado y pausar/reanudar las suyas), `surveys` (Encuestas). La **primera** que tiene es donde aterriza al entrar (`accesses[].firstView`): va directo a su módulo,
   sin pasar por el tablero general.
-- **Errores de permisos**: `403` con `code` `view-not-allowed` (no tiene esa vista), `operator-not-operable` (pendiente, apagado, sin vistas o sin filas), `operator-required` (el administrador en una acción de operador),
-  `administrator-required` (un operador en algo del administrador, p. ej. equipo, reporte o ajustes). Una fila, turno o respuesta **de otra fila** se responde `404`, igual que si no existiera.
+- **Errores de permisos**: `403` con `code` `view-not-allowed` (no tiene esa vista), `operator-not-operable` (pendiente, apagado, sin vistas o sin filas), `administrator-required` (un operador en algo del administrador, p. ej. equipo, reporte o ajustes). Una fila, turno o respuesta **de otra fila** se responde `404`, igual que si no existiera.
 ### Configuración nueva (se edita con las rutas de configuración de siempre)
 - **Fila**: `status` (`active` | `paused`) y `fields` (campos adicionales al crear un turno). `PUT /queues/:id` con `fields` los **reemplaza**; sin `fields` los conserva.
   Un campo es `{ id?, label, type, required?, options? }`; `type`: `text`, `number`, `phone`, `email`, `date`, `select` (necesita 2 a 20 `options`), `checkbox`. Hasta 10 por fila, etiqueta 2 a 60, sin etiquetas
@@ -805,7 +804,7 @@ Estados: `waiting` → `attending` → `completed`; `cancelled` (desde esperando
 Todo se **cuenta de los turnos reales**; si no hay datos, `0` y `null` (nunca un número inventado). Los rangos usan los días del negocio en su zona horaria.
 | Ruta | Quién | Respuesta |
 |------|-------|-----------|
-| `GET /operation/home` · `GET /insights/overview` | operador (`home`) · administrador | `{ range, totals, mine, queues[], daily[], hourly[], truncated, generatedAt }`. `totals`: `created`, `completed`, `cancelled`, `noShow`, `called`, `averageWaitMinutes`, `averageServiceMinutes`, `completionRate`, `noShowRate`. `queues[]`: estado actual (`waiting`, `attending`, `longestWaitMinutes`, `urgent`, `state`: `empty`/`normal`/`busy`/`full`/`paused`, con los límites propios o heredados) y sus `metrics`. `daily`: un punto por día del rango (con los días vacíos); `hourly`: 24 horas locales. `mine` solo para el operador. `home` añade `current` (su turno en atención) y `activity`. |
+| `GET /operation/home` · `GET /insights/overview` | operador (`home`) · administrador | `{ range, totals, mine, queues[], daily[], hourly[], truncated, generatedAt }`. `totals`: `created`, `completed`, `cancelled`, `noShow`, `called`, `averageWaitMinutes`, `averageServiceMinutes`, `completionRate`, `noShowRate`. `queues[]`: estado actual (`waiting`, `attending`, `longestWaitMinutes`, `urgent`, `state`: `empty`/`normal`/`busy`/`full`/`paused`, con los límites propios o heredados) y sus `metrics`. `daily`: un punto por día del rango (con los días vacíos); `hourly`: 24 horas locales. `mine`: lo que la persona misma atendió (también el administrador). `home` añade `current` (su turno en atención) y `activity`. |
 | `GET /insights/team` | administrador | `members[]`: por operador, `attended`, `completed`, `noShow`, `cancelled`, `averageServiceMinutes`, `current`. Incluye a quien fue retirado pero trabajó en el rango. |
 | `GET /operation/activity` · `GET /insights/activity?limit=` | operador (`home`) · administrador | Lo último que pasó a los turnos, el más reciente primero (máx. 100). |
 | `GET /operation/queues` · `GET /insights/queues` | operador (`queues`) · administrador | Estado de cada fila. |
@@ -845,7 +844,7 @@ En desarrollo el dev server de Vite redirige `/api/turnos` y `/api/dashboard` al
 | Tras el login: elegir acceso | `accesses[]` de `otp/verify`/`session/refresh`: `role`, `businessId`, `modules`, `views`, `firstView`, `operable`. Administrador → `GET /dashboard/businesses/:id`; operador → su `firstView` |
 | Dashboard general del administrador | `GET /dashboard/businesses/:businessId` (ver el módulo `business-dashboard`) |
 | Turnos · Inicio (operador) | `GET /operation/home`, `GET /operation/events` |
-| Turnos · Mis turnos | `GET /operation/tickets` (filtros), `GET /operation/tickets/current`, `POST /operation/tickets/:id/{call,complete,cancel,no-show}`, `POST /operation/queues/:id/call-next` |
+| Turnos · Mis turnos | `GET /operation/tickets` (filtros), `GET /operation/tickets/current`, `POST /operation/tickets/:id/{call,complete,cancel,no-show}`, `POST /operation/queues/:id/call-next`. El administrador usa las mismas subrutas bajo `/insights` (`tickets`, `tickets/current`, `tickets/:id/…`, `queues/:id/{tickets,call-next}`) |
 | Turnos · Crear turno | `GET /turnos/businesses/:id/operator` (filas con sus `fields`), `POST /operation/queues/:id/tickets` |
 | Turnos · Filas | `GET /operation/queues`, `POST /operation/queues/:id/{pause,resume}` |
 | Turnos · Encuestas | `GET /operation/surveys/summary`, `GET /operation/surveys/responses` |
@@ -853,7 +852,7 @@ En desarrollo el dev server de Vite redirige `/api/turnos` y `/api/dashboard` al
 | Pantalla de sala (ajustes) / Encuestas (ajustes) | `GET`/`PUT /insights/room-screen`, `GET`/`PUT /insights/surveys/config` |
 | Página pública de la encuesta | `GET`/`POST /turnos/surveys/:token` (la ruta del enlace del correo es `/turnos/survey/<token>` en la app web) |
 ### Errores de la operación
-`400` `invalid-ticket`, `invalid-filter`, `invalid-answer`, `invalid-room-screen`, `invalid-survey` (con `fields`) · `403` `view-not-allowed`, `operator-not-operable`, `operator-required`, `administrator-required` ·
+`400` `invalid-ticket`, `invalid-filter`, `invalid-answer`, `invalid-room-screen`, `invalid-survey` (con `fields`) · `403` `view-not-allowed`, `operator-not-operable`, `administrator-required` ·
 `404` fila, turno o encuesta que no es tuyo o no existe · `409` `queue-paused`, `operator-busy`, `queue-empty`, `not-next-in-line`, `ticket-already-taken`, `invalid-ticket-state`, `queue-has-open-turns`, `survey-closed`, `numbering-busy`.
 ### Contrato público añadido
 `turnos/public.ts` exporta además `TurnosDashboard` (los indicadores reales de Turnos para el dashboard general). `business-access/public.ts`: `MemberSignedIn`, `BusinessAccessChecks`, y `MemberAssignment.views/operable` /

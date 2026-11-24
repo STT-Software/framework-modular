@@ -33,7 +33,7 @@ describe('the dashboard counts what really happened', () => {
     const overview = await world.insights.overview(await world.admin(), {});
     assert.deepEqual(overview.totals, { created: 0, completed: 0, cancelled: 0, noShow: 0, called: 0, averageWaitMinutes: null, averageServiceMinutes: null, completionRate: null, noShowRate: null });
     assert.deepEqual(overview.board.map((entry) => [entry.waiting, entry.attending, entry.longestWaitMinutes, entry.state]), [[0, 0, null, 'empty'], [0, 0, null, 'empty']]);
-    assert.deepEqual([overview.daily.length, overview.hourly.length, overview.mine], [1, 24, null]);
+    assert.deepEqual([overview.daily.length, overview.hourly.length, overview.mine.created], [1, 24, 0]);
     const idle = setupTurnos();
     const scope = await idle.access.forAdmin('ana@cafecentral.co', BUSINESS_ID);
     assert.equal((await idle.insights.overview(scope, {})).totals.created, 0, 'a business whose Turnos was never opened');

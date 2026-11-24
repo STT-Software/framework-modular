@@ -22,7 +22,7 @@ describe('what an operator sees', () => {
     assert.deepEqual(view.business, { id: BUSINESS_ID, name: 'Café Central' });
     assert.deepEqual(view.operator.email, LAURA);
     assert.deepEqual(view.queues.map((queue) => queue.id), [recogida]);
-    assert.deepEqual(Object.keys(view.queues[0]).sort(), ['averageMinutes', 'color', 'id', 'mode', 'name']);
+    assert.deepEqual(Object.keys(view.queues[0]).sort(), ['averageMinutes', 'color', 'fields', 'id', 'mode', 'name', 'status', 'ticketExample']);
     assert.ok(!('rules' in view) && !('operators' in view), 'no rules, no other operators');
     assert.ok(!('phone' in view.operator), 'not even their own phone: the view is about the work');
   });

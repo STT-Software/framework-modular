@@ -1,4 +1,4 @@
-import type { PrefixMode, QueueColor, QueueMode, SetupStep, TurnosProfileId } from './catalog';
+import type { FieldType, OperatorStatus, OperatorViewId, PrefixMode, QueueColor, QueueMode, QueueStatus, RoomNameDisplay, SetupStep, TurnosProfileId } from './catalog';
 
 /** The general rules of Turnos for a business. A queue that does not set its own value uses these. */
 export interface TurnosRules {
@@ -23,6 +23,15 @@ export interface QueueOverrides {
   fullLimit: number | null;
 }
 
+/** An extra thing a queue asks when a turn is created ("Documento", "Motivo de la visita"...). Its `id` is what answers are stored under. */
+export interface QueueField {
+  id: string;
+  label: string;
+  type: FieldType;
+  required: boolean;
+  /** Only for `select`; empty for every other type. */
+  options: string[];
+}
 export interface Queue {
   id: string;
   name: string;
@@ -32,6 +41,10 @@ export interface Queue {
   /** "custom" when the person created it; otherwise the profile that suggested it. */
   source: 'custom' | TurnosProfileId;
   overrides: QueueOverrides;
+  /** Paused: no new turns, the existing ones stay. */
+  status: QueueStatus;
+  /** What the queue asks when a turn is created, in order. */
+  fields: QueueField[];
 }
 
 /**
@@ -46,7 +59,36 @@ export interface Operator {
   phone: string | null;
   /** At least one, always queues of this business. */
   queueIds: string[];
+  /** The views of the operator's workspace this person may use. None means they cannot operate. */
+  views: OperatorViewId[];
+  /** `pending` until their first sign-in, which makes them `active`; the administrator can switch them off (`inactive`). */
+  status: OperatorStatus;
+  activatedAt: Date | null;
   createdAt: Date;
+}
+/** What the room screen shows. It is only the configuration: the screen itself is a later stage. */
+export interface RoomScreenConfig {
+  enabled: boolean;
+  /** The queues shown; null shows all of them. */
+  queueIds: string[] | null;
+  customerName: RoomNameDisplay;
+  playSound: boolean;
+  /** How many of the latest calls stay on the screen. */
+  recentCalls: number;
+  message: string | null;
+}
+/** The satisfaction survey sent to the customer after a turn is completed. Ratings are 1 to 5. */
+export interface SurveyConfig {
+  enabled: boolean;
+  /** Where the invitation is sent, when the customer left that contact. WhatsApp has no provider yet: it is always reported as not configured. */
+  channels: { email: boolean; whatsapp: boolean };
+  question: string;
+  allowComment: boolean;
+  thanksMessage: string | null;
+  /** How long the link of an invitation works. */
+  validHours: number;
+  /** The queues that send it; null is all of them. */
+  queueIds: string[] | null;
 }
 
 /**
@@ -65,6 +107,8 @@ export interface TurnosConfiguration {
   rules: TurnosRules;
   queues: Queue[];
   operators: Operator[];
+  roomScreen: RoomScreenConfig;
+  survey: SurveyConfig;
   currentStep: SetupStep | null;
   visitedSteps: SetupStep[];
   /** When it was saved as ready. Any later change to it clears it again. */

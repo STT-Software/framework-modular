@@ -13,6 +13,8 @@ const queue = (name: string, overrides: Partial<Queue['overrides']> = {}): Queue
   averageMinutes: 10,
   source: 'custom',
   overrides: { prefix: null, urgentMinutes: null, busyLimit: null, fullLimit: null, ...overrides },
+  status: 'active',
+  fields: [],
 });
 function fieldsOf(input: Partial<RulesInput>): Record<string, string[]> {
   try {

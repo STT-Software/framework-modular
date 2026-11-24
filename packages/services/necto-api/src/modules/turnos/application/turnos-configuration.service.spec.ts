@@ -122,13 +122,13 @@ describe('isolation between businesses', () => {
 
 describe('persistence: save progress and recover it', () => {
   it('recovers everything from the stored document with a brand new service, as after signing out and back in', async () => {
-    const { service, store, directory, repository } = setupTurnos();
+    const { service, store, directory, repository, ticketService, hub, clock } = setupTurnos();
     await service.changeProfile(BUSINESS_ID, 'bank', false);
     const created = await service.createQueue(BUSINESS_ID, queueInput('Ventanilla', { color: 'green', overrides: { prefix: 'v', busyLimit: 2 } }));
     await service.saveRules(BUSINESS_ID, { ...rules, prefixMode: 'fixed', fixedPrefix: 't' });
     await service.createOperator(BUSINESS_ID, operatorInput('Laura', 'laura@x.co', [created.created!.id], { phone: '+57 300 123 4567' }));
     await service.saveProgress(BUSINESS_ID, 'operators');
-    const { configuration: config } = await new TurnosConfigurationService(store, directory).get(BUSINESS_ID);
+    const { configuration: config } = await new TurnosConfigurationService(store, directory, ticketService, hub, clock).get(BUSINESS_ID);
     assert.equal(config.profile, 'bank');
     assert.deepEqual(config.queues.map((queue) => queue.name), ['Caja', 'Asesoría', 'Ventanilla']);
     assert.deepEqual(config.queues[2].overrides, { prefix: 'V', urgentMinutes: null, busyLimit: 2, fullLimit: null });

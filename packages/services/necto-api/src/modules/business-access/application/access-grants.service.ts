@@ -33,7 +33,7 @@ export class AccessGrantsService {
   /** The operator grant for this business and module, or "not found" (the same answer as for a business that is not theirs). */
   async requireOperator(email: string, businessId: string, moduleId: string): Promise<AccessGrant> {
     const grant = (await this.operatorGrants(email)).find((item) => item.businessId === businessId && item.modules.includes(moduleId));
-    if (!grant) throw new BusinessNotAdministeredError();
+    if (!grant || !grant.operable) throw new BusinessNotAdministeredError();
     return grant;
   }
 
@@ -48,12 +48,15 @@ export class AccessGrantsService {
       role: 'admin' as const,
       modules: [...business.modules],
       personName: business.boss.name,
+      views: null,
+      firstView: null,
+      operable: true,
     }));
   }
 
   private async operatorGrants(email: string): Promise<AccessGrant[]> {
     const assignments = await this.registry.assignmentsOf(email);
-    const byBusinessModule = new Map<string, { businessId: string; moduleId: string; personName: string }>();
+    const byBusinessModule = new Map<string, { businessId: string; moduleId: string; personName: string; views: readonly string[] | null; operable: boolean }>();
     for (const assignment of assignments) {
       if (assignment.role !== 'operator') continue;
       const dedupeKey = `${assignment.businessId}:${assignment.moduleId}`;
@@ -63,6 +66,8 @@ export class AccessGrantsService {
         businessId: assignment.businessId,
         moduleId: assignment.moduleId,
         personName: assignment.personName,
+        views: assignment.views ?? null,
+        operable: assignment.operable ?? true,
       });
     }
     const businessCache = new Map<string, Awaited<ReturnType<BusinessDirectory['find']>>>();
@@ -83,6 +88,9 @@ export class AccessGrantsService {
         role: 'operator',
         modules: [entry.moduleId],
         personName: entry.personName,
+        views: entry.views,
+        firstView: entry.views?.[0] ?? null,
+        operable: entry.operable,
       });
     }
     return grants.sort(

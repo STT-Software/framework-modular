@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 import { LIMITS, SETUP_STEPS, TURNOS_PROFILE_IDS, type SetupStep, type TurnosProfileId } from '../../domain/catalog';
 
 /*
@@ -38,6 +38,27 @@ export class QueueOverridesDto {
   fullLimit?: number | null;
 }
 
+/** An extra thing a queue asks when a turn is created. The rules (labels, types, options) are checked by the domain. */
+export class QueueFieldDto {
+  @IsOptional()
+  @IsString({ message: 'id must be text' })
+  @MaxLength(60)
+  id?: string | null;
+  @IsString({ message: 'label must be text' })
+  @MaxLength(200)
+  label: string;
+  @IsString({ message: 'type must be text' })
+  @MaxLength(40)
+  type: string;
+  @IsOptional()
+  @IsBoolean({ message: 'required must be true or false' })
+  required?: boolean | null;
+  @IsOptional()
+  @IsArray({ message: 'options must be a list' })
+  @ArrayMaxSize(50)
+  @IsString({ each: true, message: 'every option must be text' })
+  options?: string[] | null;
+}
 export class QueueDto {
   @IsString({ message: 'name must be text' })
   @MaxLength(200)
@@ -57,6 +78,13 @@ export class QueueDto {
   @ValidateNested()
   @Type(() => QueueOverridesDto)
   overrides?: QueueOverridesDto | null;
+  /** Left out, the queue keeps the extra fields it has. */
+  @IsOptional()
+  @IsArray({ message: 'fields must be a list' })
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => QueueFieldDto)
+  fields?: QueueFieldDto[] | null;
 }
 
 export class RulesDto {
@@ -99,6 +127,17 @@ export class OperatorDto {
   @ArrayMaxSize(LIMITS.queuesPerBusiness)
   @IsString({ each: true, message: 'every queue id must be text' })
   queueIds: string[];
+  /** The views of the workspace the operator may use. Left out, they keep theirs (every view for a new operator). */
+  @IsOptional()
+  @IsArray({ message: 'views must be a list' })
+  @ArrayMaxSize(20)
+  @IsString({ each: true, message: 'every view must be text' })
+  views?: string[] | null;
+  /** `active` or `inactive`. Left out, they keep theirs (a new operator is `pending` until their first sign-in). */
+  @IsOptional()
+  @IsString({ message: 'status must be text' })
+  @MaxLength(20)
+  status?: string | null;
 }
 
 export class ReassignmentDto {

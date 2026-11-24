@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { PREFIX_MODES, QUEUE_COLORS, QUEUE_MODES, SETUP_STEPS, TURNOS_PROFILE_IDS } from '../domain/catalog';
+import { FIELD_TYPES, OPERATOR_STATUSES, OPERATOR_VIEWS, PREFIX_MODES, QUEUE_COLORS, QUEUE_MODES, QUEUE_STATUSES, ROOM_NAME_DISPLAYS, SETUP_STEPS, TURNOS_PROFILE_IDS } from '../domain/catalog';
 
 @Schema({ _id: false })
 export class QueueOverridesRecord {
@@ -17,6 +17,20 @@ export class QueueOverridesRecord {
 }
 const QueueOverridesSchema = SchemaFactory.createForClass(QueueOverridesRecord);
 
+@Schema({ _id: false })
+export class QueueFieldRecord {
+  @Prop({ type: String, required: true })
+  id: string;
+  @Prop({ type: String, required: true })
+  label: string;
+  @Prop({ type: String, required: true, enum: FIELD_TYPES })
+  type: string;
+  @Prop({ type: Boolean, required: true, default: false })
+  required: boolean;
+  @Prop({ type: [String], default: [] })
+  options: string[];
+}
+const QueueFieldSchema = SchemaFactory.createForClass(QueueFieldRecord);
 @Schema({ _id: false })
 export class QueueRecord {
   @Prop({ type: String, required: true })
@@ -40,6 +54,10 @@ export class QueueRecord {
 
   @Prop({ type: QueueOverridesSchema, required: true })
   overrides: QueueOverridesRecord;
+  @Prop({ type: String, enum: QUEUE_STATUSES, default: 'active' })
+  status: string;
+  @Prop({ type: [QueueFieldSchema], default: [] })
+  fields: QueueFieldRecord[];
 }
 const QueueSchema = SchemaFactory.createForClass(QueueRecord);
 
@@ -60,6 +78,16 @@ export class OperatorRecord {
 
   @Prop({ type: [String], default: [] })
   queueIds: string[];
+
+  /** Operators saved before the workspace existed have no views or status: they are read as active with every view. */
+  @Prop({ type: [String], enum: OPERATOR_VIEWS, default: undefined })
+  views: string[] | undefined;
+
+  @Prop({ type: String, enum: OPERATOR_STATUSES, default: undefined })
+  status: string | undefined;
+
+  @Prop({ type: Date, default: null })
+  activatedAt: Date | null;
 
   @Prop({ type: Date, required: true })
   createdAt: Date;
@@ -88,6 +116,48 @@ export class RulesRecord {
 }
 const RulesSchema = SchemaFactory.createForClass(RulesRecord);
 
+@Schema({ _id: false })
+export class RoomScreenRecord {
+  @Prop({ type: Boolean, required: true })
+  enabled: boolean;
+  @Prop({ type: [String], default: null })
+  queueIds: string[] | null;
+  @Prop({ type: String, required: true, enum: ROOM_NAME_DISPLAYS })
+  customerName: string;
+  @Prop({ type: Boolean, required: true })
+  playSound: boolean;
+  @Prop({ type: Number, required: true })
+  recentCalls: number;
+  @Prop({ type: String, default: null })
+  message: string | null;
+}
+const RoomScreenSchema = SchemaFactory.createForClass(RoomScreenRecord);
+@Schema({ _id: false })
+export class SurveyChannelsRecord {
+  @Prop({ type: Boolean, required: true })
+  email: boolean;
+  @Prop({ type: Boolean, required: true })
+  whatsapp: boolean;
+}
+const SurveyChannelsSchema = SchemaFactory.createForClass(SurveyChannelsRecord);
+@Schema({ _id: false })
+export class SurveyConfigRecord {
+  @Prop({ type: Boolean, required: true })
+  enabled: boolean;
+  @Prop({ type: SurveyChannelsSchema, required: true })
+  channels: SurveyChannelsRecord;
+  @Prop({ type: String, required: true })
+  question: string;
+  @Prop({ type: Boolean, required: true })
+  allowComment: boolean;
+  @Prop({ type: String, default: null })
+  thanksMessage: string | null;
+  @Prop({ type: Number, required: true })
+  validHours: number;
+  @Prop({ type: [String], default: null })
+  queueIds: string[] | null;
+}
+const SurveyConfigSchema = SchemaFactory.createForClass(SurveyConfigRecord);
 /**
  * MongoDB record of the Turnos configuration of a business (collection `turnos_configurations`, owned by the turnos module).
  * One document per business, with the queues and the operators INSIDE it: any change that touches both is one atomic write
@@ -115,6 +185,11 @@ export class TurnosConfigurationRecord {
 
   @Prop({ type: [OperatorSchema], default: [] })
   operators: OperatorRecord[];
+  /** Absent in configurations saved before the room screen existed: they are read with the defaults. */
+  @Prop({ type: RoomScreenSchema, default: undefined })
+  roomScreen: RoomScreenRecord | undefined;
+  @Prop({ type: SurveyConfigSchema, default: undefined })
+  survey: SurveyConfigRecord | undefined;
 
   @Prop({ type: String, enum: SETUP_STEPS, default: null })
   currentStep: string | null;

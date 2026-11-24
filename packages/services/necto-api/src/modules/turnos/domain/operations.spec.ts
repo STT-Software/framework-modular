@@ -322,7 +322,7 @@ describe('progress and saving as ready', () => {
     assert.ok((failure(() => markReady(brokenRules, NOW)) as TurnosIncompleteError).fields['rules.fullLimit']);
     const crossed = { ...config, queues: [{ ...config.queues[0], overrides: { ...config.queues[0].overrides, busyLimit: 9 } }, config.queues[1]] };
     assert.ok(Object.keys(readinessProblems(crossed)).some((path) => path.startsWith(`queues.${config.queues[0].id}`)));
-    const stranded = { ...config, operators: [{ id: 'o1', name: 'Laura', email: 'l@x.co', phone: null, queueIds: ['ghost'], createdAt: NOW }] };
+    const stranded = { ...config, operators: [{ id: 'o1', name: 'Laura', email: 'l@x.co', phone: null, queueIds: ['ghost'], views: ['home' as const], status: 'active' as const, activatedAt: null, createdAt: NOW }] };
     assert.ok(readinessProblems(stranded)['operators.o1.queueIds']);
   });
 

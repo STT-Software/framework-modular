@@ -1,3 +1,6 @@
+import { ConfigService } from '@nestjs/config';
+import { MailSendError, MailTransport, type MailAcceptance, type MailMessage } from '../../platform/mail/mail-transport';
+import type { Clock } from '../../platform/time/clock';
 import { FixedClock } from '../../platform/time/fixed-clock.spec';
 import {
   AdministeredBusinessProfiles,
@@ -7,6 +10,14 @@ import {
   type CategoryChange,
   type ContactChange,
 } from '../businesses/public';
+import { TurnosAccessService } from './application/turnos-access.service';
+import { TurnosInsightsService } from './application/turnos-insights.service';
+import { TurnosRealtimeHub } from './application/turnos-realtime.hub';
+import { TurnosSettingsService } from './application/turnos-settings.service';
+import { TurnosStreamService } from './application/turnos-stream.service';
+import { TurnosSurveyService } from './application/turnos-survey.service';
+import { TurnosTicketService } from './application/turnos-ticket.service';
+import { InMemorySurveyRepository, InMemoryTicketRepository } from './operation-fakes.spec';
 import { TurnosConfigurationService } from './application/turnos-configuration.service';
 import { TurnosConfigurationStore } from './application/turnos-configuration.store';
 import { TurnosBaseSetupService } from './application/turnos-base-setup.service';
@@ -28,6 +39,7 @@ export function aBusiness(overrides: Partial<BusinessAccessView> = {}): Business
     status: 'active',
     category: 'gastronomy',
     categoryOther: null,
+    timezone: 'America/Bogota',
     modules: ['turnos'],
     boss: { assignmentId: 'assignment-1', name: 'Ana Gómez', email: BOSS },
     ...overrides,
@@ -124,21 +136,45 @@ export class InMemoryTurnosConfigurationRepository extends TurnosConfigurationRe
   }
 }
 
+/** A mail provider the tests control: it records what it accepts, or fails the way a real one does. */
+export class RecordingTransport extends MailTransport {
+  readonly sent: MailMessage[] = [];
+  failWith: 'not-configured' | 'rejected' | 'timeout' | null = null;
+  async send(message: MailMessage): Promise<MailAcceptance> {
+    if (this.failWith) throw new MailSendError(this.failWith);
+    this.sent.push(message);
+    return { messageId: `<test-${this.sent.length}@necto.test>` };
+  }
+}
+/** The pieces of Turnos wired with in-memory repositories, over a directory of businesses and a clock. */
+export function buildTurnos(directory: FakeBusinessDirectory, clock: Clock, registry: { register: () => void } | { register: (source: never) => void } = { register: () => undefined }) {
+  const repository = new InMemoryTurnosConfigurationRepository();
+  const tickets = new InMemoryTicketRepository();
+  const surveyRepository = new InMemorySurveyRepository();
+  const transport = new RecordingTransport();
+  const hub = new TurnosRealtimeHub();
+  const store = new TurnosConfigurationStore(repository, clock);
+  const surveys = new TurnosSurveyService(surveyRepository, transport, directory, hub, clock, { get: () => 'http://localhost:6020' } as unknown as ConfigService, store);
+  const ticketService = new TurnosTicketService(tickets, store, clock, hub, surveys);
+  const access = new TurnosAccessService(store, directory, clock);
+  const service = new TurnosConfigurationService(store, directory, ticketService, hub, clock);
+  const operators = new TurnosOperatorService(access);
+  const insights = new TurnosInsightsService(tickets, ticketService, clock);
+  const settings = new TurnosSettingsService(store, hub, clock);
+  const source = new TurnosOperatorAccessSource(repository, registry as never);
+  return { repository, tickets, surveyRepository, transport, hub, store, surveys, ticketService, access, service, operators, insights, settings, source };
+}
 /** Everything Turnos needs, with in-memory pieces: a business of Ana with Turnos, and another one of Luis. */
 export function setupTurnos() {
   const clock = new FixedClock('2026-03-04T15:00:00.000Z');
   const directory = new FakeBusinessDirectory();
   directory.set(aBusiness());
   directory.set(aBusiness({ id: OTHER_BUSINESS_ID, name: 'Librería Sur', category: 'retail', boss: { assignmentId: 'assignment-2', name: 'Luis', email: OTHER_BOSS } }));
-  const repository = new InMemoryTurnosConfigurationRepository();
-  const store = new TurnosConfigurationStore(repository, clock);
-  const service = new TurnosConfigurationService(store, directory);
-  const operators = new TurnosOperatorService(store, directory);
-  const source = new TurnosOperatorAccessSource(repository, { register: () => undefined } as never);
-  const baseSetup = new TurnosBaseSetupService(store, new FakeAdministeredProfiles(directory));
-  return { clock, directory, repository, store, service, operators, source, baseSetup };
+  const turnos = buildTurnos(directory, clock);
+  const baseSetup = new TurnosBaseSetupService(turnos.store, new FakeAdministeredProfiles(directory));
+  return { clock, directory, ...turnos, baseSetup };
 }
-
 export const queueInput = (name: string, extra: Record<string, unknown> = {}) => ({ name, mode: 'auto', averageMinutes: 10, ...extra });
-export const operatorInput = (name: string, email: string, queueIds: string[], extra: Record<string, unknown> = {}) => ({ name, email, queueIds, ...extra });
+/** Active by default: most tests are about what an operator can do, not about the wait for their first sign-in. */
+export const operatorInput = (name: string, email: string, queueIds: string[], extra: Record<string, unknown> = {}) => ({ name, email, queueIds, status: 'active', ...extra });
 export const names = (state: { configuration: TurnosConfiguration }) => state.configuration.queues.map((queue) => queue.name);

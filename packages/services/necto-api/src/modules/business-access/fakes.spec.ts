@@ -1,3 +1,4 @@
+import { EventBus } from '../../platform/events/event-bus';
 import { JwtService } from '@nestjs/jwt';
 import { TokenService } from '../../platform/security/token.service';
 import { FixedClock } from '../../platform/time/fixed-clock.spec';
@@ -290,12 +291,13 @@ export function setupAdminAccess(policyOverrides: Partial<AccessPolicy> = {}) {
   const tokens = new TokenService(new JwtService({ secret: 'k'.repeat(32), signOptions: { expiresIn: '1h' } }));
   const sessionRepository = new InMemorySessionRepository();
   const administered = new AdministeredBusinessesService(directory, new FakeModuleAccess(directory));
+  const events = new EventBus();
   const registry = new MemberAccessRegistry();
   const memberSource = new FakeMemberSource();
   registry.register(memberSource);
   const grants = new AccessGrantsService(directory, new FakeModuleAccess(directory), registry);
   const sessions = new AdminSessionService(sessionRepository, tokens, codes, mailer, grants, policy, clock);
-  const login = new AdminLoginService(codes, mailer, sessions, grants, policy, clock);
+  const login = new AdminLoginService(codes, mailer, sessions, grants, policy, clock, events);
 
   /** Asks for a code and returns it as the person would read it in the email. */
   async function requestCode(email = business.boss.email, ip = '203.0.113.1') {
@@ -315,6 +317,6 @@ export function setupAdminAccess(policyOverrides: Partial<AccessPolicy> = {}) {
 
   return {
     directory, business, challenges, clock, policy, transport, codes, mailer, tokens,
-    sessionRepository, administered, registry, memberSource, grants, sessions, login, requestCode, signIn,
+    sessionRepository, administered, registry, events, memberSource, grants, sessions, login, requestCode, signIn,
   };
 }

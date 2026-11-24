@@ -12,6 +12,8 @@
  *   module assigned them), with the same login as the administrators and none of their permissions.
  * - `MemberAccessRegistry` + `MemberAccessSource`: how a module that assigns operators lets business-access know about them
  *   without being imported by it (it registers itself when it starts; the assignments stay in the module).
+ * - `BusinessAccessChecks`: asks again, while a connection stays open (a live stream), whether the session, the administrator or the
+ *   operator may still do what they are doing.
  * - `RequiresBusinessModule(id)`: for routes under `/:businessId/`: the person must be the current boss of that
  *   active business AND it must have that functionality enabled. The server decides; hiding it in the UI is not enough.
  *
@@ -19,6 +21,7 @@
  */
 export { BusinessAccessModule } from './business-access.module';
 export { AdministersBusiness, BusinessAdminOnly, OperatesModule, RecentlyVerified, RequiresBusinessModule, type AdminRequest } from './api/business-admin.guards';
+export { BusinessAccessChecks } from './domain/access-checks';
 export { MemberAccessRegistry } from './application/member-access.registry';
-export { MemberAccessSource, type MemberAssignment } from './domain/member-access';
+export { MemberAccessSource, MemberSignedIn, type MemberAssignment } from './domain/member-access';
 export type { AccessGrant, AccessRole } from './domain/access-grant';

@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
-import type { QueueColor, QueueMode, PrefixMode, SetupStep, TurnosProfileId } from '../domain/catalog';
+import { OPERATOR_VIEWS, type FieldType, type OperatorStatus, type OperatorViewId, type PrefixMode, type QueueColor, type QueueMode, type QueueStatus, type RoomNameDisplay, type SetupStep, type TurnosProfileId } from '../domain/catalog';
 import type { TurnosConfiguration } from '../domain/configuration';
+import { DEFAULT_ROOM_SCREEN, DEFAULT_SURVEY } from '../domain/settings';
 import { TurnosConfigurationRepository } from '../domain/turnos-configuration.repository';
 import { TurnosConfigurationRecord } from './turnos-configuration.schema';
 
@@ -39,6 +40,14 @@ function toDomain(record: Lean): TurnosConfiguration {
         busyLimit: queue.overrides?.busyLimit ?? null,
         fullLimit: queue.overrides?.fullLimit ?? null,
       },
+      status: (queue.status as QueueStatus | undefined) ?? 'active',
+      fields: (queue.fields ?? []).map((field) => ({
+        id: field.id,
+        label: field.label,
+        type: field.type as FieldType,
+        required: field.required === true,
+        options: [...(field.options ?? [])],
+      })),
     })),
     operators: record.operators.map((operator) => ({
       id: operator.id,
@@ -46,8 +55,33 @@ function toDomain(record: Lean): TurnosConfiguration {
       email: operator.email,
       phone: operator.phone ?? null,
       queueIds: [...operator.queueIds],
+      // Saved before the workspace existed: they could already use what there was, so they are active with every view.
+      views: (operator.views as OperatorViewId[] | undefined) ?? [...OPERATOR_VIEWS],
+      status: (operator.status as OperatorStatus | undefined) ?? 'active',
+      activatedAt: operator.activatedAt ?? null,
       createdAt: operator.createdAt,
     })),
+    roomScreen: record.roomScreen
+      ? {
+          enabled: record.roomScreen.enabled,
+          queueIds: record.roomScreen.queueIds ? [...record.roomScreen.queueIds] : null,
+          customerName: record.roomScreen.customerName as RoomNameDisplay,
+          playSound: record.roomScreen.playSound,
+          recentCalls: record.roomScreen.recentCalls,
+          message: record.roomScreen.message ?? null,
+        }
+      : { ...DEFAULT_ROOM_SCREEN },
+    survey: record.survey
+      ? {
+          enabled: record.survey.enabled,
+          channels: { email: record.survey.channels.email, whatsapp: record.survey.channels.whatsapp },
+          question: record.survey.question,
+          allowComment: record.survey.allowComment,
+          thanksMessage: record.survey.thanksMessage ?? null,
+          validHours: record.survey.validHours,
+          queueIds: record.survey.queueIds ? [...record.survey.queueIds] : null,
+        }
+      : { ...DEFAULT_SURVEY, channels: { ...DEFAULT_SURVEY.channels } },
     currentStep: (record.currentStep as SetupStep | null) ?? null,
     visitedSteps: record.visitedSteps as SetupStep[],
     readyAt: record.readyAt ?? null,

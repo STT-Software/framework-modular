@@ -3,7 +3,7 @@ import { normalizeEmail } from '../../../platform/text/normalize';
 import { BusinessDirectory, type BusinessAccessView } from '../../businesses/public';
 import { suggestedProfileFor, TURNOS_MODULE_ID, type SetupStep, type TurnosProfileId } from '../domain/catalog';
 import type { TurnosConfiguration } from '../domain/configuration';
-import { TurnosBusinessNotFoundError, TurnosNotEnabledError } from '../domain/errors';
+import { QueueHasOpenTurnsError, TurnosBusinessNotFoundError, TurnosNotEnabledError } from '../domain/errors';
 import {
   addOperator,
   addQueue,
@@ -21,7 +21,10 @@ import {
 import type { OperatorInput } from '../domain/operators';
 import type { QueueInput } from '../domain/queues';
 import type { RulesInput } from '../domain/rules';
+import { Clock } from '../../../platform/time/clock';
 import { TurnosConfigurationStore } from './turnos-configuration.store';
+import { TurnosRealtimeHub } from './turnos-realtime.hub';
+import { TurnosTicketService } from './turnos-ticket.service';
 
 /** The configuration of a business as the administrator sees it. */
 export interface TurnosState {
@@ -44,6 +47,9 @@ export class TurnosConfigurationService {
   constructor(
     private readonly store: TurnosConfigurationStore,
     private readonly directory: BusinessDirectory,
+    private readonly tickets: TurnosTicketService,
+    private readonly hub: TurnosRealtimeHub,
+    private readonly clock: Clock,
   ) {}
 
   /** Opens the configuration (generating the suggested queues the first time). */
@@ -73,7 +79,9 @@ export class TurnosConfigurationService {
     return this.change(businessId, (config, now) => updateQueue(config, queueId, input, now));
   }
 
-  deleteQueue(businessId: string, queueId: string, reassignments: readonly Reassignment[]): Promise<TurnosState> {
+  async deleteQueue(businessId: string, queueId: string, reassignments: readonly Reassignment[]): Promise<TurnosState> {
+    // A queue with people waiting or being attended cannot disappear from under them.
+    if ((await this.tickets.countOpen(businessId, queueId)) > 0) throw new QueueHasOpenTurnsError();
     return this.change(businessId, (config, now) => removeQueue(config, queueId, reassignments, now));
   }
 
@@ -112,8 +120,13 @@ export class TurnosConfigurationService {
   ): Promise<TurnosState> {
     const business = await this.requireBusiness(businessId);
     const suggestedProfile = suggestedProfileFor(business.category);
+    let before: TurnosConfiguration | null = null;
     // Seeding the suggestions the first time is itself a change that gets saved; when there is nothing new, nothing is written.
-    const configuration = await this.store.update(businessId, (stored, now) => change(ensureSeeded(stored, suggestedProfile, now), now));
+    const configuration = await this.store.update(businessId, (stored, now) => {
+      before = stored;
+      return change(ensureSeeded(stored, suggestedProfile, now), now);
+    });
+    if (before) await this.announce(before, configuration);
     return {
       business: { id: business.id, name: business.name, category: business.category, categoryOther: business.categoryOther },
       suggestedProfile,
@@ -121,6 +134,25 @@ export class TurnosConfigurationService {
     };
   }
 
+  /**
+   * Tells the live connections that the configuration changed, and each operator whose permissions changed (so their open session reads
+   * the new ones). An operator who can no longer hold the turn they were attending gives it back to the line.
+   */
+  private async announce(before: TurnosConfiguration, after: TurnosConfiguration): Promise<void> {
+    if (before.version === after.version) return;
+    const at = this.clock.now();
+    const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+    const touched = new Set<string>();
+    for (const operator of before.operators) {
+      const current = after.operators.find((candidate) => candidate.id === operator.id);
+      if (!current || !same([operator.status, operator.views, operator.queueIds], [current.status, current.views, current.queueIds])) touched.add(operator.id);
+    }
+    for (const operatorId of touched) {
+      await this.tickets.releaseIfUnauthorized(after.businessId, operatorId).catch(() => null);
+      this.hub.publish({ type: 'access.changed', businessId: after.businessId, at, queueId: null, operatorId });
+    }
+    this.hub.publish({ type: 'config.updated', businessId: after.businessId, at, queueId: null });
+  }
   private async requireBusiness(businessId: string): Promise<BusinessAccessView> {
     const business = await this.directory.find(businessId);
     if (!business || business.status !== 'active') throw new TurnosBusinessNotFoundError();

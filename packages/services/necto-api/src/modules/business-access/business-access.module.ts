@@ -12,6 +12,8 @@ import { BusinessAdminGuard, BusinessAdministeredGuard, BusinessModuleGuard, Ope
 import { InvitationsController } from './api/invitations.controller';
 import { AccessCodeService } from './application/access-code.service';
 import { AccessGrantsService } from './application/access-grants.service';
+import { BusinessAccessChecksService } from './application/business-access-checks.service';
+import { BusinessAccessChecks } from './domain/access-checks';
 import { AccessMailer } from './application/access-mailer';
 import { AdminLoginService } from './application/admin-login.service';
 import { AdminSessionService } from './application/admin-session.service';
@@ -61,6 +63,7 @@ import { RateLimitRecord, RateLimitSchema } from './infrastructure/rate-limit.sc
     AdministeredBusinessesService,
     MemberAccessRegistry,
     AccessGrantsService,
+    { provide: BusinessAccessChecks, useClass: BusinessAccessChecksService },
     AdminSessionService,
     AdminLoginService,
     BusinessAdminGuard,
@@ -76,6 +79,7 @@ import { RateLimitRecord, RateLimitSchema } from './infrastructure/rate-limit.sc
     AdministeredBusinessesService,
     AccessGrantsService,
     MemberAccessRegistry,
+    BusinessAccessChecks,
     BusinessAdminGuard,
     RecentVerificationGuard,
     BusinessModuleGuard,

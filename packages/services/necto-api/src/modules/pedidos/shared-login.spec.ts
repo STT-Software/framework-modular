@@ -14,7 +14,7 @@ import { setupAdminAccess } from '../business-access/fakes.spec';
 import { TurnosConfigurationService } from '../turnos/application/turnos-configuration.service';
 import { TurnosConfigurationStore } from '../turnos/application/turnos-configuration.store';
 import { TurnosOperatorAccessSource } from '../turnos/application/turnos-operator-access.source';
-import { InMemoryTurnosConfigurationRepository, operatorInput as turnosOperatorInput } from '../turnos/fakes.spec';
+import { buildTurnos, operatorInput as turnosOperatorInput } from '../turnos/fakes.spec';
 import { PedidosConfigurationService } from './application/pedidos-configuration.service';
 import { PedidosConfigurationStore } from './application/pedidos-configuration.store';
 import { PedidosOperatorAccessSource } from './application/pedidos-operator-access.source';
@@ -34,10 +34,10 @@ function setupDualModule() {
   const businessId = access.business.id;
 
   // Wire Turnos
-  const turnosRepo = new InMemoryTurnosConfigurationRepository();
-  const turnosStore = new TurnosConfigurationStore(turnosRepo, access.clock);
-  const turnos = new TurnosConfigurationService(turnosStore, access.directory);
-  new TurnosOperatorAccessSource(turnosRepo, access.registry).onModuleInit();
+  const wired = buildTurnos(access.directory as never, access.clock, access.registry);
+  const turnosRepo = wired.repository;
+  const turnos = wired.service;
+  wired.source.onModuleInit();
 
   // Wire Pedidos
   const pedidosRepo = new InMemoryPedidosConfigurationRepository();

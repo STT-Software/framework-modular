@@ -1,12 +1,16 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import compression from 'compression';
 import { AppModule } from './app.module';
 import { validationExceptionFactory } from './platform/errors/validation-exception.factory';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
+
+  // Enable HTTP response compression (gzip/deflate) to drastically reduce wire payload sizes.
+  app.use(compression());
 
   // Validates and normalizes the body using the DTOs; rejects undeclared fields.
   app.useGlobalPipes(

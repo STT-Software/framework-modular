@@ -33,8 +33,8 @@ export interface SetupState {
     name: string;
     description: string;
     schedule: { mode: "inherited" | "custom" };
-    /** Lo dice el propio módulo: hoy solo Turnos llega a `ready` (con `summary`). */
-    settings: { status: "pending" | "ready"; summary?: { queueCount: number; operatorCount: number } };
+    /** Reported by each module's setup status source (e.g. Turnos and Pedidos). */
+    settings: { status: "pending" | "ready"; summary?: Record<string, number> };
   }>;
   profile: {
     name: string;

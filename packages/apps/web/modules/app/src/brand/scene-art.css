@@ -76,6 +76,10 @@
 .dark .config-art-stage .sa-art-shadow {
   fill: rgba(0, 0, 0, 0.65) !important;
 }
+.dark .config-art-stage .sa-art-spark {
+  fill: #ffffff !important;
+  opacity: 0.9 !important;
+}
 .dark .config-art-stage .art-route {
   stroke: #97d6df !important;
 }

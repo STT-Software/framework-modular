@@ -56,6 +56,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api\/turnos/, ""),
       },
+      // Mismo backend; prefijo propio del módulo pedidos (configuración de Pedidos y vista del operador).
+      "/api/pedidos": {
+        target: API_URL,
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api\/pedidos/, ""),
+      },
       // Mismo backend; prefijo propio del módulo business-setup (configuración inicial del negocio, del administrador).
       "/api/business-setup": {
         target: API_URL,

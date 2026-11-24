@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { useRef, useState } from "react";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { turnosStore } from "../stores/turnos.store";
 import type { TurnosQueue } from "../types";
 import { DeleteDialog, type DeleteTarget } from "./DeleteDialog";
@@ -73,6 +74,7 @@ export const QueuesPanel = observer(() => {
       </div>
       {count === 0 && (
         <div className="nt-card nt-empty">
+          <BrandCardDecor />
           <div className="nt-empty-scene" aria-hidden="true">
             <span />
             <span />

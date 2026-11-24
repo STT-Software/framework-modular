@@ -1,4 +1,5 @@
 import { observer } from "mobx-react-lite";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { categoryLabel, type CategoryId } from "@/modules/businesses";
 import { turnosStore } from "../stores/turnos.store";
 import type { PrefixMode, TurnosStep } from "../types";
@@ -31,6 +32,7 @@ export const ReviewPanel = observer(({ onEdit }: { onEdit: (step: TurnosStep) =>
   return (
     <section className="nt-panel-enter" aria-label="Revisión de Turnos">
       <div className="nt-review-head nt-card">
+        <BrandCardDecor />
         <span className="nt-module-symbol">
           <Icon paths={ICONS.queue} />
         </span>
@@ -52,6 +54,7 @@ export const ReviewPanel = observer(({ onEdit }: { onEdit: (step: TurnosStep) =>
         ))}
       </div>
       <div className="nt-card">
+        <BrandCardDecor />
         <div className="nt-review-heading">
           <h2>Filas de atención</h2>
           <button className="nt-text-button" type="button" onClick={() => onEdit("queues")}>
@@ -75,6 +78,7 @@ export const ReviewPanel = observer(({ onEdit }: { onEdit: (step: TurnosStep) =>
       </div>
       <div className="nt-review-columns">
         <div className="nt-card">
+          <BrandCardDecor />
           <div className="nt-review-heading">
             <h2>Reglas generales</h2>
             <button className="nt-text-button" type="button" onClick={() => onEdit("rules")}>
@@ -91,6 +95,7 @@ export const ReviewPanel = observer(({ onEdit }: { onEdit: (step: TurnosStep) =>
           </dl>
         </div>
         <div className="nt-card">
+          <BrandCardDecor />
           <div className="nt-review-heading">
             <h2>Equipo de Turnos</h2>
             <button className="nt-text-button" type="button" onClick={() => onEdit("operators")}>

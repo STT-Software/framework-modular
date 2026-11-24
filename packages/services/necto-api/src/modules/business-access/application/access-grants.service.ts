@@ -53,29 +53,43 @@ export class AccessGrantsService {
 
   private async operatorGrants(email: string): Promise<AccessGrant[]> {
     const assignments = await this.registry.assignmentsOf(email);
-    const byBusiness = new Map<string, { modules: Set<string>; personName: string }>();
+    const byBusinessModule = new Map<string, { businessId: string; moduleId: string; personName: string }>();
     for (const assignment of assignments) {
       if (assignment.role !== 'operator') continue;
+      const dedupeKey = `${assignment.businessId}:${assignment.moduleId}`;
+      if (byBusinessModule.has(dedupeKey)) continue;
       if (!(await this.modules.isEnabled(assignment.businessId, assignment.moduleId as never))) continue;
-      const entry = byBusiness.get(assignment.businessId) ?? { modules: new Set<string>(), personName: assignment.personName };
-      entry.modules.add(assignment.moduleId);
-      byBusiness.set(assignment.businessId, entry);
+      byBusinessModule.set(dedupeKey, {
+        businessId: assignment.businessId,
+        moduleId: assignment.moduleId,
+        personName: assignment.personName,
+      });
     }
+    const businessCache = new Map<string, Awaited<ReturnType<BusinessDirectory['find']>>>();
     const grants: AccessGrant[] = [];
-    for (const [businessId, entry] of byBusiness) {
-      const business = await this.directory.find(businessId);
+    for (const entry of byBusinessModule.values()) {
+      let business = businessCache.get(entry.businessId);
+      if (!businessCache.has(entry.businessId)) {
+        business = await this.directory.find(entry.businessId);
+        businessCache.set(entry.businessId, business);
+      }
       if (!business || business.status !== 'active') continue;
       grants.push({
-        key: grantKey(businessId, 'operator'),
-        businessId,
+        key: grantKey(entry.businessId, 'operator', entry.moduleId),
+        businessId: entry.businessId,
         businessName: business.name,
         category: business.category,
         categoryOther: business.categoryOther,
         role: 'operator',
-        modules: [...entry.modules].sort(),
+        modules: [entry.moduleId],
         personName: entry.personName,
       });
     }
-    return grants.sort((a, b) => a.businessName.localeCompare(b.businessName) || a.businessId.localeCompare(b.businessId));
+    return grants.sort(
+      (a, b) =>
+        a.businessName.localeCompare(b.businessName) ||
+        a.businessId.localeCompare(b.businessId) ||
+        (a.modules[0] ?? '').localeCompare(b.modules[0] ?? ''),
+    );
   }
 }

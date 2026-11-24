@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
 import { ArtCheckBadge, ArtMark, ArtOrbits, ArtSpark } from "@/brand/SceneArt";
+import { useElementVisibility } from "@/hooks";
 import "./guide-figure.css";
 
 export function ArtStage({ label, children }: { label: string; children: ReactNode }) {
-  return <div className="config-art-stage">
+  const { ref, isVisible } = useElementVisibility<HTMLDivElement>();
+  return <div ref={ref} className="config-art-stage" data-visible={isVisible}>
     <svg viewBox="20 20 430 295" role="img" aria-label={label} preserveAspectRatio="xMidYMid meet">
       <ArtOrbits cx={232} cy={160} />
       <ellipse className="sa-art-shadow" cx="232" cy="286" rx="145" ry="9" />

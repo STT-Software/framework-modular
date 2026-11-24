@@ -16,6 +16,15 @@ import { ShellProvider } from "@/shell";
  * 
  * Run with: npm run dev
  */
+// Resource optimization: pause CSS animations when tab is hidden to save GPU/CPU cycles
+if (typeof document !== "undefined") {
+  const syncVisibility = () => {
+    document.documentElement.classList.toggle("is-page-hidden", document.hidden);
+  };
+  document.addEventListener("visibilitychange", syncVisibility);
+  syncVisibility();
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AppMetaProvider>

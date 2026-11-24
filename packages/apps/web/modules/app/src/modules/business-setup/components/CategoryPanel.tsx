@@ -1,4 +1,5 @@
 import { observer } from "mobx-react-lite";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { businessSetupStore } from "../stores/businessSetup.store";
 import { CATEGORY_CARDS } from "./categories";
 import { MiniMark } from "./MiniMark";
@@ -44,6 +45,7 @@ export const CategoryPanel = observer(() => {
       </fieldset>
       {store.categoryDraft === "other" && (
         <div className="no-card no-other-category">
+          <BrandCardDecor />
           <div className="no-field">
             <label htmlFor="no-category-custom">
               ¿Cuál es el tipo de negocio? <span>*</span>
@@ -65,6 +67,7 @@ export const CategoryPanel = observer(() => {
       </p>
       {turnos && (
         <div className="no-card" style={{ marginTop: 24 }}>
+          <BrandCardDecor />
           <div className="no-field">
             <label htmlFor="no-turnos-profile">Perfil de atención de Turnos</label>
             <select id="no-turnos-profile" value={store.turnosProfileDraft ?? turnos.profile} onChange={(event) => store.chooseTurnosProfile(event.target.value)}>

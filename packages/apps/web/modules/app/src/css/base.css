@@ -44,3 +44,33 @@
     animation: aparecer 120ms ease-out backwards;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Animation Resource Optimization
+   Freeze animation loops when document is hidden (background tab) or offscreen
+   -------------------------------------------------------------------------- */
+.is-page-hidden *,
+[data-visible="false"] * {
+  animation-play-state: paused !important;
+}
+
+/* --------------------------------------------------------------------------
+   Tactile Micro-interactions & Tap Feedback
+   -------------------------------------------------------------------------- */
+button:active:not(:disabled),
+.no-primary:active:not(:disabled),
+.no-secondary:active:not(:disabled),
+.no-text-button:active:not(:disabled),
+.config-primary:active:not(:disabled),
+.config-secondary:active:not(:disabled),
+.ws-btn:active:not(:disabled),
+[role="button"]:active:not([aria-disabled="true"]) {
+  transform: scale(0.98);
+  transition: transform 60ms ease-out;
+}
+
+button,
+[role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+}

@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef } from "react";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { NectoLogo } from "@/brand/NectoLogo";
 import { operatorStore } from "../stores/operator.store";
 import { initialsOf } from "../validation";
@@ -38,6 +39,7 @@ export const OperatorAccess = observer(({ onSignOut, signingOut }: { onSignOut: 
       {ready && (
         <>
           <div className="nt-card nt-access-card">
+            <BrandCardDecor />
             <div className="nt-access-person">
               <span className="nt-person-avatar">{initialsOf(view.operator.name)}</span>
               <div>

@@ -1,4 +1,5 @@
 import { observer } from "mobx-react-lite";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { categoryLabel } from "@/modules/businesses";
 import { initialsOf } from "../initials";
 import { dayText } from "../schedule";
@@ -29,6 +30,7 @@ export const ReviewPanel = observer(({ onEdit, onViewModule }: { onEdit: (step: 
   return (
     <section className="no-panel no-panel-enter" aria-label="Revisión de la configuración base">
       <div className="no-card no-review-identity">
+        <BrandCardDecor />
         <div className="no-review-logo">
           {store.logoUrl ? <img src={store.logoUrl} alt="Logo del negocio" /> : <span>{initialsOf(name)}</span>}
         </div>
@@ -52,6 +54,7 @@ export const ReviewPanel = observer(({ onEdit, onViewModule }: { onEdit: (step: 
         </dl>
       </div>
       <div className="no-card no-review-hours">
+        <BrandCardDecor />
         <header className="no-card-header">
           <div>
             <h2>Horario del negocio</h2>
@@ -71,6 +74,7 @@ export const ReviewPanel = observer(({ onEdit, onViewModule }: { onEdit: (step: 
         </div>
       </div>
       <div className="no-card no-review-modules">
+        <BrandCardDecor />
         <header className="no-card-header">
           <div>
             <h2>Módulos y horarios</h2>
@@ -88,7 +92,10 @@ export const ReviewPanel = observer(({ onEdit, onViewModule }: { onEdit: (step: 
                 <ModuleIcon id={module.id} />
                 <div>
                   <strong>{module.name}</strong>
-                  <p>{inherits ? "Hereda el horario del negocio" : "Horario personalizado"} · Ajustes específicos pendientes</p>
+                  <p>
+                    {inherits ? "Hereda el horario del negocio" : "Horario personalizado"} ·{" "}
+                    {module.settings.status === "ready" ? "Configuración preparada" : "Ajustes específicos pendientes"}
+                  </p>
                 </div>
                 <button type="button" className="no-text-button" aria-label={`Ver horario de ${module.name}`} onClick={() => onViewModule(module.id)}>
                   Ver horario ↗

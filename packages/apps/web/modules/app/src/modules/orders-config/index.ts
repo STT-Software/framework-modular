@@ -5,9 +5,6 @@ const OrdersConfigPage = lazy(() => import("./pages/OrdersConfigPage"));
 
 export const ordersConfigModule: AppModule = {
   id: "orders-config",
-  routes: [
-    { path: "/business/pedidos", component: OrdersConfigPage },
-    { path: "/business/pedidos/:businessId", component: OrdersConfigPage },
-    { path: "/business/pedidos/:businessId/:step", component: OrdersConfigPage },
-  ],
+  // Single route with optional params so step changes do not remount the page or reload state.
+  routes: [{ path: "/business/pedidos/:businessId?/:step?", component: OrdersConfigPage }],
 };

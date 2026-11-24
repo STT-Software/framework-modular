@@ -672,4 +672,171 @@
   background: #1d2939 !important;
 }
 
+/* --------------------------------------------------------------------------
+   Subtle Brand Geometry Backdrop for White Cards (Setup, Turnos, Pedidos)
+   Maximum 3 shapes (Ring, Wave, Arc) inspired by /welcome/ready
+   -------------------------------------------------------------------------- */
+:is(.no-card, .nt-card, .oc-card, .no-module-card) {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+:is(.no-card, .nt-card, .oc-card, .no-module-card) > :not(.card-brand-decor) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Static thread and vector lines (no movement) */
+.no-connect-line {
+  animation: none !important;
+}
+
+/* Compact, well-proportioned module cards on wide screens */
+.no-assigned-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 420px)) !important;
+  gap: 20px !important;
+}
+
+.no-module-card {
+  max-width: 440px !important;
+  padding: 22px 24px !important;
+}
+
+.no-module-card-top {
+  margin-bottom: 14px !important;
+}
+
+.no-module-card h3 {
+  font-size: 18px !important;
+  margin: 0 0 6px !important;
+}
+
+.no-module-card>p {
+  font-size: 13.5px !important;
+  line-height: 1.5 !important;
+  margin: 0 0 18px !important;
+}
+
+.no-module-card-footer {
+  padding-top: 16px !important;
+}
+
+.card-brand-decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+  z-index: 0;
+}
+
+.card-brand-shape {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.07;
+  transition: opacity 0.25s ease;
+}
+
+.dark .card-brand-shape {
+  opacity: 0.05;
+}
+
+/* Shape 1: Ring (indigo) in top-right */
+.card-brand-shape.is-ring {
+  top: -24px;
+  right: -24px;
+  width: 120px;
+  height: 120px;
+  border: 14px solid currentColor;
+  border-radius: 50%;
+  transform: rotate(15deg);
+}
+
+/* Shape 2: Wave (cyan) in bottom-left */
+.card-brand-shape.is-wave {
+  bottom: 16px;
+  left: -20px;
+  width: 110px;
+  height: 32px;
+  transform: rotate(-6deg);
+}
+
+.card-brand-shape.is-wave svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.card-brand-shape.is-wave path {
+  stroke: currentColor;
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+/* Shape 3: Arc (orange) in bottom-right */
+.card-brand-shape.is-arc {
+  bottom: -20px;
+  right: 32px;
+  width: 80px;
+  height: 80px;
+  border: 12px solid transparent;
+  border-top-color: currentColor;
+  border-right-color: currentColor;
+  border-radius: 50%;
+  transform: rotate(35deg);
+}
+
+.card-brand-shape.tone-indigo {
+  color: #190088;
+}
+
+.dark .card-brand-shape.tone-indigo {
+  color: #b7adff;
+}
+
+.card-brand-shape.tone-cyan {
+  color: #97d6df;
+}
+
+.dark .card-brand-shape.tone-cyan {
+  color: #97d6df;
+}
+
+.card-brand-shape.tone-orange {
+  color: #ff3f1a;
+}
+
+.dark .card-brand-shape.tone-orange {
+  color: #ff6b48;
+}
+
+@media (max-width: 600px) {
+  .card-brand-shape.is-ring {
+    width: 90px;
+    height: 90px;
+    border-width: 10px;
+    top: -18px;
+    right: -18px;
+  }
+  .card-brand-shape.is-wave {
+    width: 85px;
+    height: 24px;
+    bottom: 12px;
+    left: -14px;
+  }
+  .card-brand-shape.is-arc {
+    width: 60px;
+    height: 60px;
+    border-width: 9px;
+    bottom: -15px;
+    right: 18px;
+  }
+}
+
+.config-brand-backdrop {
+  display: none !important;
+}
+
+
 

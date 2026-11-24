@@ -1,6 +1,8 @@
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
+import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
 import { NectoLogo } from "@/brand/NectoLogo";
+import { useElementVisibility } from "@/hooks";
 import { businessSetupStore } from "../stores/businessSetup.store";
 import { ModuleIcon } from "./ModuleIcon";
 
@@ -22,6 +24,7 @@ interface ModulesViewProps {
 export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps) => {
   const state = businessSetupStore.state;
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const { ref: motionRef, isVisible: isMotionVisible } = useElementVisibility<HTMLDivElement>();
   const [openingModuleId, setOpeningModuleId] = useState<string | null>(null);
   const [startingBase, setStartingBase] = useState(false);
 
@@ -65,7 +68,7 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
             {!startingBase && <span aria-hidden="true">→</span>}
           </button>
         </div>
-        <div className="no-module-motion" aria-hidden="true">
+        <div ref={motionRef} className="no-module-motion" data-visible={isMotionVisible} aria-hidden="true">
           <svg viewBox="0 0 390 280" fill="none">
             <circle cx="196" cy="136" r="99" />
             <ellipse cx="196" cy="136" rx="155" ry="72" transform="rotate(-22 196 136)" />
@@ -114,20 +117,11 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
       {count > 0 ? (
         <div className={`no-assigned-grid${count === 1 ? " is-single" : ""}`}>
           {state.modules.map((module) => {
-            const isOrdersReady =
-              module.id === "pedidos" &&
-              (() => {
-                try {
-                  const raw = localStorage.getItem(`necto.orders_config.v1.${businessSetupStore.businessId}`);
-                  return raw ? JSON.parse(raw).status === "ready" : false;
-                } catch {
-                  return false;
-                }
-              })();
-            const isModuleReady = module.settings.status === "ready" || isOrdersReady;
+            const isModuleReady = module.settings.status === "ready";
             const isOpening = openingModuleId === module.id;
             return (
               <article key={module.id} className="no-module-card">
+                <BrandCardDecor />
                 <div className="no-module-card-top">
                   <ModuleIcon id={module.id} />
                   <span className="no-module-assigned">Asignado</span>

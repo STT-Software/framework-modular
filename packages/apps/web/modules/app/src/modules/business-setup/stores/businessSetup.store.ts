@@ -1,6 +1,7 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { AccessError, adminAccessStore } from "@/modules/business-access";
 import type { CategoryId, ModuleId } from "@/modules/businesses";
+import { optimizeImage } from "@/utils";
 import { businessSetupApi, SetupError } from "../api/businessSetupApi";
 import { cloneSchedule, hoursProblems, problemsFromFields, workday, type HoursProblem } from "../schedule";
 import { SETUP_STEPS, WEEK_DAYS, type ProfileForm, type SetupState, type SetupStep, type WeekSchedule } from "../types";
@@ -61,41 +62,7 @@ function formFrom(state: SetupState): ProfileForm {
  * navegador no sabe codificar WebP). Un SVG no se toca. Si algo falla, o el resultado no es más pequeño, se sube el original.
  */
 async function shrinkLogo(file: File): Promise<File> {
-  if (file.type === "image/svg+xml" || typeof createImageBitmap !== "function") return file;
-  let bitmap: ImageBitmap | null = null;
-  try {
-    bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, LOGO_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
-    const width = Math.max(1, Math.round(bitmap.width * scale));
-    const height = Math.max(1, Math.round(bitmap.height * scale));
-    const blob = await drawToBlob(bitmap, width, height);
-    if (!blob || blob.size >= file.size) return file;
-    const ext = blob.type === "image/webp" ? "webp" : "png";
-    return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "logo"}.${ext}`, { type: blob.type });
-  } catch {
-    return file;
-  } finally {
-    bitmap?.close();
-  }
-}
-
-async function drawToBlob(bitmap: ImageBitmap, width: number, height: number): Promise<Blob | null> {
-  const encode = async (type: string): Promise<Blob | null> => {
-    if (typeof OffscreenCanvas === "function") {
-      const canvas = new OffscreenCanvas(width, height);
-      canvas.getContext("2d")?.drawImage(bitmap, 0, 0, width, height);
-      return canvas.convertToBlob({ type, quality: 0.85 });
-    }
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, width, height);
-    return new Promise((resolve) => canvas.toBlob(resolve, type, 0.85));
-  };
-  const webp = await encode("image/webp");
-  // Un navegador sin codificador WebP devuelve PNG en su lugar.
-  if (webp && webp.type === "image/webp") return webp;
-  return encode("image/png");
+  return optimizeImage(file, { maxSide: LOGO_MAX_SIDE, quality: 0.85 });
 }
 
 /**

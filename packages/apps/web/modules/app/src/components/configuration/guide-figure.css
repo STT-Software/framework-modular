@@ -113,20 +113,11 @@
     animation: art-orbit-pulse 4.5s ease-in-out infinite alternate;
   }
 
-  /* Destellos y brillos */
+  /* Destellos y brillos estáticos sin animación */
   .sa-art-spark {
     transform-box: fill-box;
     transform-origin: center;
-    animation: art-sparkle 2.2s ease-in-out infinite alternate;
-  }
-  .sa-art-spark:nth-of-type(2) {
-    animation-delay: -0.6s;
-  }
-  .sa-art-spark:nth-of-type(3) {
-    animation-delay: -1.2s;
-  }
-  .sa-art-spark:nth-of-type(4) {
-    animation-delay: -1.8s;
+    opacity: 0.85;
   }
 
   /* Halo de radar cian */

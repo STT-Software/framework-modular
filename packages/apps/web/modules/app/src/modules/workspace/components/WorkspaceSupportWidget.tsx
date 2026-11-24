@@ -1,5 +1,6 @@
 import "../styles/support-widget.css";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent } from "react";
+import { useDebounce } from "@/hooks";
 import { NectoLogo } from "@/brand/NectoLogo";
 import { cn } from "@/utils";
 import {
@@ -404,9 +405,11 @@ export function WorkspaceSupportWidget() {
     return style;
   };
 
+  const debouncedSearchQuery = useDebounce(searchQuery, 250);
+
   const filteredArticles = useMemo(
-    () => filterSupportFaqs(searchQuery, selectedCategory),
-    [searchQuery, selectedCategory],
+    () => filterSupportFaqs(debouncedSearchQuery, selectedCategory),
+    [debouncedSearchQuery, selectedCategory],
   );
 
   const viewTransitionClass = slideDirection ? `ws-support-view--${slideDirection}` : "";

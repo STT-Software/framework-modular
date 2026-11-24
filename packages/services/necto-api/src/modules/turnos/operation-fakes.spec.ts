@@ -35,9 +35,10 @@ export class InMemoryTicketRepository extends TicketRepository {
     counter.n.set(prefix, (counter.n.get(prefix) ?? 0) + 1);
     this.counters.set(key, counter);
     this.numbersGiven += 1;
+    const given = { number: counter.n.get(prefix)!, seq: counter.seq };
     // Awaiting here lets concurrent callers interleave exactly where a real database round trip would.
     await Promise.resolve();
-    return { number: counter.n.get(prefix)!, seq: counter.seq };
+    return given;
   }
   async insert(ticket: Ticket): Promise<InsertResult> {
     const all = [...this.items.values()].filter((item) => item.businessId === ticket.businessId);

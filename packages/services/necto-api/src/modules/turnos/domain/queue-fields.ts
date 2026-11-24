@@ -23,6 +23,7 @@ export function parseFields(input: unknown, issues: Issues, ids: () => string = 
   }
   if (input.length > LIMITS.fieldsPerQueue) issues.add('fields', `A queue can ask at most ${LIMITS.fieldsPerQueue} extra fields`);
   const parsed: QueueField[] = [];
+  const labels = new Set<string>();
   input.slice(0, LIMITS.fieldsPerQueue).forEach((raw: unknown, index) => {
     const path = `fields.${index}`;
     if (!isRecord(raw)) {
@@ -32,18 +33,20 @@ export function parseFields(input: unknown, issues: Issues, ids: () => string = 
     const label = typeof raw.label === 'string' ? raw.label.trim() : '';
     if (label.length < LIMITS.fieldLabel.min || label.length > LIMITS.fieldLabel.max) {
       issues.add(`${path}.label`, `label must be ${LIMITS.fieldLabel.min} to ${LIMITS.fieldLabel.max} characters long`);
-    } else if (parsed.some((other) => other.label.toLocaleLowerCase() === label.toLocaleLowerCase())) {
+    } else if (labels.has(label.toLocaleLowerCase())) {
       issues.add(`${path}.label`, 'Two fields of a queue cannot have the same label');
     }
+    labels.add(label.toLocaleLowerCase());
     const type = FIELD_TYPES.find((candidate) => candidate === raw.type);
     if (!type) issues.add(`${path}.type`, `type must be one of: ${FIELD_TYPES.join(', ')}`);
     if (raw.required !== undefined && raw.required !== null && typeof raw.required !== 'boolean') issues.add(`${path}.required`, 'required must be true or false');
-    let id = ids();
+    let id: string | null = null;
     if (raw.id !== undefined && raw.id !== null) {
       if (typeof raw.id !== 'string' || !FIELD_ID.test(raw.id)) issues.add(`${path}.id`, 'id must be 1 to 40 letters, digits, "-" or "_"');
       else if (parsed.some((other) => other.id === raw.id)) issues.add(`${path}.id`, 'Two fields of a queue cannot have the same id');
       else id = raw.id;
     }
+    id ??= ids();
     let options: string[] = [];
     if (type === 'select') {
       const list = Array.isArray(raw.options) ? raw.options : [];

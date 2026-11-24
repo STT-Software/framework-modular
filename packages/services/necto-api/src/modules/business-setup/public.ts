@@ -4,6 +4,7 @@
  * - `BusinessSetupModule`: so the application can register it and functional modules can import the contracts below.
  * - `ModuleSetupStatusRegistry` + `ModuleSetupStatusSource`: IoC registry for functional modules to report their
  *   configuration readiness and summary without creating a circular dependency.
+ * - `BusinessSetupOverview`: how far the base setup and each module's configuration are, for the general dashboard.
  * - `BusinessScheduleReader` + `EffectiveModuleSchedule` + `WeekSchedule`: read-only access to the effective opening
  *   hours of a module (inherited from the business or its own override).
  */
@@ -12,3 +13,4 @@ export { ModuleSetupStatusRegistry } from './application/module-setup-status.reg
 export { ModuleSetupStatusSource, type ModuleSetupStatus } from './domain/module-setup-status';
 export { BusinessScheduleReader, type EffectiveModuleSchedule } from './domain/business-schedule-reader';
 export type { WeekSchedule } from './domain/week-schedule';
+export { BusinessSetupOverview, type SetupOverview, type SetupOverviewModule } from './domain/setup-overview';

@@ -178,3 +178,23 @@ export const queueInput = (name: string, extra: Record<string, unknown> = {}) =>
 /** Active by default: most tests are about what an operator can do, not about the wait for their first sign-in. */
 export const operatorInput = (name: string, email: string, queueIds: string[], extra: Record<string, unknown> = {}) => ({ name, email, queueIds, status: 'active', ...extra });
 export const names = (state: { configuration: TurnosConfiguration }) => state.configuration.queues.map((queue) => queue.name);
+export const LAURA = 'laura@cafecentral.co';
+export const MATEO = 'mateo@cafecentral.co';
+export const SOFIA = 'sofia@cafecentral.co';
+/**
+ * A business with Turnos already open and a small team, to test the operation: the "restaurant" profile gives two queues (`caja`, automatic,
+ * and `recogida`, manual); Laura works in both with every view, Mateo only in `recogida` with the turns views, and Sofía only sees surveys.
+ */
+export async function operationWorld() {
+  const world = setupTurnos();
+  const state = await world.service.get(BUSINESS_ID);
+  const [caja, recogida] = state.configuration.queues;
+  await world.service.createOperator(BUSINESS_ID, operatorInput('Laura Gómez', LAURA, [caja.id, recogida.id]));
+  await world.service.createOperator(BUSINESS_ID, operatorInput('Mateo Ríos', MATEO, [recogida.id], { views: ['home', 'my-turns', 'create-turn'] }));
+  await world.service.createOperator(BUSINESS_ID, operatorInput('Sofía Paz', SOFIA, [caja.id], { views: ['surveys'] }));
+  const admin = () => world.access.forAdmin(BOSS, BUSINESS_ID);
+  const operator = (email: string, view?: Parameters<typeof world.access.forOperator>[2]) => world.access.forOperator(email, BUSINESS_ID, view);
+  /** Creates a turn as Laura (who has every view) and returns it. */
+  const issue = async (queueId: string, extra: Record<string, unknown> = {}, email = LAURA) => (await world.ticketService.create(await operator(email), queueId, extra)).ticket;
+  return { ...world, caja, recogida, admin, operator, issue };
+}

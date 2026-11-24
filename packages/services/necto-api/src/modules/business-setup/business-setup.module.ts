@@ -7,7 +7,9 @@ import { BusinessesModule } from '../businesses/public';
 import { TurnosModule } from '../turnos/public';
 import { BusinessSetupController } from './api/business-setup.controller';
 import { BusinessScheduleReaderService } from './application/business-schedule-reader.service';
+import { BusinessSetupOverviewService } from './application/business-setup-overview.service';
 import { BusinessSetupService } from './application/business-setup.service';
+import { BusinessSetupOverview } from './domain/setup-overview';
 import { ModuleSetupStatusRegistry } from './application/module-setup-status.registry';
 import { BusinessScheduleReader } from './domain/business-schedule-reader';
 import { BusinessSetupRepository } from './domain/business-setup.repository';
@@ -32,9 +34,10 @@ import { MongoBusinessSetupRepository } from './infrastructure/mongo-business-se
   providers: [
     BusinessSetupService,
     ModuleSetupStatusRegistry,
+    { provide: BusinessSetupOverview, useClass: BusinessSetupOverviewService },
     { provide: BusinessScheduleReader, useClass: BusinessScheduleReaderService },
     { provide: BusinessSetupRepository, useClass: MongoBusinessSetupRepository },
   ],
-  exports: [ModuleSetupStatusRegistry, BusinessScheduleReader],
+  exports: [ModuleSetupStatusRegistry, BusinessScheduleReader, BusinessSetupOverview],
 })
 export class BusinessSetupModule {}

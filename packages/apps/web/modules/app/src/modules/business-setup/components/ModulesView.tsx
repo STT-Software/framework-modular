@@ -1,30 +1,21 @@
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
 import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
-import { NectoLogo } from "@/brand/NectoLogo";
-import { useElementVisibility } from "@/hooks";
+import { WorkspaceAnnouncementBanner } from "@/components/configuration/WorkspaceAnnouncementBanner";
+import { adminAccessStore } from "@/modules/business-access";
 import { businessSetupStore } from "../stores/businessSetup.store";
 import { ModuleIcon } from "./ModuleIcon";
-
-const NODE_POSITIONS: ReadonlyArray<readonly [number, number]> = [
-  [17, 29],
-  [44, 5],
-  [76, 27],
-  [73, 64],
-  [34, 73],
-  [7, 60],
-];
 
 interface ModulesViewProps {
   onStart: () => void;
   onConfigure: (moduleId: string) => void;
+  onOpenModule?: (moduleId: string) => void;
 }
 
-/** La primera pantalla: los módulos que el superadministrador habilitó para ESTE negocio y el estado de la base. */
+/** La primera pantalla: el espacio de trabajo del negocio con sus módulos habilitados, indicadores y estado de configuración. */
 export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps) => {
   const state = businessSetupStore.state;
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const { ref: motionRef, isVisible: isMotionVisible } = useElementVisibility<HTMLDivElement>();
   const [openingModuleId, setOpeningModuleId] = useState<string | null>(null);
   const [startingBase, setStartingBase] = useState(false);
 
@@ -32,87 +23,48 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
   if (!state) return null;
   const count = state.modules.length;
   const ready = state.progress.baseReady;
-  const started = state.progress.currentStep !== null;
+
+  const rawPersonName =
+    adminAccessStore.access?.personName ??
+    adminAccessStore.accesses.find((a) => a.businessId === state.business.id)?.personName ??
+    "Administrador";
+  const firstName = rawPersonName.trim().split(/\s+/)[0] || "Administrador";
+
   return (
     <section className="no-enter" aria-labelledby="no-modules-title">
-      <div className="no-welcome">
-        <div className="no-welcome-copy">
-          <span className="no-eyebrow">
-            <i />
-            TU NEGOCIO. TUS POSIBILIDADES.
-          </span>
+      {/* TOP GREETING BAR */}
+      <div className="no-ws-topbar">
+        <div className="no-ws-greeting">
+          <span className="no-ws-eyebrow">MI NEGOCIO · ESPACIO DE TRABAJO</span>
           <h1 id="no-modules-title" ref={headingRef} tabIndex={-1}>
-            Todo empieza con
-            <br />
-            una buena configuración<span>.</span>
+            {`Qué bueno verte, ${firstName}.`}
           </h1>
           <p>
-            Este es el espacio de <strong>{state.profile.name}</strong>. Prepara sus datos, define sus horarios y deja la base lista para tus módulos.
+            {`Este es el pulso de ${state.profile.name}. Conecta con lo que necesita tu negocio hoy.`}
           </p>
-          <button
-            className={`no-primary${startingBase ? " is-loading" : ""}`}
-            type="button"
-            disabled={startingBase}
-            onClick={() => {
-              setStartingBase(true);
-              setTimeout(onStart, 450);
-            }}
-          >
-            {startingBase
-              ? "Abriendo configuración base…"
-              : ready
-                ? "Revisar configuración base "
-                : started
-                  ? "Continuar configuración "
-                  : "Preparar mi negocio "}
-            {!startingBase && <span aria-hidden="true">→</span>}
-          </button>
         </div>
-        <div ref={motionRef} className="no-module-motion" data-visible={isMotionVisible} aria-hidden="true">
-          <svg viewBox="0 0 390 280" fill="none">
-            <circle cx="196" cy="136" r="99" />
-            <ellipse cx="196" cy="136" rx="155" ry="72" transform="rotate(-22 196 136)" />
-            <path d="M69 161Q74 50 203 51M323 104Q322 213 196 228" pathLength="1" className="no-connect-line" />
-            <path
-              d="m72 70 3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8Zm253 117 2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"
-              className="no-motion-spark"
-            />
-            <ellipse cx="196" cy="249" rx="94" ry="7" className="no-motion-shadow" />
-          </svg>
-          <div className="no-motion-center">
-            <NectoLogo variant="mark" width={48} height={48} />
-            <span>Grow together</span>
-          </div>
-          <div>
-            {state.modules.map((module, index) => (
-              <span
-                key={module.id}
-                className="no-motion-node"
-                style={{ left: `${NODE_POSITIONS[index][0]}%`, top: `${NODE_POSITIONS[index][1]}%` }}
-              >
-                <ModuleIcon id={module.id} />
-              </span>
-            ))}
-          </div>
-          <span className="no-motion-chip">
-            <i />
-            Un espacio propio para crecer
-          </span>
-        </div>
+        <button
+          type="button"
+          className="no-ws-config-btn"
+          disabled={startingBase}
+          onClick={() => {
+            setStartingBase(true);
+            setTimeout(onStart, 350);
+          }}
+        >
+          {startingBase ? "Abriendo…" : "Ver configuración"}
+        </button>
       </div>
+
+      {/* 3-SLIDE ANNOUNCEMENT HERO BANNER */}
+      <WorkspaceAnnouncementBanner />
+
       <div className="no-section-heading">
         <div>
-          <h2>
-            Los módulos de tu negocio <span>{count}</span>
-          </h2>
-          <p>Habilitados por tu superadministrador, solo para este negocio.</p>
+          <h2>{`Los módulos de ${state.profile.name}`}</h2>
+          <p>Un espacio propio para cada parte de tu operación.</p>
         </div>
-        <span className="no-assignment-label">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Zm-4 9 3 3 5-6" />
-          </svg>
-          Asignación por negocio
-        </span>
+        <span className="no-ws-count-pill">{`${count} ${count === 1 ? "habilitado" : "habilitados"}`}</span>
       </div>
       {count > 0 ? (
         <div className={`no-assigned-grid${count === 1 ? " is-single" : ""}`}>
@@ -124,32 +76,42 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
                 <BrandCardDecor />
                 <div className="no-module-card-top">
                   <ModuleIcon id={module.id} />
-                  <span className="no-module-assigned">Asignado</span>
+                  <span className={`no-module-assigned${isModuleReady ? " is-configured" : ""}`}>
+                    {isModuleReady ? "Configurado" : "Asignado"}
+                  </span>
                 </div>
                 <h3>{module.name}</h3>
                 <p>{module.description}</p>
                 <div className="no-module-card-footer">
-                  <span>{isModuleReady ? "Configuración preparada" : ready ? "Ajustes específicos pendientes" : "Configuración pendiente"}</span>
-                  <button
-                    type="button"
-                    className={isOpening ? "is-loading" : undefined}
-                    disabled={openingModuleId !== null}
-                    aria-label={`Configurar ${module.name}`}
-                    onClick={() => {
-                      setOpeningModuleId(module.id);
-                      setTimeout(() => onConfigure(module.id), 450);
-                    }}
-                  >
-                    {isOpening
-                      ? "Abriendo…"
-                      : isModuleReady
-                        ? "Revisar configuración"
-                        : module.id === "turnos" || module.id === "pedidos"
-                          ? "Configurar"
-                          : ready
-                            ? "Revisar base"
-                            : "Configurar"}
-                  </button>
+                  <span>
+                    {isModuleReady
+                      ? "Configuración preparada"
+                      : ready
+                        ? "Ajustes específicos pendientes"
+                        : "Configuración pendiente"}
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className={isOpening ? "is-loading" : undefined}
+                      disabled={openingModuleId !== null}
+                      aria-label={`Configurar ${module.name}`}
+                      onClick={() => {
+                        setOpeningModuleId(module.id);
+                        setTimeout(() => onConfigure(module.id), 350);
+                      }}
+                    >
+                      {isOpening
+                        ? "Abriendo…"
+                        : isModuleReady
+                          ? "Ver configuración"
+                          : module.id === "turnos" || module.id === "pedidos"
+                            ? "Configurar"
+                            : ready
+                              ? "Revisar base"
+                              : "Configurar"}
+                    </button>
+                  </div>
                 </div>
               </article>
             );
@@ -161,13 +123,6 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
           <p>Puedes preparar los datos de tu negocio. Tu superadministrador podrá habilitar sus funcionalidades.</p>
         </div>
       )}
-      <div className="no-next-note">
-        <span className="no-note-number">01</span>
-        <p>
-          <strong>Primero, la base de tu negocio.</strong> Después añadiremos los pasos de configuración de cada módulo.
-        </p>
-        <span aria-hidden="true">↗</span>
-      </div>
     </section>
   );
 });

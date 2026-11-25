@@ -10,7 +10,16 @@ import { QueueSymbol } from "./QueueSymbol";
  * La pantalla del operador: quién es en este negocio y las filas que tiene asignadas. Nada administrativo: sin reglas, sin otros operadores,
  * sin acceso a otros módulos. La atención de turnos (emitir, llamar) es una etapa posterior.
  */
-export const OperatorAccess = observer(({ onSignOut, signingOut }: { onSignOut: () => void; signingOut: boolean }) => {
+export const OperatorAccess = observer(
+  ({
+    onSignOut,
+    onSwitchSpace,
+    signingOut,
+  }: {
+    onSignOut: () => void;
+    onSwitchSpace?: () => void;
+    signingOut: boolean;
+  }) => {
   const store = operatorStore;
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => headingRef.current?.focus({ preventScroll: true }), [store.status]);
@@ -72,9 +81,16 @@ export const OperatorAccess = observer(({ onSignOut, signingOut }: { onSignOut: 
           </div>
         </>
       )}
-      <button className="nt-secondary" type="button" disabled={signingOut} onClick={onSignOut}>
-        Cerrar sesión
-      </button>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
+        {onSwitchSpace && (
+          <button className="nt-secondary" type="button" disabled={signingOut} onClick={onSwitchSpace}>
+            Cambiar rol o espacio
+          </button>
+        )}
+        <button className="nt-secondary" type="button" disabled={signingOut} onClick={onSignOut}>
+          Cerrar sesión
+        </button>
+      </div>
     </main>
   );
 });

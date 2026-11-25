@@ -1,5 +1,5 @@
 import { Injectable, type OnModuleInit } from '@nestjs/common';
-import { MemberAccessRegistry, MemberAccessSource, type MemberAssignment } from '../../business-access/public';
+import { MemberAccessRegistry, MemberAccessSource, type BusinessMemberCandidate, type MemberAssignment } from '../../business-access/public';
 import { TURNOS_MODULE_ID } from '../domain/catalog';
 import { TurnosConfigurationRepository } from '../domain/turnos-configuration.repository';
 /**
@@ -39,5 +39,16 @@ export class TurnosOperatorAccessSource extends MemberAccessSource implements On
       });
     }
     return assignments;
+  }
+
+  async membersOfBusiness(businessId: string): Promise<BusinessMemberCandidate[]> {
+    const config = await this.configurations.find(businessId);
+    if (!config) return [];
+    return config.operators.map((operator) => ({
+      moduleId: TURNOS_MODULE_ID,
+      name: operator.name,
+      email: operator.email,
+      phone: operator.phone,
+    }));
   }
 }

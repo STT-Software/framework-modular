@@ -10,6 +10,10 @@ import type { ModuleId } from "@/modules/businesses";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
 import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
+import {
+  BusinessWorkspaceShell,
+  type BusinessWorkspaceNavItem,
+} from "@/components/configuration/BusinessWorkspaceShell";
 import { ConfigBusinessSwitcher } from "@/components/configuration/ConfigBusinessSwitcher";
 import { WorkspaceSupportDropdown, WorkspaceSupportWidget } from "@/modules/workspace";
 import { ModulesView } from "../components/ModulesView";
@@ -122,9 +126,174 @@ const BusinessSetupPage = observer(() => {
   const name = state?.profile.name ?? "tu negocio";
   const startStep: SetupStep = state && !state.progress.baseReady && state.progress.currentStep ? state.progress.currentStep : "data";
 
+  const rawPersonName =
+    adminAccessStore.access?.personName ??
+    adminAccessStore.accesses.find((a) => a.businessId === businessId)?.personName ??
+    "Administrador";
+
+  const workspaceNavItems: BusinessWorkspaceNavItem[] =
+    businessId && state
+      ? [
+          {
+            id: "business-home",
+            name: "Espacio del negocio",
+            path: pathOf(businessId, "modules"),
+            icon: "home" as const,
+            active: view === "modules",
+            badgeCount: state.modules.length,
+            section: "workspace" as const,
+          },
+          ...state.modules
+            .filter((m) => m.id === "pedidos" || m.id === "turnos")
+            .map((m) => ({
+              id: `module-${m.id}`,
+              name: m.name,
+              path:
+                m.id === "pedidos" && m.settings.status === "ready"
+                  ? `/business/app/${businessId}/pedidos/dashboard`
+                  : `/business/${m.id}/${businessId}/${m.settings.status === "ready" ? "review" : "profile"}`,
+              icon: (m.id === "pedidos" ? "pedidos" : "turnos") as "pedidos" | "turnos",
+              readyDot: m.settings.status === "ready",
+              section: "workspace" as const,
+            })),
+          {
+            id: "base-config",
+            name: "Configuración base",
+            path: pathOf(businessId, startStep),
+            icon: "settings" as const,
+            active: view !== "modules",
+            section: "config" as const,
+          },
+          ...state.modules
+            .filter((m) => m.id === "pedidos" || m.id === "turnos")
+            .map((m) => ({
+              id: `config-${m.id}`,
+              name: `Configurar ${m.name}`,
+              path: `/business/${m.id}/${businessId}/${m.settings.status === "ready" ? "review" : "profile"}`,
+              icon: "settings" as const,
+              section: "config" as const,
+            })),
+        ]
+      : [];
+
+  if (view === "modules") {
+    return (
+      <>
+        <PageMeta title={`Necto · Espacio de trabajo de ${name}`} />
+        <BusinessWorkspaceShell
+          hideSidebar
+          className="no-root"
+          businessId={businessId ?? ""}
+          businessName={state ? state.profile.name : name}
+          sectionLabel="Espacio de trabajo"
+          subtitle="Espacio de trabajo"
+          roleLabel="Administrador"
+          personName={rawPersonName}
+          personEmail={adminAccessStore.email || undefined}
+          homePath={businessId ? pathOf(businessId, "modules") : "/business/access"}
+          businesses={administered.map((business) => ({
+            id: business.id,
+            name: business.id === businessId && state ? state.profile.name : business.name,
+            category: business.category,
+            categoryOther: business.categoryOther,
+          }))}
+          quickLinks={
+            businessId && state
+              ? [
+                  {
+                    id: "modules",
+                    label: "Espacio del negocio",
+                    description: "Directorio y pulso de mis módulos",
+                    active: true,
+                    onSelect: () => undefined,
+                  },
+                  ...state.modules
+                    .filter((m) => m.id === "pedidos" || m.id === "turnos")
+                    .map((m) => ({
+                      id: m.id,
+                      label: `Módulo de ${m.name}`,
+                      description:
+                        m.settings.status === "ready"
+                          ? "Configuración preparada · Abrir"
+                          : "Configuración pendiente",
+                      onSelect: () =>
+                        navigate(
+                          m.id === "pedidos" && m.settings.status === "ready"
+                            ? `/business/app/${businessId}/pedidos/dashboard`
+                            : `/business/${m.id}/${businessId}/${m.settings.status === "ready" ? "review" : "profile"}`,
+                        ),
+                    })),
+                ]
+              : []
+          }
+          navItems={workspaceNavItems}
+          onSelectBusiness={(id) => void switchBusiness(id)}
+          onSwitchSpace={() => navigate("/business/access")}
+          onSignOut={() => {
+            void adminAccessStore
+              .leave("Sesión cerrada. Verifica tu correo para volver a entrar.")
+              .then(() => navigate("/business/access", { replace: true }));
+          }}
+          disabled={store.saving}
+        >
+          {store.status === "loading" || store.status === "idle" ? (
+            <SkeletonGroup className="sk-stack" style={{ ["--sk-gap" as string]: "16px" }}>
+              <Skeleton width="45%" height={30} />
+              <Skeleton width="70%" height={14} />
+              <Skeleton height={56} radius={12} style={{ marginTop: 8 }} />
+              <Skeleton height={56} radius={12} />
+              <Skeleton height={56} radius={12} />
+              <Skeleton width={160} height={44} radius={10} style={{ marginTop: 8 }} />
+            </SkeletonGroup>
+          ) : null}
+          {store.status === "unavailable" && (
+            <div className="no-empty-modules">
+              <h3>Este negocio ya no está disponible para ti</h3>
+              <p>Pudo haberse pausado o asignarse a otra persona. Entra de nuevo para ver los negocios que administras.</p>
+              <Link className="no-primary" to="/business/access">
+                Ir al acceso
+              </Link>
+            </div>
+          )}
+          {store.status === "error" && (
+            <div className="no-empty-modules">
+              <h3>No pudimos abrir la configuración</h3>
+              <p>{store.error}</p>
+              <button type="button" className="no-primary" onClick={() => businessId && void store.load(businessId)}>
+                Reintentar
+              </button>
+            </div>
+          )}
+          {ready && (
+            <ModulesView
+              onStart={() => void go(startStep)}
+              onConfigure={(moduleId) => {
+                const targetModule = state?.modules.find((m) => m.id === moduleId);
+                const entryStep = targetModule?.settings.status === "ready" ? "review" : "profile";
+                if (moduleId === "turnos" && businessId) {
+                  navigate(`/business/turnos/${businessId}/${entryStep}`);
+                  return;
+                }
+                if (moduleId === "pedidos" && businessId) {
+                  navigate(`/business/pedidos/${businessId}/${entryStep}`);
+                  return;
+                }
+                store.setHoursScope(moduleId as ModuleId);
+                void go("data");
+              }}
+            />
+          )}
+          <p className="no-sr-only" role="status" aria-live="polite">
+            {store.announcement}
+          </p>
+        </BusinessWorkspaceShell>
+      </>
+    );
+  }
+
   return (
     <section className="no-root" aria-label="Configuración inicial del negocio">
-      <PageMeta title={view === "modules" ? `Necto · Los módulos de ${name}` : `Necto · ${STEP_TITLES[view]}`} />
+      <PageMeta title={`Necto · ${STEP_TITLES[view]}`} />
       <header className="no-header">
         <Link to={businessId ? pathOf(businessId, "modules") : "/business/access"} className="no-logo" aria-label="Necto, módulos de mi negocio">
           <NectoLogo width={161} height={23} />
@@ -146,6 +315,32 @@ const BusinessSetupPage = observer(() => {
               category: business.category,
               categoryOther: business.categoryOther,
             }))}
+            quickLinks={
+              businessId && state
+                ? [
+                    {
+                      id: "modules",
+                      label: "Panel de módulos",
+                      description: "Directorio y configuración base del negocio",
+                      active: false,
+                      onSelect: () => void go("modules"),
+                    },
+                    ...state.modules
+                      .filter((m) => m.id === "pedidos" || m.id === "turnos")
+                      .map((m) => ({
+                        id: m.id,
+                        label: `Módulo de ${m.name}`,
+                        description:
+                          m.settings.status === "ready" ? "Configuración preparada · Ver resumen" : "Configuración pendiente",
+                        onSelect: () =>
+                          navigate(
+                            `/business/${m.id}/${businessId}/${m.settings.status === "ready" ? "review" : "profile"}`,
+                          ),
+                      })),
+                  ]
+                : []
+            }
+            onSwitchSpace={() => navigate("/business/access")}
             disabled={store.saving}
             onSelect={(id) => void switchBusiness(id)}
           />
@@ -203,25 +398,7 @@ const BusinessSetupPage = observer(() => {
             </button>
           </div>
         )}
-        {ready && view === "modules" && (
-          <ModulesView
-            onStart={() => void go(startStep)}
-            onConfigure={(moduleId) => {
-              // Turnos y Pedidos se configuran en sus propios asistentes; los demás empiezan por la base.
-              if (moduleId === "turnos" && businessId) {
-                navigate(`/business/turnos/${businessId}/profile`);
-                return;
-              }
-              if (moduleId === "pedidos" && businessId) {
-                navigate(`/business/pedidos/${businessId}/profile`);
-                return;
-              }
-              store.setHoursScope(moduleId as ModuleId);
-              void go("data");
-            }}
-          />
-        )}
-        {ready && view !== "modules" && businessId && (
+        {ready && businessId && (
           <Wizard
             step={view}
             categoryPath={pathOf(businessId, "category")}

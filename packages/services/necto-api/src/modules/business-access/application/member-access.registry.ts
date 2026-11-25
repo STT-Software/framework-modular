@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MemberAccessSource, type MemberAssignment } from '../domain/member-access';
+import { MemberAccessSource, type BusinessMemberCandidate, type MemberAssignment } from '../domain/member-access';
 
 /**
  * Where functional modules announce that they assign people (operators) to a business. A module registers once when it
@@ -15,6 +15,13 @@ export class MemberAccessRegistry {
 
   async assignmentsOf(email: string): Promise<MemberAssignment[]> {
     const lists = await Promise.all(this.sources.map((source) => source.assignmentsOf(email)));
+    return lists.flat();
+  }
+
+  async membersOfBusiness(businessId: string): Promise<BusinessMemberCandidate[]> {
+    const lists = await Promise.all(
+      this.sources.map((source) => (source.membersOfBusiness ? source.membersOfBusiness(businessId) : Promise.resolve([]))),
+    );
     return lists.flat();
   }
 }

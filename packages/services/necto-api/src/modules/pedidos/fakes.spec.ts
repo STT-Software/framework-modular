@@ -101,6 +101,10 @@ export class FakeAdministeredProfiles extends AdministeredBusinessProfiles {
       timezone: business.timezone ?? 'America/Bogota',
       modules: [...business.modules],
       status: business.status,
+      boss: {
+        name: business.boss.name,
+        email: business.boss.email,
+      },
     };
   }
 

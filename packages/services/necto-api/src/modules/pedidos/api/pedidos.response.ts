@@ -71,6 +71,12 @@ export function toPedidosResponse(state: PedidosState) {
       stages: [...operator.stages],
       createdAt: operator.createdAt.toISOString(),
     })),
+    candidateOperators: (state.candidateOperators ?? []).map((candidate) => ({
+      name: candidate.name,
+      email: candidate.email,
+      phone: candidate.phone,
+      sources: [...candidate.sources],
+    })),
     progress: {
       currentStep: config.currentStep,
       visitedSteps: [...config.visitedSteps],

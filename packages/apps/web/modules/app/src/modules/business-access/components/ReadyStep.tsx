@@ -40,7 +40,7 @@ export const ReadyStep = observer(() => {
   // de su módulo que tiene permitida, sin pasar por el dashboard general.
   const target = isOperator
     ? isPedidosOperator
-      ? `/business/pedidos/${access?.businessId}/operator`
+      ? `/business/app/${access?.businessId}/pedidos/dashboard`
       : `/business/app/${access?.businessId}/turnos/${TURNOS_SECTION_OF_VIEW[access?.firstView ?? ""] ?? "dashboard"}`
     : `/business/app/${access?.businessId}`;
 

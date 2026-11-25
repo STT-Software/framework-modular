@@ -1,0 +1,31 @@
+.sales-workspace { display: grid; align-content: start; gap: 1.1rem; min-width: 0; color: var(--color-gray-900); }
+.dark .sales-workspace { color: white; }
+.sales-workspace h1 { font-size: clamp(1.4rem, 2vw, 1.9rem); font-weight: 700; letter-spacing: -.025em; }
+.sales-workspace header > p, .sales-preview { color: var(--color-gray-500); font-size: .85rem; }
+.dark .sales-preview, .dark .sales-workspace header > p { color: var(--color-gray-400); }
+.sales-toolbar { display: flex; gap: .65rem; flex-wrap: wrap; align-items: center; }
+.sales-toolbar svg { width: 1rem; height: 1rem; }
+.sales-toggle { display: inline-flex; gap: .25rem; border-radius: .8rem; padding: .25rem; background: var(--color-gray-100); }
+.sales-toggle button { display: flex; align-items: center; gap: .4rem; padding: .4rem .8rem; border-radius: .6rem; font-size: .85rem; cursor: pointer; }
+.sales-toggle button[aria-pressed=true] { background: white; box-shadow: 0 1px 4px #0002; font-weight: 600; }
+.dark .sales-toggle { background: var(--color-gray-800); }
+.dark .sales-toggle button[aria-pressed=true] { background: var(--color-gray-700); }
+.sales-toolbar select, .sales-form :is(input,select) { padding: .6rem .8rem; border: 1px solid var(--color-gray-300); border-radius: .75rem; background: white; color: inherit; font-size: .875rem; }
+.dark :is(.sales-toolbar select,.sales-form input,.sales-form select) { background: var(--color-gray-900); border-color: var(--color-gray-700); }
+.sales-form, .sales-form label { display: grid; gap: .4rem; }
+.sales-form { gap: 1rem; }
+.sales-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(15rem,1fr); overflow-x: auto; gap: .85rem; padding-bottom: .75rem; }
+.sales-board section { padding: .9rem; min-height: 15rem; border-radius: 1rem; border: 1px solid var(--color-gray-200); background: var(--color-gray-50); }
+.sales-board section h2 { display: flex; align-items: center; gap: .5rem; font-size: .9rem; font-weight: 700; }
+.sales-board section h2 span { margin-left: auto; }
+.sales-board section i { width: .6rem; height: .6rem; border-radius: 50%; background: #97d6df; }
+.sales-board i[data-stage=new] { background: #ff896c; } .sales-board i[data-stage=delivered] { background: #6dc29a; }
+.sales-board i[data-stage=cancelled] { background: #a8a8ac; }
+.sales-board section > p { padding: 3rem 0; text-align: center; font-size: .85rem; color: var(--color-gray-500); }
+.sales-order { width: 100%; display: grid; gap: .35rem; margin-top: .8rem; padding: .9rem; text-align: left; background: white; border-radius: .8rem; box-shadow: 0 1px 4px #0001; cursor: pointer; }
+.sales-table { overflow-x: auto; border: 1px solid var(--color-gray-200); border-radius: 1rem; background: white; }
+.sales-table table { border-collapse: collapse; width: 100%; white-space: nowrap; font-size: .85rem; }
+.sales-table :is(th,td) { padding: .9rem; } .sales-table th { text-align: left; background: var(--color-gray-50); }
+.dark :is(.sales-table,.sales-board section,.sales-order,.sales-table th) { background: var(--color-gray-900); border-color: var(--color-gray-700); }
+.sales-bar { display: grid; grid-template-columns: 8rem 1fr 2rem; gap: .8rem; align-items: center; margin: .75rem 0; font-size: .85rem; }
+.sales-bar progress { width: 100%; accent-color: #ff3f1a; }

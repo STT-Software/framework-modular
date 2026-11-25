@@ -1,4 +1,4 @@
-import type { AdministeredBusiness } from "@/modules/business-access";
+import type { AdministeredBusiness } from "@/modules/business-access/public";
 
 /**
  * Types for the Business Administrator Orders configuration module.
@@ -85,6 +85,13 @@ export interface PedidosApiOperator {
   createdAt: string;
 }
 
+export interface PedidosOperatorCandidate {
+  name: string;
+  email: string;
+  phone: string | null;
+  sources: string[];
+}
+
 export interface PedidosApiResponse {
   business: PedidosApiBusiness;
   profile: {
@@ -98,6 +105,7 @@ export interface PedidosApiResponse {
   payments: PaymentPoliciesSettings;
   sla: SlaSettings;
   operators: PedidosApiOperator[];
+  candidateOperators?: PedidosOperatorCandidate[];
   progress: {
     currentStep: OrdersConfigStep | null;
     visitedSteps: OrdersConfigStep[];

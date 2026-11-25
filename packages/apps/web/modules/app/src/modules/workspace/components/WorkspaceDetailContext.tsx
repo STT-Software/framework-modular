@@ -19,3 +19,8 @@ export function useWorkspaceDetail(): WorkspaceDetailContextValue {
   }
   return value;
 }
+
+/** Returns the workspace-scoped controller when inside WorkspaceLayout, or null in business/operator shells. */
+export function useOptionalWorkspaceDetail(): WorkspaceDetailContextValue | null {
+  return useContext(WorkspaceDetailContext);
+}

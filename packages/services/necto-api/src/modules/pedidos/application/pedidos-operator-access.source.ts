@@ -1,5 +1,5 @@
 import { Injectable, type OnModuleInit } from '@nestjs/common';
-import { MemberAccessRegistry, MemberAccessSource, type MemberAssignment } from '../../business-access/public';
+import { MemberAccessRegistry, MemberAccessSource, type BusinessMemberCandidate, type MemberAssignment } from '../../business-access/public';
 import { PEDIDOS_MODULE_ID } from '../domain/catalog';
 import { PedidosConfigurationRepository } from '../domain/pedidos-configuration.repository';
 
@@ -34,5 +34,16 @@ export class PedidosOperatorAccessSource extends MemberAccessSource implements O
       });
     }
     return assignments;
+  }
+
+  async membersOfBusiness(businessId: string): Promise<BusinessMemberCandidate[]> {
+    const config = await this.configurations.findByBusinessId(businessId);
+    if (!config) return [];
+    return config.operators.map((operator) => ({
+      moduleId: PEDIDOS_MODULE_ID,
+      name: operator.name,
+      email: operator.email,
+      phone: operator.phone,
+    }));
   }
 }

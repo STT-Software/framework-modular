@@ -22,12 +22,26 @@ export interface MemberAssignment {
 }
 
 /**
+ * A person already registered in a functional module of a business, so other modules of that same business can suggest
+ * them when assigning operators without re-typing their contact details.
+ */
+export interface BusinessMemberCandidate {
+  moduleId: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+}
+
+/**
  * Implemented by a module that assigns people to one of its functionalities. It registers itself in
  * `MemberAccessRegistry` (so business-access does not import it and there is no import cycle).
  */
 export abstract class MemberAccessSource {
   /** Every assignment of this email (already normalized), whatever the state of the business: business-access filters. */
   abstract assignmentsOf(email: string): Promise<MemberAssignment[]>;
+
+  /** Optional: every operator currently registered in this module for the given business. */
+  membersOfBusiness?(businessId: string): Promise<BusinessMemberCandidate[]>;
 }
 
 /**

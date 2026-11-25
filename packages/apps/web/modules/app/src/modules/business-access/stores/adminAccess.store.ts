@@ -72,8 +72,36 @@ class AdminAccessStore {
     makeAutoObservable(this);
   }
 
-  /** Looks at the browser's session: with one, offers to continue; without, asks for the email. */
+  /**
+   * Looks at the browser's session:
+   * - if the user already has a live token in memory (e.g. returning from configuration or operator view to switch space/role),
+   *   refreshes their authorized accesses from the server so newly created operator assignments appear immediately and opens
+   *   the space picker (`negocios`) directly when they hold more than one access;
+   * - otherwise checks the HttpOnly cookie and offers to continue (`regreso`) or asks for the email (`acceso`).
+   */
   async start(): Promise<void> {
+    const hadActiveToken = this.accessToken !== null;
+    if (hadActiveToken) {
+      this.view = "loading";
+      this.error = null;
+      try {
+        const grant = await businessAccessApi.refresh();
+        runInAction(() => {
+          this.accessToken = grant.accessToken;
+          this.email = grant.admin.email;
+          this.remember = grant.admin.remember;
+          this.accesses = grant.accesses;
+          this.businesses = grant.businesses;
+          this.access = null;
+          this.business = null;
+          this.view = grant.accesses.length > 0 ? "negocios" : "regreso";
+        });
+        return;
+      } catch {
+        // Fallback to standard session check below if refresh failed.
+      }
+    }
+
     this.clearAccount();
     this.view = "loading";
     try {

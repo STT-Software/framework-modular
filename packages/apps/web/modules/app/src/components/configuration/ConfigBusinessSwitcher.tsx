@@ -48,20 +48,31 @@ export interface ConfigBusinessSwitcherItem {
   categoryOther?: string | null;
 }
 
+export interface ConfigQuickNavigationItem {
+  id: string;
+  label: string;
+  description?: string;
+  active?: boolean;
+  onSelect: () => void;
+}
+
 export interface ConfigBusinessSwitcherProps {
   currentBusinessId: string;
   currentBusinessName?: string;
   subtitle?: string;
   businesses: ConfigBusinessSwitcherItem[];
   onSelect?: (businessId: string) => void;
+  quickLinks?: ConfigQuickNavigationItem[];
+  onSwitchSpace?: () => void;
   disabled?: boolean;
   className?: string;
 }
 
 /**
- * Topbar business switcher for setup and configuration flows.
+ * Topbar business & module switcher for setup and configuration flows.
  * Adopts the Workspace business switcher pill design (initials badge, business name,
- * contextual subtitle, chevron and dropdown), tailored for selecting between administered businesses.
+ * contextual subtitle, chevron and dropdown), allowing the user to jump between assigned modules,
+ * return to the space/role selector (`¿Dónde comenzamos?`), or switch administered businesses.
  */
 export function ConfigBusinessSwitcher({
   currentBusinessId,
@@ -69,6 +80,8 @@ export function ConfigBusinessSwitcher({
   subtitle = "Negocio activo",
   businesses,
   onSelect,
+  quickLinks = [],
+  onSwitchSpace,
   disabled = false,
   className,
 }: ConfigBusinessSwitcherProps) {
@@ -81,7 +94,8 @@ export function ConfigBusinessSwitcher({
     (currentBusinessName ? { id: currentBusinessId, name: currentBusinessName } : null);
 
   const displayName = currentBusinessName || activeBusiness?.name || "Tu negocio";
-  const canSwitch = businesses.length > 1 && !disabled;
+  const hasMultipleBusinesses = businesses.length > 1;
+  const canSwitch = !disabled && (hasMultipleBusinesses || quickLinks.length > 0 || Boolean(onSwitchSpace));
 
   const closeMenu = () => setOpen(false);
 
@@ -132,59 +146,126 @@ export function ConfigBusinessSwitcher({
         <ShellDropdown
           id={menuId}
           role="menu"
-          aria-label="Selector de negocios"
+          aria-label="Selector de negocios y módulos"
           isOpen={open}
           onClose={closeMenu}
           triggerRef={triggerRef}
           className="absolute left-0 right-auto mt-2.5 flex w-72 max-w-[calc(100vw-2rem)] flex-col rounded-2xl border border-gray-200/90 bg-white p-2 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900 z-50 font-sans"
         >
-          <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-            Mis negocios ({businesses.length})
-          </div>
-          <div className="flex flex-col gap-0.5 overflow-y-auto max-h-64">
-            {businesses.map((business) => {
-              const isSelected = business.id === currentBusinessId;
-              return (
-                <button
-                  key={business.id}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    closeMenu();
-                    onSelect?.(business.id);
-                  }}
-                  className={cn(
-                    "flex items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 text-left transition-colors cursor-pointer",
-                    isSelected
-                      ? "bg-[#190088]/[0.08] text-[#190088] dark:bg-white/[0.08] dark:text-white font-medium"
-                      : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
-                  )}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span
-                      aria-hidden="true"
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-200"
-                    >
-                      {initialsOf(business.name)}
-                    </span>
+          {quickLinks.length > 0 && (
+            <div className="mb-1">
+              <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                Ir a en {displayName}
+              </div>
+              <div className="flex flex-col gap-0.5">
+                {quickLinks.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      closeMenu();
+                      item.onSelect();
+                    }}
+                    className={cn(
+                      "flex items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 text-left transition-colors cursor-pointer",
+                      item.active
+                        ? "bg-[#190088]/[0.08] text-[#190088] dark:bg-white/[0.08] dark:text-white font-medium"
+                        : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
+                    )}
+                  >
                     <div className="min-w-0">
-                      <span className="block truncate text-xs font-semibold">
-                        {business.name}
-                      </span>
-                      {business.category && (
-                        <span className="block text-[10px] text-gray-400 dark:text-gray-500">
-                          {categoryLabel(business.category as any, business.categoryOther ?? null) || business.category}
+                      <span className="block truncate text-xs font-semibold">{item.label}</span>
+                      {item.description && (
+                        <span className="block truncate text-[10px] text-gray-400 dark:text-gray-500">
+                          {item.description}
                         </span>
                       )}
                     </div>
-                  </div>
-                  {isSelected && (
-                    <CheckIcon className="h-4 w-4 text-[#ff3f1a] shrink-0" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                    {item.active && <CheckIcon className="h-4 w-4 text-[#ff3f1a] shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {hasMultipleBusinesses && (
+            <>
+              {quickLinks.length > 0 && <div className="my-1 border-t border-gray-100 dark:border-gray-800" />}
+              <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                Mis negocios ({businesses.length})
+              </div>
+              <div className="flex flex-col gap-0.5 overflow-y-auto max-h-52">
+                {businesses.map((business) => {
+                  const isSelected = business.id === currentBusinessId;
+                  return (
+                    <button
+                      key={business.id}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        closeMenu();
+                        onSelect?.(business.id);
+                      }}
+                      className={cn(
+                        "flex items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 text-left transition-colors cursor-pointer",
+                        isSelected
+                          ? "bg-[#190088]/[0.08] text-[#190088] dark:bg-white/[0.08] dark:text-white font-medium"
+                          : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span
+                          aria-hidden="true"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-200"
+                        >
+                          {initialsOf(business.name)}
+                        </span>
+                        <div className="min-w-0">
+                          <span className="block truncate text-xs font-semibold">
+                            {business.name}
+                          </span>
+                          {business.category && (
+                            <span className="block text-[10px] text-gray-400 dark:text-gray-500">
+                              {categoryLabel(business.category as any, business.categoryOther ?? null) || business.category}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <CheckIcon className="h-4 w-4 text-[#ff3f1a] shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {onSwitchSpace && (
+            <>
+              {(quickLinks.length > 0 || hasMultipleBusinesses) && (
+                <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+              )}
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  closeMenu();
+                  onSwitchSpace();
+                }}
+                className="flex items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-[#190088] hover:bg-[#190088]/[0.06] dark:text-[#97d6df] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+              >
+                <div>
+                  <span className="block">Cambiar rol o espacio</span>
+                  <span className="block text-[10px] font-normal text-gray-400 dark:text-gray-500">
+                    Volver a ¿Dónde comenzamos? (Administrador / Operador)
+                  </span>
+                </div>
+                <span aria-hidden="true" className="text-sm">⇄</span>
+              </button>
+            </>
+          )}
         </ShellDropdown>
       )}
     </div>

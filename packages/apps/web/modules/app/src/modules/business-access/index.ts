@@ -14,6 +14,4 @@ export const businessAccessModule: AppModule = {
  * Lo que otros módulos del administrador (hoy business-setup) pueden usar: su sesión (token en memoria, renovable) y el
  * error tipado del cliente. Nunca los componentes ni el cliente HTTP del acceso.
  */
-export { adminAccessStore } from "./stores/adminAccess.store";
-export { AccessError } from "./api/businessAccessApi";
-export type { AccessErrorKind, AccessGrant, AccessRole, AdministeredBusiness } from "./api/businessAccessApi";
+export * from "./public";

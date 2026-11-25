@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { AccessError } from "@/modules/business-access";
+import { AccessError } from "@/modules/business-access/public";
 import { PedidosError, type PedidosApi } from "./api/pedidosApi";
 import { DEFAULT_CARRIERS, PROFILE_DEFAULTS } from "./constants";
 import { ordersConfigErrorMessage, OrdersConfigStore } from "./ordersConfig.store";
-import { PedidosOperatorStore } from "./stores/pedidosOperator.store";
+import { PedidosOperationStore } from "./operation/stores/operation.store";
 import { ALL_OPERATOR_STAGES, type OrdersProfileId, type PedidosApiResponse, type PedidosOperatorView } from "./types";
 
 function makeApiResponse(
@@ -663,7 +663,7 @@ describe("OrdersConfigStore · modalities, payments, operators CRUD, and complet
   });
 });
 
-describe("PedidosOperatorStore", () => {
+describe("PedidosOperationStore", () => {
   const sampleView: PedidosOperatorView = {
     business: { id: "biz-1", name: "Casa Oliva" },
     operator: {
@@ -685,9 +685,15 @@ describe("PedidosOperatorStore", () => {
   function setupOperator(hasSession = true) {
     const operatorFn = vi.fn<PedidosApi["operator"]>().mockResolvedValue(sampleView);
     const ensureSession = vi.fn<() => Promise<boolean>>().mockResolvedValue(hasSession);
-    const store = new PedidosOperatorStore({
-      api: { operator: operatorFn },
-      access: { ensureSession, withToken: (call) => call("op-token") },
+    const store = new PedidosOperationStore({
+      api: {
+        operator: operatorFn,
+        get: vi.fn(),
+        createOperator: vi.fn(),
+        updateOperator: vi.fn(),
+        deleteOperator: vi.fn(),
+      },
+      access: { ensureSession, chooseRole: () => "operator", withToken: (call) => call("op-token") },
     });
     return { store, operatorFn, ensureSession };
   }
@@ -741,5 +747,68 @@ describe("PedidosOperatorStore", () => {
 
     expect(store.status).toBe("idle");
     expect(store.view).toBeNull();
+  });
+
+  function setupAdmin() {
+    const response = makeApiResponse({
+      operators: [
+        { id: "op_1", name: "Camila Rojas", email: "camila@oliva.co", phone: null, stages: ["confirmation"], createdAt: "2026-01-01T00:00:00.000Z" },
+      ],
+    });
+    const get = vi.fn<PedidosApi["get"]>().mockResolvedValue(response);
+    const createOperator = vi.fn<PedidosApi["createOperator"]>().mockResolvedValue({
+      ...response,
+      operators: [
+        ...response.operators,
+        { id: "op_2", name: "Leo Paz", email: "leo@oliva.co", phone: null, stages: ["dispatch"], createdAt: "2026-01-02T00:00:00.000Z" },
+      ],
+    });
+    const updateOperator = vi.fn<PedidosApi["updateOperator"]>().mockResolvedValue(response);
+    const deleteOperator = vi.fn<PedidosApi["deleteOperator"]>().mockResolvedValue({ ...response, operators: [] });
+    const store = new PedidosOperationStore({
+      api: { get, operator: vi.fn(), createOperator, updateOperator, deleteOperator },
+      access: { ensureSession: async () => true, chooseRole: () => "admin", withToken: (call) => call("token") },
+    });
+    return { store, response, createOperator, updateOperator, deleteOperator };
+  }
+
+  it("loads the real team for the administrator", async () => {
+    const { store } = setupAdmin();
+    await store.load("biz-1");
+
+    expect(store.isAdmin).toBe(true);
+    expect(store.operatorCount).toBe(1);
+    expect(store.operators.map((operator) => operator.email)).toEqual(["camila@oliva.co"]);
+  });
+
+  it("adds and removes operators against the service", async () => {
+    const { store, createOperator, deleteOperator } = setupAdmin();
+    await store.load("biz-1");
+
+    const added = await store.addOperator({ name: "Leo Paz", email: "leo@oliva.co", stages: ["dispatch"] });
+    expect(added.ok).toBe(true);
+    expect(createOperator).toHaveBeenCalledWith("token", "biz-1", {
+      name: "Leo Paz",
+      email: "leo@oliva.co",
+      phone: null,
+      stages: ["dispatch"],
+    });
+    expect(store.operators).toHaveLength(2);
+    expect(store.operatorCount).toBe(2);
+
+    const removed = await store.removeOperator("op_2");
+    expect(removed.ok).toBe(true);
+    expect(deleteOperator).toHaveBeenCalledWith("token", "biz-1", "op_2");
+    expect(store.operators).toHaveLength(0);
+  });
+
+  it("rejects a duplicate email before calling the service", async () => {
+    const { store, createOperator } = setupAdmin();
+    await store.load("biz-1");
+
+    const added = await store.addOperator({ name: "Otra Camila", email: "camila@oliva.co", stages: ["dispatch"] });
+    expect(added.ok).toBe(false);
+    expect(added.message).toBe("Este correo ya pertenece a otro operador registrado.");
+    expect(createOperator).not.toHaveBeenCalled();
   });
 });

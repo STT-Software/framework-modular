@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from "mobx";
-import { AccessError, adminAccessStore } from "@/modules/business-access";
+import { AccessError, adminAccessStore } from "@/modules/business-access/public";
 import {
   pedidosApi,
   PedidosError,
@@ -29,6 +29,7 @@ import type {
   OrdersValidationIssue,
   PaymentMethodId,
   PedidosApiResponse,
+  PedidosOperatorCandidate,
   PedidosScheduleSummary,
   PickupScheduleMode,
   ShippingPricingMode,
@@ -196,6 +197,7 @@ export class OrdersConfigStore {
   state: OrdersConfigState | null = null;
   schedule: PedidosScheduleSummary | null = null;
   suggestedProfile: OrdersProfileId | null = null;
+  candidateOperators: PedidosOperatorCandidate[] = [];
   error: string | null = null;
   saveError: string | null = null;
   saving = false;
@@ -260,6 +262,7 @@ export class OrdersConfigStore {
     this.state = null;
     this.schedule = null;
     this.suggestedProfile = null;
+    this.candidateOperators = [];
     this.error = null;
     this.saveError = null;
     this.saving = false;
@@ -330,6 +333,12 @@ export class OrdersConfigStore {
     };
     this.schedule = response.schedule;
     this.suggestedProfile = response.profile.suggested;
+    this.candidateOperators = (response.candidateOperators ?? []).map((candidate) => ({
+      name: candidate.name,
+      email: candidate.email,
+      phone: candidate.phone,
+      sources: [...candidate.sources],
+    }));
     this.serverStep = response.progress.currentStep;
     this.serverVisitedSteps = [...response.progress.visitedSteps];
 

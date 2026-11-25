@@ -21,6 +21,10 @@ export interface AdministeredBusinessProfile {
   timezone: string;
   modules: readonly BusinessModuleId[];
   status: BusinessStatus;
+  boss?: {
+    name: string;
+    email: string;
+  };
 }
 
 /** What an administrator may correct of the contact data. Currency, time zone, modules and boss stay with the owner. */

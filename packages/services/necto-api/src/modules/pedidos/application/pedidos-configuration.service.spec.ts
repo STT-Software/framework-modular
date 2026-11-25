@@ -177,4 +177,39 @@ describe('PedidosConfigurationService', () => {
       ConcurrentPedidosChangeError,
     );
   });
+
+  it('collects candidateOperators from the business boss and operators registered in other modules', async () => {
+    const { store, profiles, scheduleReader } = setupPedidos();
+    const fakeRegistry = {
+      membersOfBusiness: async (businessId: string) =>
+        businessId === BUSINESS_ID
+          ? [
+              { moduleId: 'turnos', name: 'Ana Gómez', email: BOSS, phone: '+57 314 537 6069' },
+              { moduleId: 'turnos', name: 'Carlos Ruiz', email: 'carlos@cafecentral.co', phone: '+57 300 999 8877' },
+            ]
+          : [],
+    };
+    const serviceWithRegistry = new (await import('./pedidos-configuration.service')).PedidosConfigurationService(
+      store,
+      profiles,
+      scheduleReader,
+      fakeRegistry as never,
+    );
+
+    const state = await serviceWithRegistry.get(BOSS, BUSINESS_ID);
+    assert.deepEqual(state.candidateOperators, [
+      {
+        name: 'Ana Gómez',
+        email: BOSS,
+        phone: '+57 314 537 6069',
+        sources: ['admin', 'turnos'],
+      },
+      {
+        name: 'Carlos Ruiz',
+        email: 'carlos@cafecentral.co',
+        phone: '+57 300 999 8877',
+        sources: ['turnos'],
+      },
+    ]);
+  });
 });

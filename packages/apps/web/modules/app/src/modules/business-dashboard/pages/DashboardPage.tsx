@@ -1,6 +1,7 @@
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
+import { NectoLogo } from "@/brand/NectoLogo";
 import { adminAccessStore } from "@/modules/business-access";
 import { categoryLabel } from "@/modules/businesses";
 import type { DashboardModuleView } from "../api/dashboardApi";
@@ -130,7 +131,9 @@ const DashboardPage = observer(() => {
             <div className="nd-motion-map" aria-hidden="true">
               <span className="nd-map-orbit" />
               <span className="nd-map-orbit two" />
-              <span className="nd-motion-center" />
+              <span className="nd-motion-center">
+                <NectoLogo variant="mark" width={44} height={44} />
+              </span>
               {PREVIEW_ICONS.map((icon) => (
                 <span key={icon} className="nd-map-token">
                   <Icon name={icon} />

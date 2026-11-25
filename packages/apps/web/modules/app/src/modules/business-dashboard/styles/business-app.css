@@ -25,3 +25,4 @@
 .nd-embedded .nd-main{padding:4px 2px 12px;max-width:none}
 .nd-embedded .nd-footer{padding:10px 2px 0}
 .nd-embedded .nd-toast{left:50%}
+.dark .nd-motion-center path[fill='#190088']{fill:#fff}

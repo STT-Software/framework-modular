@@ -234,7 +234,8 @@ const BusinessSetupPage = observer(() => {
         open={saved}
         onClose={() => {
           setSaved(false);
-          if (businessId) navigate(pathOf(businessId, "modules"));
+          // El dashboard decide: si todo está preparado se abre; si falta algo (por ejemplo Turnos), devuelve a ese paso.
+          if (businessId) navigate(`/business/app/${businessId}`);
         }}
       />
       <p className="no-sr-only" role="status" aria-live="polite">

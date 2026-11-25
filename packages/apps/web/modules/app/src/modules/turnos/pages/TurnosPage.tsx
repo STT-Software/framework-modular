@@ -386,7 +386,8 @@ const TurnosPage = observer(() => {
         open={saved}
         onClose={() => {
           setSaved(false);
-          if (businessId) navigate(`/business/setup/${businessId}`);
+          // Con la configuración preparada, el administrador entra a su dashboard (desde ahí abre Turnos).
+          if (businessId) navigate(`/business/app/${businessId}`);
         }}
       />
       <p className="nt-sr-only" role="status" aria-live="polite">

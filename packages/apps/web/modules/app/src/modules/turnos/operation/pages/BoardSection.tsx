@@ -243,7 +243,7 @@ function Card({ ticket, urgent, serving, finished, onDetail, children }: { ticke
       ) : null}
       <div className="nd-ticket-footer">
         <Badge>{ticket.createdBy.name}</Badge>
-        <small>{finished ? "Atención finalizada" : `${ticket.waitMinutes ?? waitOf(ticket)} min de espera`}</small>
+        <small>{finished ? "Atención finalizada" : `${Math.round(ticket.waitMinutes ?? waitOf(ticket))} min de espera`}</small>
       </div>
       {children}
     </article>

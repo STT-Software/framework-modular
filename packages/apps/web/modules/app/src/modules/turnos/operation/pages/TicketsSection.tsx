@@ -121,7 +121,7 @@ export const TicketsSection = observer(() => {
                     <td>
                       <Badge color={statusColor(ticket.status)}>{statusText(ticket.status)}</Badge>
                     </td>
-                    <td>{ticket.waitMinutes ?? waitOf(ticket)} min</td>
+                    <td>{Math.round(ticket.waitMinutes ?? waitOf(ticket))} min</td>
                     <td>{ticket.createdBy.name}</td>
                     <td>
                       <button type="button" className="nd-text-button" onClick={() => setDetailId(ticket.id)}>
@@ -240,7 +240,7 @@ export const TicketDetail = observer(({ ticketId, onClose }: { ticketId: string 
             {[
               ["Teléfono", ticket.customer.phone ?? "Sin registrar"],
               ["Correo", ticket.customer.email ?? "Sin registrar"],
-              ["Tiempo en espera", `${ticket.waitMinutes ?? waitOf(ticket)} min`],
+              ["Tiempo en espera", `${Math.round(ticket.waitMinutes ?? waitOf(ticket))} min`],
               ["Creado por", ticket.createdBy.name],
               ["Atendido por", ticket.attendedBy?.name ?? "Todavía nadie"],
               ...(ticket.cancelReason ? [["Motivo de la cancelación", ticket.cancelReason]] : []),

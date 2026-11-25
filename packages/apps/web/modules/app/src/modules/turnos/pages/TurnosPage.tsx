@@ -207,6 +207,11 @@ const TurnosPage = observer(() => {
           <NectoLogo width={161} height={23} />
         </Link>
         <div className="nt-header-context">
+          {!isOperator && businessId ? (
+            <Link to={`/business/app/${businessId}`} className="nt-secondary" style={{ textDecoration: "none", whiteSpace: "nowrap" }}>
+              ← Volver al dashboard
+            </Link>
+          ) : null}
           <RoleShieldBadge role={isOperator ? "Operador" : "Administrador"} />
           <span className="nt-module-label">
             <Icon paths={ICONS.queue} />

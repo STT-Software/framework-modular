@@ -127,6 +127,11 @@ const BusinessSetupPage = observer(() => {
           <NectoLogo width={161} height={23} />
         </Link>
         <div className="no-header-actions">
+          {businessId ? (
+            <Link to={`/business/app/${businessId}`} className="no-secondary" style={{ textDecoration: "none", whiteSpace: "nowrap" }}>
+              ← Volver al dashboard
+            </Link>
+          ) : null}
           <RoleShieldBadge role="Administrador" />
           <ConfigBusinessSwitcher
             currentBusinessId={businessId ?? ""}

@@ -231,6 +231,38 @@ const TurnosPage = observer(() => {
                 category: business.category,
                 categoryOther: business.categoryOther,
               }))}
+              quickLinks={
+                businessId
+                  ? [
+                      {
+                        id: "modules",
+                        label: "Panel de módulos",
+                        description: "Volver a los módulos de mi negocio",
+                        onSelect: () => void goModules(),
+                      },
+                      {
+                        id: "turnos",
+                        label: "Módulo de Turnos",
+                        description: "Configuración actual",
+                        active: true,
+                        onSelect: () => undefined,
+                      },
+                      ...(adminAccessStore.businesses
+                        .find((b) => b.id === businessId)
+                        ?.modules.includes("pedidos")
+                        ? [
+                            {
+                              id: "pedidos",
+                              label: "Módulo de Pedidos",
+                              description: "Ir a la configuración de Pedidos",
+                              onSelect: () => navigate(`/business/pedidos/${businessId}/profile`),
+                            },
+                          ]
+                        : []),
+                    ]
+                  : []
+              }
+              onSwitchSpace={() => navigate("/business/access")}
               disabled={store.saving}
               onSelect={(id) => void switchBusiness(id)}
             />
@@ -260,7 +292,11 @@ const TurnosPage = observer(() => {
       </header>
 
       {isOperator ? (
-        <OperatorAccess onSignOut={() => void signOut()} signingOut={signingOut} />
+        <OperatorAccess
+          onSignOut={() => void signOut()}
+          onSwitchSpace={() => navigate("/business/access")}
+          signingOut={signingOut}
+        />
       ) : (
         <main className="nt-layout">
           <aside className="nt-sidebar">

@@ -1,0 +1,1 @@
+export { ordersConfigModule } from "./index";

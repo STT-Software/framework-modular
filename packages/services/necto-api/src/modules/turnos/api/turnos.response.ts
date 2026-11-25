@@ -57,6 +57,12 @@ export function toTurnosResponse(state: TurnosState) {
     })),
     roomScreen: { ...config.roomScreen },
     survey: { ...config.survey, channels: { ...config.survey.channels } },
+    candidateOperators: (state.candidateOperators ?? []).map((candidate) => ({
+      name: candidate.name,
+      email: candidate.email,
+      phone: candidate.phone,
+      sources: [...candidate.sources],
+    })),
     progress: {
       currentStep: config.currentStep,
       visitedSteps: config.visitedSteps,

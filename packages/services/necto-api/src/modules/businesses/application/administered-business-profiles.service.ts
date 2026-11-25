@@ -24,6 +24,10 @@ function toProfile(business: Business): AdministeredBusinessProfile {
     timezone: business.timezone,
     modules: [...business.modules],
     status: business.status,
+    boss: {
+      name: business.boss.name,
+      email: business.boss.email,
+    },
   };
 }
 

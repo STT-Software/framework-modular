@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { normalizeEmail } from '../../../platform/text/normalize';
+import { MemberAccessRegistry } from '../../business-access/public';
 import { BusinessDirectory, type BusinessAccessView } from '../../businesses/public';
 import { suggestedProfileFor, TURNOS_MODULE_ID, type SetupStep, type TurnosProfileId } from '../domain/catalog';
 import type { TurnosConfiguration } from '../domain/configuration';
@@ -26,12 +27,20 @@ import { TurnosConfigurationStore } from './turnos-configuration.store';
 import { TurnosRealtimeHub } from './turnos-realtime.hub';
 import { TurnosTicketService } from './turnos-ticket.service';
 
+export interface TurnosOperatorCandidate {
+  name: string;
+  email: string;
+  phone: string | null;
+  sources: string[];
+}
+
 /** The configuration of a business as the administrator sees it. */
 export interface TurnosState {
   business: { id: string; name: string; category: string; categoryOther: string | null };
   /** The profile the business's category suggests (the default of the first step). */
   suggestedProfile: TurnosProfileId;
   configuration: TurnosConfiguration;
+  candidateOperators?: TurnosOperatorCandidate[];
   /** The queue or operator the call just created. */
   created?: { id: string };
 }
@@ -50,6 +59,7 @@ export class TurnosConfigurationService {
     private readonly tickets: TurnosTicketService,
     private readonly hub: TurnosRealtimeHub,
     private readonly clock: Clock,
+    @Optional() private readonly memberRegistry?: MemberAccessRegistry,
   ) {}
 
   /** Opens the configuration (generating the suggested queues the first time). */
@@ -127,10 +137,12 @@ export class TurnosConfigurationService {
       return change(ensureSeeded(stored, suggestedProfile, now), now);
     });
     if (before) await this.announce(before, configuration);
+    const candidateOperators = await this.collectCandidateOperators(business);
     return {
       business: { id: business.id, name: business.name, category: business.category, categoryOther: business.categoryOther },
       suggestedProfile,
       configuration,
+      candidateOperators,
     };
   }
 
@@ -153,6 +165,38 @@ export class TurnosConfigurationService {
     }
     this.hub.publish({ type: 'config.updated', businessId: after.businessId, at, queueId: null });
   }
+
+  private async collectCandidateOperators(business: BusinessAccessView): Promise<TurnosOperatorCandidate[]> {
+    const byEmail = new Map<string, TurnosOperatorCandidate>();
+    if (business.boss?.email && business.boss?.name) {
+      const email = normalizeEmail(business.boss.email);
+      byEmail.set(email, {
+        name: business.boss.name,
+        email,
+        phone: null,
+        sources: ['admin'],
+      });
+    }
+    const members = this.memberRegistry ? await this.memberRegistry.membersOfBusiness(business.id) : [];
+    for (const member of members) {
+      if (member.moduleId === TURNOS_MODULE_ID) continue;
+      const email = normalizeEmail(member.email);
+      const existing = byEmail.get(email);
+      if (existing) {
+        if (!existing.sources.includes(member.moduleId)) existing.sources.push(member.moduleId);
+        if (member.phone) existing.phone = member.phone;
+      } else {
+        byEmail.set(email, {
+          name: member.name,
+          email,
+          phone: member.phone ?? null,
+          sources: [member.moduleId],
+        });
+      }
+    }
+    return [...byEmail.values()];
+  }
+
   private async requireBusiness(businessId: string): Promise<BusinessAccessView> {
     const business = await this.directory.find(businessId);
     if (!business || business.status !== 'active') throw new TurnosBusinessNotFoundError();

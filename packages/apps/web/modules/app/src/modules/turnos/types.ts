@@ -115,6 +115,13 @@ export interface TurnosLimits {
   operatorsPerBusiness: number;
 }
 
+export interface TurnosOperatorCandidate {
+  name: string;
+  email: string;
+  phone: string | null;
+  sources: string[];
+}
+
 /** La configuración completa, tal como la guardó el servidor (la devuelve `GET` y cada escritura). */
 export interface TurnosState {
   business: { id: string; name: string; category: string; categoryOther: string | null };
@@ -124,6 +131,7 @@ export interface TurnosState {
   operators: TurnosOperator[];
   roomScreen: RoomScreenSettings;
   survey: SurveySettings;
+  candidateOperators?: TurnosOperatorCandidate[];
   progress: { currentStep: TurnosStep | null; visitedSteps: TurnosStep[]; ready: boolean; readyAt: string | null };
   /** Solo en la respuesta de crear una fila o un operador. */
   created?: { id: string };

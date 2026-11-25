@@ -39,6 +39,7 @@ export interface BusinessAppShellProps {
   activity?: ActivityItem[];
   /** Si la conexión en vivo está abierta. */
   live?: boolean;
+  dataStatus?: string;
   onSignOut: () => void;
   /** El título del documento, para el lector de pantalla y el historial. */
   documentTitle: string;
@@ -99,7 +100,7 @@ export const BusinessAppShell = observer((props: BusinessAppShellProps) => {
             <span>© 2026 Necto · Conecta. Comparte. Crece.</span>
             <span>
               <i />
-              {props.live === undefined ? "Datos reales de tu negocio" : props.live ? "En vivo" : "Se actualiza al recargar"}
+              {props.dataStatus ?? (props.live === undefined ? "Datos reales de tu negocio" : props.live ? "En vivo" : "Se actualiza al recargar")}
             </span>
           </footer>
           <p className="nd-toast" role="status" aria-live="polite" hidden={!toastStore.message}>

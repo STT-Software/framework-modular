@@ -14,8 +14,9 @@ import type { AppModule } from "@/app/module";
  */
 export const preloadWorkspacePage = () => import("./pages/WorkspacePage");
 
-export { WorkspaceSupportDropdown } from "./components/WorkspaceSupportDropdown";
-export { WorkspaceSupportWidget, openSupportWidget } from "./components/WorkspaceSupportWidget";
+
+
+
 
 export const workspaceModule: AppModule = {
   id: "workspace",
@@ -28,3 +29,4 @@ export const workspaceModule: AppModule = {
     { path: "/workspace/profile", component: lazy(() => import("./pages/ProfilePage")) },
   ],
 };
+export * from "./public";

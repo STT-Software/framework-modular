@@ -23,5 +23,5 @@ export { BusinessAccessModule } from './business-access.module';
 export { AdministersBusiness, BusinessAdminOnly, OperatesModule, RecentlyVerified, RequiresBusinessModule, type AdminRequest } from './api/business-admin.guards';
 export { BusinessAccessChecks } from './domain/access-checks';
 export { MemberAccessRegistry } from './application/member-access.registry';
-export { MemberAccessSource, MemberSignedIn, type MemberAssignment } from './domain/member-access';
+export { MemberAccessSource, MemberSignedIn, type BusinessMemberCandidate, type MemberAssignment } from './domain/member-access';
 export type { AccessGrant, AccessRole } from './domain/access-grant';

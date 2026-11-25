@@ -3,7 +3,7 @@ import { businessAccessModule } from "@/modules/business-access";
 import { businessDashboardModule } from "@/modules/business-dashboard";
 import { businessSetupModule } from "@/modules/business-setup";
 import { onboardingModule } from "@/modules/onboarding";
-import { ordersConfigModule } from "@/modules/orders-config";
+import { ordersConfigModule } from "@/modules/orders-config/public";
 import { superAdminAuthModule } from "@/modules/super-admin-auth";
 import { turnosModule } from "@/modules/turnos";
 import { workspaceModule } from "@/modules/workspace";

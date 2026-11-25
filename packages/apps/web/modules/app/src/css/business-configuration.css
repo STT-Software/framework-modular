@@ -479,7 +479,7 @@
 /* --------------------------------------------------------------------------
    5. Consistent Sticky Baseline Layout & Workspace Floating Shell Architecture
    -------------------------------------------------------------------------- */
-:is(.no-root, .nt-root, .oc-root) {
+:is(.no-root, .nt-root, .oc-root):not(.is-workspace-shell) {
   display: flex !important;
   flex-direction: column !important;
   min-height: 100svh !important;
@@ -488,8 +488,21 @@
   box-sizing: border-box !important;
 }
 
-.dark :is(.no-root, .nt-root, .oc-root) {
+:is(.no-root, .nt-root, .oc-root).is-workspace-shell {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  background: transparent !important;
+  box-sizing: border-box !important;
+}
+
+.dark :is(.no-root, .nt-root, .oc-root):not(.is-workspace-shell) {
   background: #0c111d !important;
+  color: #f2f4f7 !important;
+}
+
+.dark :is(.no-root, .nt-root, .oc-root).is-workspace-shell {
+  background: transparent !important;
   color: #f2f4f7 !important;
 }
 
@@ -691,15 +704,15 @@
   animation: none !important;
 }
 
-/* Compact, well-proportioned module cards on wide screens */
+/* Full-width, well-proportioned module cards filling the workspace panel */
 .no-assigned-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 420px)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
   gap: 20px !important;
 }
 
 .no-module-card {
-  max-width: 440px !important;
+  max-width: none !important;
   padding: 22px 24px !important;
 }
 

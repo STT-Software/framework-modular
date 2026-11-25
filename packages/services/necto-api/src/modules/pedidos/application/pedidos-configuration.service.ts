@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { normalizeEmail } from '../../../platform/text/normalize';
+import { MemberAccessRegistry } from '../../business-access/public';
 import { BusinessScheduleReader, type EffectiveModuleSchedule } from '../../business-setup/public';
 import { AdministeredBusinessProfiles, type AdministeredBusinessProfile } from '../../businesses/public';
 import { PEDIDOS_MODULE_ID, suggestedProfileFor, type PedidosProfileId } from '../domain/catalog';
@@ -21,6 +22,13 @@ import {
 import type { FulfillmentInput, PaymentsInput, PedidosOperatorInput, SlaInput } from '../domain/validation';
 import { PedidosConfigurationStore } from './pedidos-configuration.store';
 
+export interface PedidosOperatorCandidate {
+  name: string;
+  email: string;
+  phone: string | null;
+  sources: string[];
+}
+
 /** Full Pedidos configuration state returned to the business administrator. */
 export interface PedidosState {
   business: {
@@ -34,6 +42,7 @@ export interface PedidosState {
   suggestedProfile: PedidosProfileId;
   schedule: EffectiveModuleSchedule;
   configuration: PedidosConfiguration;
+  candidateOperators?: PedidosOperatorCandidate[];
   /** Set on POST /operators to identify the newly created operator. */
   created?: { id: string };
 }
@@ -49,6 +58,7 @@ export class PedidosConfigurationService {
     private readonly store: PedidosConfigurationStore,
     private readonly profiles: AdministeredBusinessProfiles,
     private readonly scheduleReader: BusinessScheduleReader,
+    @Optional() private readonly memberRegistry?: MemberAccessRegistry,
   ) {}
 
   get(adminEmail: string, businessId: string): Promise<PedidosState> {
@@ -131,7 +141,10 @@ export class PedidosConfigurationService {
     const configuration = await this.store.update(businessId, (stored, now) =>
       transform(ensureSeeded(stored, suggestedProfile, now), now),
     );
-    const schedule = await this.scheduleReader.forModule(business.id, PEDIDOS_MODULE_ID, business.timezone);
+    const [schedule, candidateOperators] = await Promise.all([
+      this.scheduleReader.forModule(business.id, PEDIDOS_MODULE_ID, business.timezone),
+      this.collectCandidateOperators(business),
+    ]);
     return {
       business: {
         id: business.id,
@@ -144,7 +157,39 @@ export class PedidosConfigurationService {
       suggestedProfile,
       schedule,
       configuration,
+      candidateOperators,
     };
+  }
+
+  private async collectCandidateOperators(business: AdministeredBusinessProfile): Promise<PedidosOperatorCandidate[]> {
+    const byEmail = new Map<string, PedidosOperatorCandidate>();
+    if (business.boss?.email && business.boss?.name) {
+      const email = normalizeEmail(business.boss.email);
+      byEmail.set(email, {
+        name: business.boss.name,
+        email,
+        phone: business.phone ?? null,
+        sources: ['admin'],
+      });
+    }
+    const members = this.memberRegistry ? await this.memberRegistry.membersOfBusiness(business.id) : [];
+    for (const member of members) {
+      if (member.moduleId === PEDIDOS_MODULE_ID) continue;
+      const email = normalizeEmail(member.email);
+      const existing = byEmail.get(email);
+      if (existing) {
+        if (!existing.sources.includes(member.moduleId)) existing.sources.push(member.moduleId);
+        if (member.phone) existing.phone = member.phone;
+      } else {
+        byEmail.set(email, {
+          name: member.name,
+          email,
+          phone: member.phone ?? null,
+          sources: [member.moduleId],
+        });
+      }
+    }
+    return [...byEmail.values()];
   }
 
   private async requireBusiness(adminEmail: string, businessId: string): Promise<AdministeredBusinessProfile> {

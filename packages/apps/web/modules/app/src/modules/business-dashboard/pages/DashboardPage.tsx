@@ -2,6 +2,7 @@ import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { NectoLogo } from "@/brand/NectoLogo";
+import { WorkspaceAnnouncementBanner } from "@/components/configuration/WorkspaceAnnouncementBanner";
 import { adminAccessStore } from "@/modules/business-access";
 import { categoryLabel } from "@/modules/businesses";
 import type { DashboardModuleView } from "../api/dashboardApi";
@@ -75,6 +76,8 @@ const DashboardPage = observer(() => {
   const readyCount = state.modules.filter((module) => module.setup.status === "ready").length;
   const open = (module: DashboardModuleView) => {
     if (module.id === "turnos") navigate(module.setup.status === "ready" ? turnosPath(businessId) : `/business/turnos/${businessId}/profile`);
+    else if (module.id === "pedidos")
+      navigate(module.setup.status === "ready" ? `/business/app/${businessId}/pedidos/dashboard` : `/business/pedidos/${businessId}/profile`);
     else setDetail(module);
   };
   const signOut = async () => {
@@ -109,40 +112,7 @@ const DashboardPage = observer(() => {
         }
       />
       <div id="nd-content">
-        {modulesView ? null : (
-          <section className="nd-hub-hero">
-            <div>
-              <span className="nd-eyebrow">UN ESPACIO. MUCHAS POSIBILIDADES.</span>
-              <h2>
-                Todo lo que haces crecer,
-                <br />
-                <em>mejor conectado.</em>
-              </h2>
-              <p>Tus módulos, tu equipo y cada nueva conexión. Elige dónde quieres comenzar hoy.</p>
-              <div className="nd-hero-links">
-                {turnos ? (
-                  <button type="button" className="nd-primary" onClick={() => open(turnos)}>
-                    {turnos.setup.status === "ready" ? "Abrir Turnos" : "Configurar Turnos"}
-                  </button>
-                ) : null}
-                <Badge color="purple">{`${readyCount} de ${state.modules.length} módulos preparados`}</Badge>
-              </div>
-            </div>
-            <div className="nd-motion-map" aria-hidden="true">
-              <span className="nd-map-orbit" />
-              <span className="nd-map-orbit two" />
-              <span className="nd-motion-center">
-                <NectoLogo variant="mark" width={44} height={44} />
-              </span>
-              {PREVIEW_ICONS.map((icon) => (
-                <span key={icon} className="nd-map-token">
-                  <Icon name={icon} />
-                </span>
-              ))}
-              <span className="nd-map-caption">El poder de conectar</span>
-            </div>
-          </section>
-        )}
+        {modulesView ? null : <WorkspaceAnnouncementBanner />}
         {modulesView ? null : (
           <div className="nd-stat-grid">
             <Stat label="Módulos habilitados" value={state.modules.length} icon="grid" foot="Asignados a este negocio" />
@@ -234,7 +204,8 @@ function ModuleCard({ module, onOpen }: { module: DashboardModuleView; onOpen: (
   const look = moduleDescriptor(module.id);
   const ready = module.setup.status === "ready";
   const indicators = module.indicators?.turnos;
-  const label = module.id === "turnos" ? (ready ? "Abrir Turnos" : "Configurar") : "Ver detalles";
+  const label =
+    module.id === "turnos" || module.id === "pedidos" ? (ready ? `Abrir ${module.name}` : "Configurar") : "Ver detalles";
   return (
     <article className="nd-card nd-module-card">
       <div className="nd-module-card-top">

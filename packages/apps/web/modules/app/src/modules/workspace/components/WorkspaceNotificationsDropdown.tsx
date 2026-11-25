@@ -5,7 +5,7 @@ import { businessesStore, type Business } from "@/modules/businesses";
 import { superAdminSessionStore } from "@/modules/super-admin-auth";
 import { ShellDropdown } from "@/shell";
 import { NEW_BUSINESS_PATH, WORKSPACE_PATH } from "../paths";
-import { useWorkspaceDetail } from "./WorkspaceDetailContext";
+import { useOptionalWorkspaceDetail } from "./WorkspaceDetailContext";
 import { AnnouncementArt, NoticeToken, NotificationsEmptyArt, type NoticeKind } from "./workspaceArt";
 
 const READ_STORAGE_PREFIX = "necto.workspace.notifications.read:";
@@ -99,7 +99,7 @@ function TrashIcon({ className = "size-4 stroke-[1.7]" }: { className?: string }
 export const WorkspaceNotificationsDropdown = observer(() => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { openBusinessDetail } = useWorkspaceDetail();
+  const workspaceDetail = useOptionalWorkspaceDetail();
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -191,7 +191,7 @@ export const WorkspaceNotificationsDropdown = observer(() => {
         onSelect: () => {
           markAsRead(id);
           closeDropdown();
-          openBusinessDetail(business);
+          workspaceDetail?.openBusinessDetail(business);
         },
       };
     });

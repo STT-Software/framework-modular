@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { AccessError } from "@/modules/business-access";
+import { AccessError } from "@/modules/business-access/public";
 import { PedidosError, type PedidosApi } from "./api/pedidosApi";
 import { DEFAULT_CARRIERS, PROFILE_DEFAULTS } from "./constants";
 import { ordersConfigErrorMessage, OrdersConfigStore } from "./ordersConfig.store";
-import { PedidosOperatorStore } from "./stores/pedidosOperator.store";
+import { PedidosOperationStore } from "./operation/stores/operation.store";
 import { ALL_OPERATOR_STAGES, type OrdersProfileId, type PedidosApiResponse, type PedidosOperatorView } from "./types";
 
 function makeApiResponse(
@@ -663,7 +663,7 @@ describe("OrdersConfigStore · modalities, payments, operators CRUD, and complet
   });
 });
 
-describe("PedidosOperatorStore", () => {
+describe("PedidosOperationStore", () => {
   const sampleView: PedidosOperatorView = {
     business: { id: "biz-1", name: "Casa Oliva" },
     operator: {
@@ -685,9 +685,9 @@ describe("PedidosOperatorStore", () => {
   function setupOperator(hasSession = true) {
     const operatorFn = vi.fn<PedidosApi["operator"]>().mockResolvedValue(sampleView);
     const ensureSession = vi.fn<() => Promise<boolean>>().mockResolvedValue(hasSession);
-    const store = new PedidosOperatorStore({
-      api: { operator: operatorFn },
-      access: { ensureSession, withToken: (call) => call("op-token") },
+    const store = new PedidosOperationStore({
+      api: { operator: operatorFn, get: vi.fn() },
+      access: { ensureSession, chooseRole: () => "operator", withToken: (call) => call("op-token") },
     });
     return { store, operatorFn, ensureSession };
   }

@@ -1,30 +1,21 @@
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
 import { BrandCardDecor } from "@/components/configuration/BrandBackdrop";
-import { NectoLogo } from "@/brand/NectoLogo";
-import { useElementVisibility } from "@/hooks";
+import { WorkspaceAnnouncementBanner } from "@/components/configuration/WorkspaceAnnouncementBanner";
+import { adminAccessStore } from "@/modules/business-access";
 import { businessSetupStore } from "../stores/businessSetup.store";
 import { ModuleIcon } from "./ModuleIcon";
-
-const NODE_POSITIONS: ReadonlyArray<readonly [number, number]> = [
-  [17, 29],
-  [44, 5],
-  [76, 27],
-  [73, 64],
-  [34, 73],
-  [7, 60],
-];
 
 interface ModulesViewProps {
   onStart: () => void;
   onConfigure: (moduleId: string) => void;
+  onOpenModule?: (moduleId: string) => void;
 }
 
-/** La primera pantalla: los módulos que el superadministrador habilitó para ESTE negocio y el estado de la base. */
-export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps) => {
+/** La primera pantalla: el espacio de trabajo del negocio con sus módulos habilitados, indicadores y estado de configuración. */
+export const ModulesView = observer(({ onStart, onConfigure, onOpenModule }: ModulesViewProps) => {
   const state = businessSetupStore.state;
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const { ref: motionRef, isVisible: isMotionVisible } = useElementVisibility<HTMLDivElement>();
   const [openingModuleId, setOpeningModuleId] = useState<string | null>(null);
   const [startingBase, setStartingBase] = useState(false);
 
@@ -33,86 +24,153 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
   const count = state.modules.length;
   const ready = state.progress.baseReady;
   const started = state.progress.currentStep !== null;
+
+  const readyModules = state.modules.filter((m) => m.settings.status === "ready");
+  const readyModulesCount = readyModules.length;
+  const primaryModule =
+    readyModules.find((m) => m.id === "pedidos" || m.id === "turnos") ??
+    state.modules.find((m) => m.id === "pedidos" || m.id === "turnos") ??
+    state.modules[0] ??
+    null;
+
+  const pedidosModule = state.modules.find((m) => m.id === "pedidos");
+  const turnosModule = state.modules.find((m) => m.id === "turnos");
+  const totalOperators = state.modules.reduce((acc, m) => acc + (m.settings.summary?.operatorCount ?? 0), 0);
+  const activeChannelsCount =
+    (pedidosModule?.settings.summary?.modalityCount ?? 0) + (turnosModule?.settings.summary?.queueCount ?? 0);
+
+  const rawPersonName =
+    adminAccessStore.access?.personName ??
+    adminAccessStore.accesses.find((a) => a.businessId === state.business.id)?.personName ??
+    "Administrador";
+  const firstName = rawPersonName.trim().split(/\s+/)[0] || "Administrador";
+
+  const handlePrimaryHeroAction = () => {
+    if (primaryModule && primaryModule.settings.status === "ready" && onOpenModule) {
+      setOpeningModuleId(primaryModule.id);
+      setTimeout(() => onOpenModule(primaryModule.id), 350);
+      return;
+    }
+    if (primaryModule) {
+      setOpeningModuleId(primaryModule.id);
+      setTimeout(() => onConfigure(primaryModule.id), 350);
+      return;
+    }
+    setStartingBase(true);
+    setTimeout(onStart, 350);
+  };
+
   return (
     <section className="no-enter" aria-labelledby="no-modules-title">
-      <div className="no-welcome">
-        <div className="no-welcome-copy">
-          <span className="no-eyebrow">
-            <i />
-            TU NEGOCIO. TUS POSIBILIDADES.
-          </span>
+      {/* TOP GREETING BAR */}
+      <div className="no-ws-topbar">
+        <div className="no-ws-greeting">
+          <span className="no-ws-eyebrow">MI NEGOCIO · ESPACIO DE TRABAJO</span>
           <h1 id="no-modules-title" ref={headingRef} tabIndex={-1}>
-            Todo empieza con
-            <br />
-            una buena configuración<span>.</span>
+            {`Qué bueno verte, ${firstName}.`}
           </h1>
           <p>
-            Este es el espacio de <strong>{state.profile.name}</strong>. Prepara sus datos, define sus horarios y deja la base lista para tus módulos.
+            {`Este es el pulso de ${state.profile.name}. Conecta con lo que necesita tu negocio hoy.`}
           </p>
-          <button
-            className={`no-primary${startingBase ? " is-loading" : ""}`}
-            type="button"
-            disabled={startingBase}
-            onClick={() => {
-              setStartingBase(true);
-              setTimeout(onStart, 450);
-            }}
-          >
-            {startingBase
-              ? "Abriendo configuración base…"
-              : ready
-                ? "Revisar configuración base "
-                : started
-                  ? "Continuar configuración "
-                  : "Preparar mi negocio "}
-            {!startingBase && <span aria-hidden="true">→</span>}
-          </button>
         </div>
-        <div ref={motionRef} className="no-module-motion" data-visible={isMotionVisible} aria-hidden="true">
-          <svg viewBox="0 0 390 280" fill="none">
-            <circle cx="196" cy="136" r="99" />
-            <ellipse cx="196" cy="136" rx="155" ry="72" transform="rotate(-22 196 136)" />
-            <path d="M69 161Q74 50 203 51M323 104Q322 213 196 228" pathLength="1" className="no-connect-line" />
-            <path
-              d="m72 70 3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8Zm253 117 2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"
-              className="no-motion-spark"
-            />
-            <ellipse cx="196" cy="249" rx="94" ry="7" className="no-motion-shadow" />
-          </svg>
-          <div className="no-motion-center">
-            <NectoLogo variant="mark" width={48} height={48} />
-            <span>Grow together</span>
-          </div>
-          <div>
-            {state.modules.map((module, index) => (
-              <span
-                key={module.id}
-                className="no-motion-node"
-                style={{ left: `${NODE_POSITIONS[index][0]}%`, top: `${NODE_POSITIONS[index][1]}%` }}
-              >
-                <ModuleIcon id={module.id} />
-              </span>
-            ))}
-          </div>
-          <span className="no-motion-chip">
-            <i />
-            Un espacio propio para crecer
-          </span>
-        </div>
+        <button
+          type="button"
+          className="no-ws-config-btn"
+          disabled={startingBase}
+          onClick={() => {
+            setStartingBase(true);
+            setTimeout(onStart, 350);
+          }}
+        >
+          {startingBase ? "Abriendo…" : "Ver configuración"}
+        </button>
       </div>
+
+      {/* 3-SLIDE ANNOUNCEMENT HERO BANNER */}
+      <WorkspaceAnnouncementBanner />
+
+      {/* 4 KPI CARDS */}
+      <div className="no-ws-kpi-grid" aria-label="Indicadores del negocio">
+        <article className="no-ws-kpi-card">
+          <div className="no-ws-kpi-head">
+            <span className="no-ws-kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="4" y="4" width="6" height="6" rx="1.5" />
+                <rect x="14" y="4" width="6" height="6" rx="1.5" />
+                <rect x="4" y="14" width="6" height="6" rx="1.5" />
+                <rect x="14" y="14" width="6" height="6" rx="1.5" />
+              </svg>
+            </span>
+            <span className="no-ws-kpi-label">Módulos habilitados</span>
+          </div>
+          <strong className="no-ws-kpi-value">{count}</strong>
+          <span className="no-ws-kpi-foot">Asignados a este negocio</span>
+        </article>
+
+        <article className="no-ws-kpi-card">
+          <div className="no-ws-kpi-head">
+            <span className="no-ws-kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M5 7h14l1 13H4L5 7Zm3 0V5a4 4 0 0 1 8 0v2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            <span className="no-ws-kpi-label">
+              {pedidosModule ? "Modalidades y filas" : "Filas de atención"}
+            </span>
+          </div>
+          <strong className="no-ws-kpi-value">{activeChannelsCount}</strong>
+          <span className="no-ws-kpi-foot">
+            {pedidosModule && turnosModule
+              ? "En Pedidos y Turnos"
+              : pedidosModule
+                ? "En el módulo de Pedidos"
+                : "En el módulo de Turnos"}
+          </span>
+        </article>
+
+        <article className="no-ws-kpi-card">
+          <div className="no-ws-kpi-head">
+            <span className="no-ws-kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m5 12 5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            <span className="no-ws-kpi-label">Módulos preparados</span>
+          </div>
+          <strong className="no-ws-kpi-value">
+            {readyModulesCount} <small>hoy</small>
+          </strong>
+          <span className="no-ws-kpi-foot">Durante esta jornada</span>
+        </article>
+
+        <article className="no-ws-kpi-card">
+          <div className="no-ws-kpi-head">
+            <span className="no-ws-kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" strokeLinecap="round" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" strokeLinecap="round" />
+              </svg>
+            </span>
+            <span className="no-ws-kpi-label">Operadores activos</span>
+          </div>
+          <strong className="no-ws-kpi-value">{totalOperators}</strong>
+          <span className="no-ws-kpi-foot">
+            {pedidosModule && turnosModule
+              ? "Equipo de Pedidos y Turnos"
+              : pedidosModule
+                ? "Equipo de Pedidos"
+                : "Equipo de Turnos"}
+          </span>
+        </article>
+      </div>
+
       <div className="no-section-heading">
         <div>
-          <h2>
-            Los módulos de tu negocio <span>{count}</span>
-          </h2>
-          <p>Habilitados por tu superadministrador, solo para este negocio.</p>
+          <h2>{`Los módulos de ${state.profile.name}`}</h2>
+          <p>Un espacio propio para cada parte de tu operación.</p>
         </div>
-        <span className="no-assignment-label">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Zm-4 9 3 3 5-6" />
-          </svg>
-          Asignación por negocio
-        </span>
+        <span className="no-ws-count-pill">{`${count} ${count === 1 ? "habilitado" : "habilitados"}`}</span>
       </div>
       {count > 0 ? (
         <div className={`no-assigned-grid${count === 1 ? " is-single" : ""}`}>
@@ -124,32 +182,55 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
                 <BrandCardDecor />
                 <div className="no-module-card-top">
                   <ModuleIcon id={module.id} />
-                  <span className="no-module-assigned">Asignado</span>
+                  <span className={`no-module-assigned${isModuleReady ? " is-configured" : ""}`}>
+                    {isModuleReady ? "Configurado" : "Asignado"}
+                  </span>
                 </div>
                 <h3>{module.name}</h3>
                 <p>{module.description}</p>
                 <div className="no-module-card-footer">
-                  <span>{isModuleReady ? "Configuración preparada" : ready ? "Ajustes específicos pendientes" : "Configuración pendiente"}</span>
-                  <button
-                    type="button"
-                    className={isOpening ? "is-loading" : undefined}
-                    disabled={openingModuleId !== null}
-                    aria-label={`Configurar ${module.name}`}
-                    onClick={() => {
-                      setOpeningModuleId(module.id);
-                      setTimeout(() => onConfigure(module.id), 450);
-                    }}
-                  >
-                    {isOpening
-                      ? "Abriendo…"
-                      : isModuleReady
-                        ? "Revisar configuración"
-                        : module.id === "turnos" || module.id === "pedidos"
-                          ? "Configurar"
-                          : ready
-                            ? "Revisar base"
-                            : "Configurar"}
-                  </button>
+                  <span>
+                    {isModuleReady
+                      ? "Configuración preparada"
+                      : ready
+                        ? "Ajustes específicos pendientes"
+                        : "Configuración pendiente"}
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    {isModuleReady && onOpenModule && (module.id === "pedidos" || module.id === "turnos") && (
+                      <button
+                        type="button"
+                        className="no-ws-open-module-btn"
+                        disabled={openingModuleId !== null}
+                        onClick={() => {
+                          setOpeningModuleId(module.id);
+                          setTimeout(() => onOpenModule(module.id), 350);
+                        }}
+                      >
+                        {isOpening ? "Abriendo…" : `Abrir ${module.name}`}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className={isOpening ? "is-loading" : undefined}
+                      disabled={openingModuleId !== null}
+                      aria-label={`Configurar ${module.name}`}
+                      onClick={() => {
+                        setOpeningModuleId(module.id);
+                        setTimeout(() => onConfigure(module.id), 350);
+                      }}
+                    >
+                      {isOpening
+                        ? "Abriendo…"
+                        : isModuleReady
+                          ? "Ver configuración"
+                          : module.id === "turnos" || module.id === "pedidos"
+                            ? "Configurar"
+                            : ready
+                              ? "Revisar base"
+                              : "Configurar"}
+                    </button>
+                  </div>
                 </div>
               </article>
             );
@@ -161,13 +242,6 @@ export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps)
           <p>Puedes preparar los datos de tu negocio. Tu superadministrador podrá habilitar sus funcionalidades.</p>
         </div>
       )}
-      <div className="no-next-note">
-        <span className="no-note-number">01</span>
-        <p>
-          <strong>Primero, la base de tu negocio.</strong> Después añadiremos los pasos de configuración de cada módulo.
-        </p>
-        <span aria-hidden="true">↗</span>
-      </div>
     </section>
   );
 });

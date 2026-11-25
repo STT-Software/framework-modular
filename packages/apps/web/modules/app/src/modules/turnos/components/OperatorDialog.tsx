@@ -32,6 +32,17 @@ function Form({ operator, onClose, onSaved }: { operator: TurnosOperator | null;
   };
   const toggle = (id: string, checked: boolean) => set("queueIds", checked ? [...form.queueIds, id] : form.queueIds.filter((item) => item !== id));
 
+  const assignedEmails = new Set(
+    state.operators
+      .filter((item) => item.id !== operator?.id)
+      .map((item) => item.email.trim().toLowerCase()),
+  );
+  const availableCandidates = (state.candidateOperators ?? []).filter(
+    (candidate) => !assignedEmails.has(candidate.email.trim().toLowerCase()),
+  );
+  const formatSourceLabel = (source: string) =>
+    source === "admin" ? "Administrador" : source === "pedidos" ? "Pedidos" : source === "turnos" ? "Turnos" : source;
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const result = await store.saveOperator(operator?.id ?? null, form);
@@ -56,6 +67,38 @@ function Form({ operator, onClose, onSaved }: { operator: TurnosOperator | null;
         </button>
       </header>
       <div className="nt-dialog-body">
+        {!operator && availableCandidates.length > 0 && (
+          <div className="nt-field">
+            <label htmlFor="nt-operator-candidate">Seleccionar persona ya registrada en el negocio</label>
+            <select
+              id="nt-operator-candidate"
+              value={
+                availableCandidates.find((c) => c.email.toLowerCase() === form.email.trim().toLowerCase())?.email ?? ""
+              }
+              onChange={(e) => {
+                const chosen = availableCandidates.find((c) => c.email === e.target.value);
+                if (!chosen) return;
+                setForm((previous) => ({
+                  ...previous,
+                  name: chosen.name,
+                  email: chosen.email,
+                  phone: chosen.phone ?? previous.phone,
+                }));
+                setError("");
+              }}
+            >
+              <option value="">
+                {`— Elegir del registro (${availableCandidates.length} disponible${availableCandidates.length === 1 ? "" : "s"}) o escribir manualmente —`}
+              </option>
+              {availableCandidates.map((candidate) => (
+                <option key={candidate.email} value={candidate.email}>
+                  {`${candidate.name} · ${candidate.email} (${candidate.sources.map(formatSourceLabel).join(" + ")})`}
+                </option>
+              ))}
+            </select>
+            <small>Completa automáticamente los datos del administrador u operadores de otros módulos.</small>
+          </div>
+        )}
         <div className="nt-field">
           <label htmlFor="nt-operator-name">
             Nombre <b>*</b>

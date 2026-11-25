@@ -1,4 +1,4 @@
-import { AccessError, type AccessErrorKind } from "@/modules/business-access";
+import { AccessError, type AccessErrorKind } from "@/modules/business-access/public";
 import type {
   CancellationStage,
   CarrierConfig,

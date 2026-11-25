@@ -7,6 +7,8 @@ import { AccessCodeService } from './access-code.service';
 import { AccessMailer } from './access-mailer';
 import { AdminSessionService, type SessionGrant, type StartedSession } from './admin-session.service';
 import { AccessGrantsService } from './access-grants.service';
+import { EventBus } from '../../../platform/events/event-bus';
+import { MemberSignedIn } from '../domain/member-access';
 
 /** What the public request-a-code endpoint can say: only the rules, never whether the email is assigned. */
 export interface CodeRequestRules {
@@ -31,6 +33,7 @@ export class AdminLoginService {
     private readonly grants: AccessGrantsService,
     private readonly policy: AccessPolicy,
     private readonly clock: Clock,
+    private readonly events: EventBus,
   ) {}
 
   /** The numbers the page shows next to the code box. They are the same for every email. */
@@ -78,6 +81,8 @@ export class AdminLoginService {
     previousCookie?: string;
   }): Promise<{ started: StartedSession; grant: SessionGrant }> {
     await this.codes.verify({ email: input.email, code: input.code, ip: input.ip, purposes: SIGN_IN_PURPOSES });
+    // The email is proven: modules may finish what waited for this first sign-in (a pending operator becomes active) before the accesses are read.
+    await this.events.publish(new MemberSignedIn(input.email));
     const accesses = await this.grants.list(input.email);
     if (accesses.length === 0) throw new InvalidAccessCodeError();
     if (input.previousCookie) await this.sessions.endByCookie(input.previousCookie, 'replaced');

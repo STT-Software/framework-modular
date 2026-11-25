@@ -9,7 +9,7 @@ import { TurnosConfigurationService } from './application/turnos-configuration.s
 import { TurnosConfigurationStore } from './application/turnos-configuration.store';
 import { TurnosOperatorAccessSource } from './application/turnos-operator-access.source';
 import { TurnosOperatorService } from './application/turnos-operator.service';
-import { InMemoryTurnosConfigurationRepository, operatorInput } from './fakes.spec';
+import { buildTurnos, operatorInput } from './fakes.spec';
 
 /**
  * The same login for administrators and operators, with the real pieces of both modules wired together in memory: the OTP flow
@@ -21,11 +21,11 @@ const ANA = 'ana@cafecentral.co';
 function setup() {
   const access = setupAdminAccess();
   access.directory.set({ ...access.business, modules: ['reservas', 'turnos'] });
-  const repository = new InMemoryTurnosConfigurationRepository();
-  const store = new TurnosConfigurationStore(repository, access.clock);
-  const turnos = new TurnosConfigurationService(store, access.directory);
-  const operators = new TurnosOperatorService(store, access.directory);
-  new TurnosOperatorAccessSource(repository, access.registry).onModuleInit();
+  const wired = buildTurnos(access.directory as never, access.clock, access.registry);
+  const repository = wired.repository;
+  const turnos = wired.service;
+  const operators = wired.operators;
+  wired.source.onModuleInit();
   const businessId = access.business.id;
 
   const context = (request: Partial<AdminRequest>, handler: () => void): ExecutionContext =>

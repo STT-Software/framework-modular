@@ -15,6 +15,27 @@ export type PrefixMode = (typeof PREFIX_MODES)[number];
 export const SETUP_STEPS = ['profile', 'queues', 'rules', 'operators', 'review'] as const;
 export type SetupStep = (typeof SETUP_STEPS)[number];
 
+/**
+ * The views of the operator's workspace, in the order they are offered: the first one an operator may use is where they land after
+ * signing in. Each one is granted on its own, by the administrator.
+ */
+export const OPERATOR_VIEWS = ['home', 'my-turns', 'create-turn', 'queues', 'surveys'] as const;
+export type OperatorViewId = (typeof OPERATOR_VIEWS)[number];
+/** Pending: assigned, has not signed in yet. Active: can operate. Inactive: switched off by the administrator (keeps their history). */
+export const OPERATOR_STATUSES = ['pending', 'active', 'inactive'] as const;
+export type OperatorStatus = (typeof OPERATOR_STATUSES)[number];
+/** A paused queue accepts no new turns and keeps the ones it has. */
+export const QUEUE_STATUSES = ['active', 'paused'] as const;
+export type QueueStatus = (typeof QUEUE_STATUSES)[number];
+/** The kinds of extra field a queue can ask when a turn is created. `select` has options; `checkbox` is a yes/no. */
+export const FIELD_TYPES = ['text', 'number', 'phone', 'email', 'date', 'select', 'checkbox'] as const;
+export type FieldType = (typeof FIELD_TYPES)[number];
+/** The life of a turn: waiting, in attention, and one of three endings. */
+export const TICKET_STATUSES = ['waiting', 'attending', 'completed', 'cancelled', 'no-show'] as const;
+export type TicketStatus = (typeof TICKET_STATUSES)[number];
+export const OPEN_TICKET_STATUSES = ['waiting', 'attending'] as const satisfies readonly TicketStatus[];
+export const ROOM_NAME_DISPLAYS = ['full', 'first-name', 'hidden'] as const;
+export type RoomNameDisplay = (typeof ROOM_NAME_DISPLAYS)[number];
 /** Numbers and sizes the rules accept (own limits of the product, shown to the interface so it can validate the same way). */
 export const LIMITS = {
   queueName: { min: 2, max: 60 },
@@ -29,6 +50,23 @@ export const LIMITS = {
   phoneDigits: { min: 7, max: 15 },
   queuesPerBusiness: 30,
   operatorsPerBusiness: 100,
+  fieldsPerQueue: 10,
+  fieldLabel: { min: 2, max: 60 },
+  fieldOptions: { min: 2, max: 20 },
+  fieldOption: { min: 1, max: 40 },
+  /** The longest text answered in a field, a customer name or a comment. */
+  answerText: 200,
+  customerName: { min: 2, max: 80 },
+  note: 300,
+  roomRecentCalls: { min: 1, max: 10 },
+  roomMessage: 120,
+  surveyQuestion: { min: 2, max: 140 },
+  surveyThanks: 200,
+  surveyValidHours: { min: 1, max: 720 },
+  /** A page of tickets or responses. */
+  pageSize: { default: 25, max: 100 },
+  /** The most rows a CSV report holds, so one request cannot read the whole history. */
+  reportRows: 20000,
 } as const;
 
 export interface SuggestedQueue {

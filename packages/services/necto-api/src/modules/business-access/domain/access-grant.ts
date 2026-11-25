@@ -19,6 +19,14 @@ export interface AccessGrant {
   modules: readonly string[];
   /** The name the business knows the person by in that role. */
   personName: string;
+  /**
+   * An operator: the views of the module they may use right now (in the order to offer them) and the one to open first, so they
+   * go straight to their module without passing through the general dashboard. Null for an administrator.
+   */
+  views: readonly string[] | null;
+  firstView: string | null;
+  /** An operator who is assigned but cannot operate yet (pending): they can sign in, no operator route lets them in. Always true for an administrator. */
+  operable: boolean;
 }
 
 export function grantKey(businessId: string, role: 'admin'): string;

@@ -6,7 +6,7 @@ import { parseQueue, type QueueInput } from './queues';
 import { DEFAULT_RULES } from './rules';
 
 const base: QueueInput = { name: 'Consulta general', mode: 'auto', averageMinutes: 14 };
-const existing = (name: string): Queue => ({ id: name, name, color: 'blue', mode: 'auto', averageMinutes: 5, source: 'custom', overrides: { prefix: null, urgentMinutes: null, busyLimit: null, fullLimit: null } });
+const existing = (name: string): Queue => ({ id: name, name, color: 'blue', mode: 'auto', averageMinutes: 5, source: 'custom', overrides: { prefix: null, urgentMinutes: null, busyLimit: null, fullLimit: null }, status: 'active', fields: [] });
 const parse = (input: Partial<QueueInput> & Record<string, unknown>, others: Queue[] = [], rules = DEFAULT_RULES) =>
   parseQueue({ ...base, ...input } as QueueInput, { rules, others, defaultColor: 'purple' });
 function fieldsOf(input: Partial<QueueInput> & Record<string, unknown>, others: Queue[] = [], rules = DEFAULT_RULES): Record<string, string[]> {
@@ -27,6 +27,7 @@ describe('queue validation', () => {
       mode: 'auto',
       averageMinutes: 14,
       overrides: { prefix: null, urgentMinutes: null, busyLimit: null, fullLimit: null },
+      fields: [],
     });
   });
 

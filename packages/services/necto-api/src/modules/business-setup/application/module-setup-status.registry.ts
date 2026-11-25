@@ -14,6 +14,10 @@ export class ModuleSetupStatusRegistry {
     this.sources.set(source.moduleId, source);
   }
 
+  /** Whether a module has announced how to report its configuration, that is, whether it has one to complete. */
+  has(moduleId: string): boolean {
+    return this.sources.has(moduleId);
+  }
   async statusOf(moduleId: string, businessId: string): Promise<ModuleSetupStatus | null> {
     const source = this.sources.get(moduleId);
     if (!source) return null;

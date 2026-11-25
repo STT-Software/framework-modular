@@ -96,7 +96,8 @@ describe('what the API shows', () => {
     const { service } = setupTurnos();
     const state = await service.get(BUSINESS_ID);
     const response = toTurnosResponse(await service.createOperator(BUSINESS_ID, { name: 'Laura', email: 'laura@x.co', queueIds: [state.configuration.queues[0].id] }));
-    assert.deepEqual(Object.keys(response.operators[0]).sort(), ['createdAt', 'email', 'id', 'name', 'phone', 'queueIds']);
+    assert.deepEqual(Object.keys(response.operators[0]).sort(), ['activatedAt', 'createdAt', 'email', 'id', 'name', 'phone', 'queueIds', 'status', 'views']);
+    assert.equal(response.operators[0].status, 'pending', 'a new operator waits for their first sign-in');
     const json = JSON.stringify(response);
     for (const internal of ['version', 'touched', 'seeded']) assert.ok(!json.includes(`"${internal}"`), `${internal} is internal to the document`);
   });
@@ -104,9 +105,9 @@ describe('what the API shows', () => {
   it('shows an operator only themselves and their queues', async () => {
     const { service, operators } = setupTurnos();
     const state = await service.get(BUSINESS_ID);
-    await service.createOperator(BUSINESS_ID, { name: 'Laura', email: 'laura@x.co', queueIds: [state.configuration.queues[1].id] });
+    await service.createOperator(BUSINESS_ID, { name: 'Laura', email: 'laura@x.co', queueIds: [state.configuration.queues[1].id], status: 'active' });
     const response = toOperatorResponse(await operators.view('laura@x.co', BUSINESS_ID));
-    assert.deepEqual(Object.keys(response).sort(), ['business', 'operator', 'queues']);
+    assert.deepEqual(Object.keys(response).sort(), ['business', 'catalog', 'firstView', 'operator', 'queues', 'views']);
     assert.deepEqual(response.queues.map((queue) => queue.name), ['Recogida de pedidos']);
   });
 });

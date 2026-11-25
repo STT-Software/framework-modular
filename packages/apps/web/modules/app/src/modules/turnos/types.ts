@@ -23,6 +23,18 @@ export interface EffectiveRules {
   fullLimit: number;
 }
 
+export type FieldType = "text" | "number" | "phone" | "email" | "date" | "select" | "checkbox";
+/** Un dato extra que la fila pide al crear un turno. */
+export interface QueueField {
+  id: string;
+  label: string;
+  type: FieldType;
+  required: boolean;
+  /** Solo para `select`. */
+  options: string[];
+}
+export type OperatorViewId = "home" | "my-turns" | "create-turn" | "queues" | "surveys";
+export type OperatorStatus = "pending" | "active" | "inactive";
 export interface TurnosQueue {
   id: string;
   name: string;
@@ -34,6 +46,9 @@ export interface TurnosQueue {
   overrides: QueueOverrides;
   effective: EffectiveRules;
   ticketExample: string;
+  /** `paused`: la fila no recibe turnos nuevos y conserva los que tiene. */
+  status: "active" | "paused";
+  fields: QueueField[];
 }
 
 export interface TurnosRules {
@@ -51,7 +66,29 @@ export interface TurnosOperator {
   email: string;
   phone: string | null;
   queueIds: string[];
+  /** Las vistas del espacio de trabajo que puede usar (ninguna: no puede operar). */
+  views: OperatorViewId[];
+  /** `pending` hasta su primer inicio de sesión; `inactive` si el administrador lo apagó. */
+  status: OperatorStatus;
+  activatedAt: string | null;
   createdAt: string;
+}
+export interface RoomScreenSettings {
+  enabled: boolean;
+  queueIds: string[] | null;
+  customerName: "full" | "first-name" | "hidden";
+  playSound: boolean;
+  recentCalls: number;
+  message: string | null;
+}
+export interface SurveySettings {
+  enabled: boolean;
+  channels: { email: boolean; whatsapp: boolean };
+  question: string;
+  allowComment: boolean;
+  thanksMessage: string | null;
+  validHours: number;
+  queueIds: string[] | null;
 }
 
 export interface ProfileOption {
@@ -70,6 +107,9 @@ export interface TurnosLimits {
   fullLimit: { min: number; max: number; generalMin: number };
   operatorName: { min: number; max: number };
   operatorEmail: { max: number };
+  fieldsPerQueue: number;
+  fieldLabel: { min: number; max: number };
+  fieldOptions: { min: number; max: number };
   phoneDigits: { min: number; max: number };
   queuesPerBusiness: number;
   operatorsPerBusiness: number;
@@ -82,6 +122,8 @@ export interface TurnosState {
   queues: TurnosQueue[];
   rules: TurnosRules;
   operators: TurnosOperator[];
+  roomScreen: RoomScreenSettings;
+  survey: SurveySettings;
   progress: { currentStep: TurnosStep | null; visitedSteps: TurnosStep[]; ready: boolean; readyAt: string | null };
   /** Solo en la respuesta de crear una fila o un operador. */
   created?: { id: string };
@@ -92,14 +134,29 @@ export interface TurnosState {
     prefixModes: PrefixMode[];
     steps: TurnosStep[];
     limits: TurnosLimits;
+    operatorViews: OperatorViewId[];
+    fieldTypes: FieldType[];
   };
 }
 
 /** Lo que ve un operador: él y solo sus filas. */
 export interface OperatorView {
   business: { id: string; name: string };
-  operator: { id: string; name: string; email: string };
-  queues: Array<{ id: string; name: string; color: QueueColor; mode: QueueMode; averageMinutes: number }>;
+  operator: { id: string; name: string; email: string; status: OperatorStatus };
+  /** Las vistas que puede usar, en orden, y la primera (donde aterriza). */
+  views: OperatorViewId[];
+  firstView: OperatorViewId | null;
+  queues: Array<{
+    id: string;
+    name: string;
+    color: QueueColor;
+    mode: QueueMode;
+    averageMinutes: number;
+    status: "active" | "paused";
+    fields: QueueField[];
+    ticketExample: string;
+    effective: EffectiveRules;
+  }>;
 }
 
 /** Lo que la persona escribe en el diálogo de una fila (los valores propios son texto: vacío = usa el general). */

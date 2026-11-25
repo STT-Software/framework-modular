@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './modules/auth/public';
 import { BusinessAccessModule } from './modules/business-access/public';
+import { BusinessDashboardModule } from './modules/business-dashboard/public';
 import { BusinessSetupModule } from './modules/business-setup/public';
 import { BusinessesModule } from './modules/businesses/public';
 import { OnboardingModule } from './modules/onboarding/public';
@@ -30,6 +31,7 @@ import { RateLimitModule } from './platform/security/rate-limit.module';
     BusinessesModule,
     BusinessAccessModule,
     BusinessSetupModule,
+    BusinessDashboardModule,
     TurnosModule,
     PedidosModule,
   ],

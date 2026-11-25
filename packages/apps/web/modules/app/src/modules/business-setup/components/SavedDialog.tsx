@@ -23,11 +23,11 @@ export function SavedDialog({ open, hasTurnos, onClose }: { open: boolean; hasTu
       </h2>
       <p>
         {hasTurnos
-          ? "Revisaste los datos, el tipo de negocio y sus horarios. Puedes continuar con las filas, reglas y operadores desde la tarjeta de Turnos. Los demás módulos se incorporarán después."
+          ? "Revisaste los datos, el tipo de negocio y sus horarios. Si Turnos todavía no está preparado, te llevamos a configurarlo; si ya lo está, entras a tu dashboard."
           : "Revisaste los datos, el tipo de negocio y sus horarios. Los ajustes específicos de cada módulo quedan para la siguiente etapa."}
       </p>
       <button className="no-primary" type="button" onClick={onClose}>
-        Ver mis módulos <span aria-hidden="true">→</span>
+        Continuar <span aria-hidden="true">→</span>
       </button>
     </dialog>
   );

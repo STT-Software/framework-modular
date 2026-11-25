@@ -1,6 +1,6 @@
 import { Modal } from "./Modal";
 
-/** Aviso de que la configuración de Turnos quedó preparada. La atención de turnos es una etapa posterior y aquí se dice con claridad. */
+/** Aviso de que la configuración de Turnos quedó preparada.  */
 export function SavedDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Modal open={open} onClose={onClose} labelledBy="nt-saved-title" className="nt-dialog nt-saved-dialog">
@@ -14,9 +14,9 @@ export function SavedDialog({ open, onClose }: { open: boolean; onClose: () => v
       <h2 id="nt-saved-title">
         Turnos, preparado a tu manera<span>.</span>
       </h2>
-      <p>Filas, reglas y equipo quedaron guardados. La atención de turnos y la pantalla de sala serán la siguiente etapa.</p>
+      <p>Filas, reglas y equipo quedaron guardados. Ya puedes entrar a tu dashboard y abrir Turnos para atender.</p>
       <button className="nt-primary" type="button" onClick={onClose}>
-        Ver mis módulos
+        Ir a mi dashboard
       </button>
     </Modal>
   );

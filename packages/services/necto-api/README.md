@@ -356,10 +356,11 @@ identidad es el correo, y una misma persona puede administrar varios negocios y 
    menos un acceso y abre una **sesión de servidor**. Responde con `accessToken` (corto), `expiresInSeconds`,
    `admin { email, remember }`, `accesses[]` (todo lo que la persona puede abrir, en cualquier rol) y `businesses[]` (solo los que
    **administra**, por compatibilidad con las pantallas anteriores a los roles), y pone la cookie de sesión.
-   Cada elemento de `accesses`: `{ key, businessId, businessName, category, categoryOther, role: "admin" | "operator", modules, personName }`, donde `key` es `<businessId>:admin` para administradores y `<businessId>:operator:<moduleId>` para operadores (un correo puede operar distintos módulos del mismo negocio y aparecen como accesos independientes).
+   Cada elemento de `accesses`: `{ key, businessId, businessName, category, categoryOther, role: "admin" | "operator", modules, personName, views, firstView, operable }`
+   (`views` y `firstView` solo para un operador: las vistas de su módulo que puede usar, en orden, y la primera, donde debe aterrizar; `operable: false` mientras es un operador `pending` que aún no inició sesión), donde `key` es `<businessId>:admin` para administradores y `<businessId>:operator:<moduleId>` para operadores (un correo puede operar distintos módulos del mismo negocio y aparecen como accesos independientes).
    Para un administrador, `modules` son los módulos habilitados del negocio; para un operador, **solo** el módulo al que está asignado.
 3. Con un solo acceso el cliente entra directo; con varios muestra el selector de **negocio y rol** (un correo puede ser jefe y operador
-   del mismo negocio: son dos elementos). Un administrador entra a `/business/setup/<id>`; un operador, a la vista de su módulo
+   del mismo negocio: son dos elementos). Un administrador entra a su dashboard (`GET /dashboard/businesses/:businessId`, que dice si va al `dashboard` o debe continuar la configuración); un operador va **directo a la primera vista permitida de su módulo** (`firstView`), sin pasar por el dashboard general
    (`GET /turnos/businesses/:businessId/operator` o `GET /pedidos/businesses/:businessId/operator`). `GET /business-access/accesses` devuelve la misma lista con la sesión abierta.
 
 **Conocer el correo nunca basta**: sin un código válido no se crea ninguna sesión, y `GET /session` sin la cookie responde `401`.
@@ -602,7 +603,7 @@ Las claves de categoría: `Gastronomía`→`gastronomy`, `Retail y boutique`→`
 
 ## Módulo turnos
 La **configuración** de Turnos de un negocio: perfil de atención, filas, reglas generales y operadores. Referencia visual:
-`referencias html/necto-configuracion-turnos.html`. **Todavía no** emite ni atiende turnos, no hay llamados, pantalla de sala ni estadísticas.
+`referencias html/necto-configuracion-turnos.html`. La **operación** (emitir y atender turnos, tablero, encuestas, tiempo real) está más abajo, en «Operación de Turnos».
 Colección propia: `turnos_configurations` (un documento por negocio, índices `{ businessId }` único y `{ operators.email }`).
 
 - **Dos roles, dos controladores.** La configuración (`/turnos/businesses/:businessId/…`) es del **administrador** de ese negocio
@@ -742,6 +743,138 @@ elige el perfil debe ser el jefe vigente de un negocio activo con Turnos, compro
 | Siguiente / Atrás entre pasos | `PUT /progress` |
 Las claves del HTML (`average`, `queueIds`, `urgent`, `busy`, `full`, `prefixMode: 'initial'`) se traducen a las del contrato en el cliente del módulo.
 
+## Operación de Turnos (módulo `turnos`)
+Emitir, buscar, llamar y atender turnos; el tablero del administrador (métricas, equipo, actividad, reporte CSV), la pantalla de sala, las encuestas
+de satisfacción y las actualizaciones en tiempo real. Sigue siendo el **mismo módulo** `turnos` (la configuración y la operación comparten filas, reglas y
+operadores), con tres colecciones nuevas: `turnos_tickets` (los turnos), `turnos_counters` (la numeración) y `turnos_surveys` (invitaciones y respuestas).
+No incluye Reservas, Agendamiento, Referidos, Inventario ni Pedidos.
+### Quién puede qué (se valida en CADA petición y en cada conexión en vivo)
+| Rol | Rutas | Qué puede |
+|-----|-------|-----------|
+| **Administrador** (jefe vigente, negocio activo, Turnos habilitado) | `/turnos/businesses/:businessId/insights/*` y la configuración | **Mira** todo el negocio (tablero, equipo, turnos, reportes, encuestas), **configura** (operadores, permisos, pantalla de sala, encuestas, pausar filas) y **también atiende**: crea, llama, completa, cancela y marca ausente con las mismas rutas de turnos bajo `/insights`, atribuido a su propia identidad (`admin:<correo>`, con el nombre del jefe), con la misma regla de un turno a la vez. |
+| **Operador** (asignado, `active`, con al menos una vista y una fila) | `/turnos/businesses/:businessId/operation/*` | Solo lo que su administrador le dio: **vistas** (Inicio, Mis turnos, Crear turno, Filas, Encuestas) y **filas**. Nunca configura nada. |
+- **Dos controladores, dos pares de guards.** Operación: `@OperatesModule('turnos')` (operador de ESE negocio, negocio activo, módulo habilitado) + `TurnosOperatorScopeGuard`,
+  que busca su asignación **por el correo de la sesión**, exige que esté `active` y con la **vista** que declara la ruta (`@RequiresView`). Administrador: `@RequiresBusinessModule('turnos')`
+  + `TurnosAdminScopeGuard`. Un operador en una ruta de administrador, y un jefe en una de operador, reciben `403`/`404`. El negocio, el rol, la vista y las filas **nunca** se leen de lo que
+  envía la página: salen de la sesión y de los datos del momento.
+- **Los permisos cambian en sesiones abiertas.** Nada del rol, las vistas ni las filas va en el token ni se copia en `business-access`: cada petición vuelve a leer la configuración.
+  Si el administrador le quita una vista, la siguiente petición con el **mismo token** responde `403 view-not-allowed`; si lo apaga o le quita todas las vistas, deja de entrar.
+  Si estaba atendiendo un turno, el turno **vuelve a la fila en su lugar** (evento `released`) y otro operador puede llamarlo.
+- **Estados del operador**: `pending` (recién asignado), `active` (puede operar) e `inactive` (apagado por el administrador). El **primer inicio de sesión con código** lo pasa de `pending`
+  a `active` (`business-access` publica `MemberSignedIn` y `turnos` lo escucha). Un `inactive` no se reactiva solo. Sin vistas no hay acceso: ni siquiera se envía el código.
+  Un operador `pending` que ya tiene sesión por otro acceso no puede operar hasta volver a entrar (`accesses[].operable: false`).
+- **Vistas** (`views`, en el orden en que se ofrecen): `home` (Inicio), `my-turns` (Mis turnos: ver, buscar, llamar, completar, cancelar, ausente), `create-turn` (Crear turno), `queues`
+  (Filas: ver estado y pausar/reanudar las suyas), `surveys` (Encuestas). La **primera** que tiene es donde aterriza al entrar (`accesses[].firstView`): va directo a su módulo,
+  sin pasar por el tablero general.
+- **Errores de permisos**: `403` con `code` `view-not-allowed` (no tiene esa vista), `operator-not-operable` (pendiente, apagado, sin vistas o sin filas), `administrator-required` (un operador en algo del administrador, p. ej. equipo, reporte o ajustes). Una fila, turno o respuesta **de otra fila** se responde `404`, igual que si no existiera.
+### Configuración nueva (se edita con las rutas de configuración de siempre)
+- **Fila**: `status` (`active` | `paused`) y `fields` (campos adicionales al crear un turno). `PUT /queues/:id` con `fields` los **reemplaza**; sin `fields` los conserva.
+  Un campo es `{ id?, label, type, required?, options? }`; `type`: `text`, `number`, `phone`, `email`, `date`, `select` (necesita 2 a 20 `options`), `checkbox`. Hasta 10 por fila, etiqueta 2 a 60, sin etiquetas
+  repetidas. El `id` se conserva (las respuestas se guardan con él); si falta se genera.
+- **Operador**: `views` (lista; sin enviarla se conservan, y un operador nuevo parte con todas) y `status` (`active` | `inactive`; un operador nuevo parte `pending`). Las vistas se guardan en el orden del espacio de trabajo,
+  sin importar cómo se envíen. Quien ya inició sesión no vuelve a `pending`.
+- `GET /turnos/businesses/:businessId` ahora trae también `roomScreen`, `survey` y en `catalog`: `operatorViews`, `operatorStatuses`, `queueStatuses`, `fieldTypes`, `ticketStatuses`, `roomNameDisplays`, `ranges` y `limits`.
+- **Eliminar una fila con turnos esperando o en atención** → `409 queue-has-open-turns`. Las restricciones de reasignación de operadores (`reassignment-required`, `queue-has-operators`) siguen igual.
+### El turno
+Estados: `waiting` → `attending` → `completed`; `cancelled` (desde esperando o en atención) y `no-show` (ausente: lo llamaron y no llegó).
+```json
+{ "id": "…", "code": "P-001", "queue": { "id": "…", "name": "Pedidos en caja" }, "status": "attending",
+  "customer": { "name": "Ana Pérez", "phone": "+573001234567", "email": "ana@example.com" },
+  "answers": [{ "fieldId": "doc", "label": "Documento", "type": "text", "value": "123" }], "note": null,
+  "createdAt": "…", "createdBy": { "id": "…", "name": "Laura Gómez" }, "calledAt": "…", "attendedBy": { "id": "…", "name": "Laura Gómez" },
+  "finishedAt": null, "cancelReason": null, "waitMinutes": 4, "serviceMinutes": null }
+```
+`GET /operation/tickets/:id` y `/insights/tickets/:id` añaden `events: [{ type, at, by, automatic }]` (`created`, `called`, `completed`, `cancelled`, `no-show`, `released`; `automatic: true` en la llamada que hace la fila sola).
+- **Numeración.** Código = prefijo efectivo de la fila (propio, general o su inicial) + `-` + número de al menos 3 dígitos (`C-001`, `001`). El contador es **atómico** (`findOneAndUpdate` con `$inc` sobre `turnos_counters`), por prefijo dentro de un
+  ámbito: el día del negocio **en su zona horaria** si `dailyReset` (reinicia a medianoche local) o «todos» si no. Dos filas con el mismo prefijo comparten la cuenta: **nunca hay códigos repetidos en un día** (además lo garantiza
+  un índice único `{businessId, dayKey, code}`; si por un cambio de modo un código ya existe, se toma el siguiente número). El orden de llamada es el de llegada.
+- **Crear** (`POST /operation/queues/:queueId/tickets`, vista `create-turn`): `{ customerName?, customerPhone?, customerEmail?, note?, answers?, clientRequestId? }`. La fila debe ser del operador y no estar pausada (`409 queue-paused`).
+  Los `answers` se validan contra los campos de la fila: obligatorios, tipo (número, teléfono, correo, fecha `AAAA-MM-DD`, opción de la lista, casilla) y sin respuestas a campos que la fila no pide; los errores salen por campo
+  (`fields["answers.<id>"]`, `code: "invalid-ticket"`). `201` con el turno nuevo; con el mismo `clientRequestId` (8 a 64 caracteres) devuelve `200` con `created: false` y **el mismo turno**: un doble clic no crea dos.
+- **Llamar.** `POST /operation/tickets/:id/call` y `POST /operation/queues/:id/call-next` (vista `my-turns`). En una fila **manual** se elige a quién llamar; en una **automática** solo el siguiente por orden de llegada (`409 not-next-in-line`).
+  Un operador atiende **un turno a la vez**: llamar otro mientras tiene uno responde `409 operator-busy` (lo garantiza un índice único parcial en la base, no solo el código). Fila vacía: `409 queue-empty`.
+- **Completar** (`POST /operation/tickets/:id/complete`). En una fila **automática**, al completar se llama **al siguiente por orden de llegada**, con una sola escritura atómica; la respuesta lo trae en `next`.
+  Si la persona no llegó: `no-show`; también `cancel` con `{ reason? }`. No se llama al siguiente automáticamente al cancelar o marcar ausente: solo al completar.
+- **Atómico e idempotente.** Cada cambio de estado es **una escritura condicionada al estado esperado**. Repetir lo que ya está hecho responde `200` con `applied: false` y no cambia nada ni llama a otro turno; que otro operador ya lo tomó, `409 ticket-already-taken`;
+  un estado que no admite el cambio, `409 invalid-ticket-state`. Dos operadores llamando al mismo turno a la vez: solo uno lo logra. Seis «completar» simultáneos: uno se aplica.
+- **Pausar una fila** (`POST …/queues/:id/pause` y `…/resume`; administrador, o un operador con la vista `queues` en sus filas): no entran turnos nuevos, los existentes se conservan y se pueden atender. Es un interruptor operativo: **no** invalida «configuración preparada».
+- **Listar y buscar** (`GET /operation/tickets`, `GET /insights/tickets`): `queueId`, `status` (uno o varios separados por coma), `search` (código, nombre, teléfono o correo; sin distinguir mayúsculas y sin interpretar patrones), `range` (`today`, `yesterday`, `7d`, `30d`) o `from`/`to` (`AAAA-MM-DD`, hasta 92 días, en la zona del negocio),
+  `mine=true` (los que llamó el operador), `operatorId` (solo administrador), `order` (`newest` por defecto o `arrival`), `page`, `pageSize` (máx. 100). Respuesta `{ items, total, page, pageSize }`. Filtros inválidos: `400 invalid-filter` con `fields`.
+### Tablero y herramientas
+Todo se **cuenta de los turnos reales**; si no hay datos, `0` y `null` (nunca un número inventado). Los rangos usan los días del negocio en su zona horaria.
+| Ruta | Quién | Respuesta |
+|------|-------|-----------|
+| `GET /operation/home` · `GET /insights/overview` | operador (`home`) · administrador | `{ range, totals, mine, queues[], daily[], hourly[], truncated, generatedAt }`. `totals`: `created`, `completed`, `cancelled`, `noShow`, `called`, `averageWaitMinutes`, `averageServiceMinutes`, `completionRate`, `noShowRate`. `queues[]`: estado actual (`waiting`, `attending`, `longestWaitMinutes`, `urgent`, `state`: `empty`/`normal`/`busy`/`full`/`paused`, con los límites propios o heredados) y sus `metrics`. `daily`: un punto por día del rango (con los días vacíos); `hourly`: 24 horas locales. `mine`: lo que la persona misma atendió (también el administrador). `home` añade `current` (su turno en atención) y `activity`. |
+| `GET /insights/team` | administrador | `members[]`: por operador, `attended`, `completed`, `noShow`, `cancelled`, `averageServiceMinutes`, `current`. Incluye a quien fue retirado pero trabajó en el rango. |
+| `GET /operation/activity` · `GET /insights/activity?limit=` | operador (`home`) · administrador | Lo último que pasó a los turnos, el más reciente primero (máx. 100). |
+| `GET /operation/queues` · `GET /insights/queues` | operador (`queues`) · administrador | Estado de cada fila. |
+| `GET /insights/tickets.csv` | administrador | Reporte con los mismos filtros (hoy si no se da rango). `text/csv; charset=utf-8` con BOM, `Content-Disposition: attachment`, `X-Report-Rows` y `X-Report-Truncated` (máx. 20 000 filas). Un texto que empieza por `=`, `+`, `-` o `@` lleva un apóstrofo delante para que la hoja de cálculo no lo ejecute como fórmula. Columnas: `code,queue,status,day,created_at,called_at,finished_at,wait_minutes,service_minutes,operator,customer_name,customer_phone,customer_email,note,cancel_reason,answers`. |
+| `GET` · `PUT /insights/room-screen` | administrador | Ajustes de la pantalla de sala `{ enabled, queueIds\|null, customerName: full\|first-name\|hidden, playSound, recentCalls 1..10, message }` y las últimas llamadas que mostraría (con el nombre ya recortado según el ajuste). Solo la configuración: la pantalla en sí es otra etapa. Quitar una fila de la selección o eliminarla la saca; una selección vacía vuelve a «todas». |
+### Encuestas de satisfacción
+- **Ajustes** (`GET`/`PUT /insights/surveys/config`, administrador): `{ enabled, channels: { email, whatsapp }, question, allowComment, thanksMessage?, validHours 1..720, queueIds|null }`. Empiezan **apagadas**.
+- **Invitación.** Al **completar** un turno de una fila con encuesta, se crea **una** invitación (una por turno, aunque se complete dos veces) con un enlace privado `…/turnos/survey/<token>` (el token son 256 bits al azar y en la base solo se guarda su hash). Se envía por el **correo que la plataforma ya tiene** (`MailTransport`).
+- **Sin éxitos ficticios.** `delivery.email.status`: `accepted` (el proveedor aceptó el mensaje; **no** significa que llegó), `failed` (con `failureCode`), `not-configured` (no hay proveedor de correo: no se envió nada), `no-contact` (el cliente no dejó correo), `not-requested`, `pending`.
+  `delivery.whatsapp`: **no existe proveedor de WhatsApp** en este backend: pedirlo queda en `not-configured` (o `no-contact`), nunca `accepted`.
+- **El cliente responde sin iniciar sesión**, solo con el enlace: `GET /turnos/surveys/:token` (`{ businessName, queueName, question, allowComment, thanksMessage, expiresAt, closed: false|"answered"|"expired" }`) y
+  `POST /turnos/surveys/:token` `{ rating 1..5, comment? }`. La primera respuesta válida gana (dos a la vez: se guarda una), una segunda o fuera de plazo responde `409 survey-closed`, un enlace desconocido `404`. Con límite de peticiones.
+- **Cálculos** (`GET /insights/surveys/summary` y `GET /operation/surveys/summary`, `range`/`from`/`to`, `queueId`, `operatorId` solo administrador): `overall` (`invited`, `responses`, `responseRate`, `average`, `satisfied` = % de 4 y 5, `distribution` 1 a 5), `trend` (un punto por día, `average: null` sin respuestas),
+  `byQueue[]` y `byOperator[]`. Sin respuestas todo es `null`, no `0`. Listado de respuestas: `GET …/surveys/responses` (`rating`, `queueId`, `page`, `pageSize`), la más reciente primero, con `delivery` solo para el administrador.
+- **Mismos permisos**: el operador necesita la vista `surveys`, ve **solo sus filas** y de los operadores **solo su propia fila**; pedir otra fila es `400 invalid-filter`.
+### Tiempo real (Server-Sent Events)
+`GET …/operation/events` (operador) y `GET …/insights/events` (administrador). Se abren con `fetch` y la cabecera `Authorization: Bearer …` (`EventSource` no puede enviarla); el cuerpo es `text/event-stream`.
+| Evento | Cuándo | Datos |
+|--------|--------|-------|
+| `ready` | al conectar | `{ role, queueIds, views, firstView }` (lo que la persona puede ver) |
+| `ticket.created` · `ticket.called` · `ticket.completed` · `ticket.cancelled` · `ticket.no-show` · `ticket.released` | cambia un turno | `{ type, at, queueId, ticket }` con el turno completo solo para quien atiende (`my-turns`/`create-turn`) o el administrador; para el resto solo `{ id, code, status }` |
+| `queue.paused` · `queue.resumed` | se pausa o reanuda una fila | `{ type, at, queueId }` |
+| `config.updated` | cambia la configuración (filas, reglas, operadores, encuesta) | `{ type, at }`: volver a pedir la configuración |
+| `survey.answered` | llega una respuesta | `{ type, at, queueId }` (vista `surveys`) |
+| `room-screen.updated` | cambian los ajustes de la sala | solo administrador |
+| `access.updated` | el administrador cambió los permisos de ESTA persona | `{ role, queueIds, views, firstView }` nuevos |
+| `access.revoked` | la persona ya no tiene acceso (sesión terminada, apagada, retirada, negocio pausado, módulo deshabilitado) | la conexión se cierra |
+| `ping` | cada 15 s | revalida el acceso |
+- **Autorización viva.** Al abrir pasan los mismos guards que cualquier ruta. Con la conexión abierta, cada evento (a lo sumo cada 5 s) y cada latido vuelven a comprobar sesión, rol en el negocio, módulo y estado, vistas y filas del operador (`BusinessAccessChecks`).
+  Cada evento se filtra por lo que la persona puede alcanzar **en el momento de entregarlo**: un operador nunca recibe turnos de filas que no son suyas ni de otro negocio.
+- **Alcance.** El canal vive en la memoria del proceso: con varias instancias del backend un evento solo llega a las conexiones de la instancia que lo produjo (es la única pieza a cambiar por un canal compartido el día que se escale). No hay reenvío de eventos perdidos:
+  tras reconectar, la pantalla vuelve a pedir lo que muestra. Si hay un proxy, debe dejar pasar `text/event-stream` sin almacenarlo.
+### Cómo conectar los HTML (guía de rutas)
+En desarrollo el dev server de Vite redirige `/api/turnos` y `/api/dashboard` al backend quitando ese prefijo (ya están en `vite.config.ts`), así que la página llama, por ejemplo, a `/api/turnos/turnos/businesses/:id/operation/home` y a `/api/dashboard/dashboard/businesses/:id`. Todas las rutas llevan `Authorization: Bearer <accessToken>` (el de `business-access`, que se renueva con `POST /business-access/session/refresh`), menos las de la encuesta del cliente.
+| Pantalla | Backend |
+|----------|---------|
+| Tras el login: elegir acceso | `accesses[]` de `otp/verify`/`session/refresh`: `role`, `businessId`, `modules`, `views`, `firstView`, `operable`. Administrador → `GET /dashboard/businesses/:id`; operador → su `firstView` |
+| Dashboard general del administrador | `GET /dashboard/businesses/:businessId` (ver el módulo `business-dashboard`) |
+| Turnos · Inicio (operador) | `GET /operation/home`, `GET /operation/events` |
+| Turnos · Mis turnos | `GET /operation/tickets` (filtros), `GET /operation/tickets/current`, `POST /operation/tickets/:id/{call,complete,cancel,no-show}`, `POST /operation/queues/:id/call-next`. El administrador usa las mismas subrutas bajo `/insights` (`tickets`, `tickets/current`, `tickets/:id/…`, `queues/:id/{tickets,call-next}`) |
+| Turnos · Crear turno | `GET /turnos/businesses/:id/operator` (filas con sus `fields`), `POST /operation/queues/:id/tickets` |
+| Turnos · Filas | `GET /operation/queues`, `POST /operation/queues/:id/{pause,resume}` |
+| Turnos · Encuestas | `GET /operation/surveys/summary`, `GET /operation/surveys/responses` |
+| Tablero del administrador | `GET /insights/overview`, `/team`, `/activity`, `/queues`, `/tickets`, `/tickets.csv` |
+| Pantalla de sala (ajustes) / Encuestas (ajustes) | `GET`/`PUT /insights/room-screen`, `GET`/`PUT /insights/surveys/config` |
+| Página pública de la encuesta | `GET`/`POST /turnos/surveys/:token` (la ruta del enlace del correo es `/turnos/survey/<token>` en la app web) |
+### Errores de la operación
+`400` `invalid-ticket`, `invalid-filter`, `invalid-answer`, `invalid-room-screen`, `invalid-survey` (con `fields`) · `403` `view-not-allowed`, `operator-not-operable`, `administrator-required` ·
+`404` fila, turno o encuesta que no es tuyo o no existe · `409` `queue-paused`, `operator-busy`, `queue-empty`, `not-next-in-line`, `ticket-already-taken`, `invalid-ticket-state`, `queue-has-open-turns`, `survey-closed`, `numbering-busy`.
+### Contrato público añadido
+`turnos/public.ts` exporta además `TurnosDashboard` (los indicadores reales de Turnos para el dashboard general). `business-access/public.ts`: `MemberSignedIn`, `BusinessAccessChecks`, y `MemberAssignment.views/operable` /
+`AccessGrant.views/firstView/operable`. `business-setup/public.ts`: `BusinessSetupOverview` (estado de la base y de cada módulo asignado).
+## Módulo business-dashboard
+El **dashboard general** del administrador. No tiene datos propios: lee la configuración base y el estado de cada módulo por la puerta pública de `business-setup` (`BusinessSetupOverview`) y los indicadores de Turnos por la de `turnos` (`TurnosDashboard`).
+`GET /dashboard/businesses/:businessId` (`@AdministersBusiness()`: jefe vigente de un negocio activo; un operador nunca entra: va directo a su módulo).
+```json
+{
+  "entry": "dashboard",
+  "business": { "id": "…", "name": "Casa Oliva", "category": "gastronomy", "categoryOther": null, "status": "active", "timezone": "America/Bogota" },
+  "setup": { "baseReady": true, "baseReadyAt": "…", "next": null, "pendingModules": [], "configurableModules": 1, "readyModules": 1 },
+  "modules": [{ "id": "turnos", "name": "Turnos", "description": "…", "configurable": true, "operational": true, "setup": { "status": "ready", "summary": { "queueCount": 2, "operatorCount": 3 } }, "openNow": true,
+    "indicators": { "turnos": { "queues": { "total": 2, "paused": 0 }, "operators": { "total": 3, "active": 2, "pending": 1, "inactive": 0 },
+      "today": { "created": 12, "waiting": 3, "attending": 1, "completed": 8, "cancelled": 0, "noShow": 0, "averageWaitMinutes": 4.5, "averageServiceMinutes": 6.1 }, "satisfaction": { "average": 4.6, "responses": 9 } } } }],
+  "generatedAt": "…"
+}
+```
+- **`entry`**: `dashboard` cuando la base está preparada **y** todo módulo asignado que ya se puede configurar tiene su configuración preparada; `setup` mientras falte algo, y `setup.next` dice qué sigue: `{ step: "base" }` o `{ step: "module", moduleId }`.
+- **Solo lo asignado.** `modules` trae únicamente los módulos del negocio. Un módulo asignado que **todavía no tiene configuración** (Reservas, Agendamiento, Referidos, Inventario) aparece con `configurable: false`, `operational: false` y `indicators: null`, y **no** impide entrar al dashboard.
+  Pedidos tiene configuración (cuenta para `entry`) pero aún no operación (`operational: false`, `indicators: null`).
+- **Indicadores reales.** `indicators.turnos` solo existe si Turnos está asignado y su configuración está preparada; se calculan de los turnos y respuestas del día del negocio y de los últimos 30 días (satisfacción). `null` donde no hay datos: nunca se inventa una métrica.
 ## Módulo pedidos
 La **configuración** de Pedidos de un negocio en 7 pasos: perfil operativo, modalidades de entrega, despacho y logística, pagos y políticas, tiempos y alertas (SLA), operadores por etapa y revisión final. **Todavía no** recibe ni gestiona pedidos operativos, tableros de preparación ni métricas de entrega.
 Colección propia: `pedidos_configurations` (un documento por negocio, índices `{ businessId }` único y `{ operators.email }`).
@@ -871,7 +1004,8 @@ src/
     ├── businesses/              Negocios, jefe vigente y módulos habilitados (colección `businesses`)
     ├── business-access/         Acceso de administradores por OTP, sesiones y permisos (`access_challenges`, `access_rate_limits`, `admin_sessions`)
     ├── business-setup/          Configuración inicial del negocio por su administrador (`business_setups`)
-    ├── turnos/                  Configuración de Turnos: perfil, filas, reglas y operadores (`turnos_configurations`)
+    ├── business-dashboard/      Dashboard general del administrador: módulos asignados, su estado real y los indicadores de los que ya operan (sin datos propios)
+    ├── turnos/                  Configuración y operación de Turnos: perfil, filas, reglas, operadores y permisos, turnos, tablero, encuestas y tiempo real (`turnos_configurations`, `turnos_tickets`, `turnos_counters`, `turnos_surveys`)
     └── pedidos/                 Configuración de Pedidos: perfil, modalidades, despacho, pagos, SLA y operadores (`pedidos_configurations`)
 ```
 
@@ -888,7 +1022,8 @@ habla con un repositorio abstracto (`domain/*.repository.ts`) que implementa `in
 | `businesses` | Negocios, jefe vigente, catálogo y habilitación de módulos | Colección `businesses` | `/businesses/*` |
 | `business-access` | Invitación por correo, acceso de administradores con OTP, sesiones y permisos por negocio/módulo | `access_challenges`, `access_rate_limits`, `admin_sessions` | `/business-access/*`, `/businesses/:id/invitation*` |
 | `business-setup` | Configuración inicial del negocio por su administrador: datos, logo, horarios (propios o heredados), tipo y progreso | `business_setups` | `/business-setup/businesses/:businessId/*` |
-| `turnos` | Configuración de Turnos: perfil de atención, filas, reglas generales y operadores (que entran por el login compartido) | `turnos_configurations` | `/turnos/businesses/:businessId/*` |
+| `business-dashboard` | Dashboard general: módulos asignados, su estado y sus indicadores reales | (ninguno) | `/dashboard/businesses/:businessId` |
+| `turnos` | Configuración y operación de Turnos: perfil, filas con campos adicionales, reglas, operadores con vistas y estado; emitir/llamar/atender turnos, tablero, equipo, reporte CSV, pantalla de sala, encuestas y eventos en vivo | `turnos_configurations`, `turnos_tickets`, `turnos_counters`, `turnos_surveys` | `/turnos/businesses/:businessId/{operation,insights,…}`, `/turnos/surveys/:token` |
 | `pedidos` | Configuración de Pedidos: perfil operativo, modalidades, logística, pagos/políticas, SLA y operadores (con login compartido y estado en `business-setup`) | `pedidos_configurations` | `/pedidos/businesses/:businessId/*` |
 
 - **Puertas públicas.** `modules/<módulo>/public.ts` es lo único que otro código puede importar de un módulo. Hoy exporta
@@ -949,7 +1084,15 @@ Son tres cosas distintas y viven en lugares distintos:
   vista del operador (solo sus filas), contrato con la configuración base, DTOs, guards declarados en los controladores y la forma de las respuestas.
   `mongo-turnos-configuration.repository.spec.ts` prueba el repositorio contra MongoDB real con `NECTO_TEST_MONGODB_URI` (versión, dos escritores, borrar fila y
   reasignar en una escritura, búsqueda por correo de operador).
-- **`pedidos`:** inicialización única por perfil sugerido, validación de dominio por sección (modalidades, logística/transportadoras/flete, pagos/políticas, SLA/fuera de horario, operadores por etapa y unicidad de correo), cambio de perfil conservando operadores, progreso sin invalidar `ready`, concurrencia optimista, `complete` con `pedidos-incomplete`, vista acotada del operador, fuentes IoC (`PedidosOperatorAccessSource` y `PedidosSetupStatusSource`), DTOs con whitelist estricto y guards declarados en los controladores. Suite total del backend: **491 pruebas** pasando con `npm run test:api`.
+- **`pedidos`:** inicialización única por perfil sugerido, validación de dominio por sección (modalidades, logística/transportadoras/flete, pagos/políticas, SLA/fuera de horario, operadores por etapa y unicidad de correo), cambio de perfil conservando operadores, progreso sin invalidar `ready`, concurrencia optimista, `complete` con `pedidos-incomplete`, vista acotada del operador, fuentes IoC (`PedidosOperatorAccessSource` y `PedidosSetupStatusSource`), DTOs con whitelist estricto y guards declarados en los controladores. 
+- **Operación de Turnos** (`turnos/**/*.spec.ts`, `business-dashboard/*.spec.ts`): permisos de cada rol, vista y fila (operador pendiente, apagado, sin vistas o sin filas; otra fila, otro negocio, el administrador que no opera) y que **un cambio de permisos
+  llega a la sesión abierta** (`operation-login.spec.ts`, `turnos-access.service.spec.ts`); creación y numeración (prefijos propios y heredados, reinicio diario a medianoche **en la zona del negocio**, códigos compartidos, `clientRequestId`, 40 creaciones simultáneas sin repetir códigos);
+  campos adicionales por fila (obligatorios, tipos, opciones); flujo **manual y automático** (siguiente por orden de llegada al completar, un turno por operador, llamadas y completados repetidos o simultáneos); pausa; búsqueda, filtros y paginación; tablero, equipo, actividad, CSV
+  (incluida la protección contra fórmulas) y pantalla de sala; encuestas (invitación única por turno, correo aceptado / no configurado / fallido, WhatsApp siempre no configurado, una sola respuesta, vencimiento, cálculos y permisos); flujo en vivo (filtrado por fila y vista,
+  revocación y cambio de permisos con la conexión abierta, aislamiento entre negocios); contrato de los controladores (guards y vista de cada ruta); dashboard general (`entry`, módulos sin configuración que no bloquean, indicadores solo reales).
+  `mongo-ticket.repository.spec.ts` prueba contra MongoDB real (con `NECTO_TEST_MONGODB_URI`) lo que solo la base demuestra: 100 numeraciones simultáneas sin huecos ni repetidos, diez operadores llamando al mismo turno, diez tomando «el siguiente», un operador llamando dos turnos a la vez
+  (índice único parcial), completar seis veces a la vez, una sola respuesta de encuesta entre varias, búsqueda sin interpretar patrones y lectura de configuraciones guardadas antes de las vistas.
+  Suite total del backend: **650 pruebas** con `npm run test:api` (más las de MongoDB real con `NECTO_TEST_MONGODB_URI`).
 - **Arquitectura** (`src/architecture.spec.ts`): lee los imports reales y comprueba que `platform/` no depende de los
   módulos, que los módulos solo se alcanzan por `public.ts`, que las capas respetan su sentido, que Mongoose solo está en
   `infrastructure`, que `@nestjs/jwt` solo está en `platform/security` y `nodemailer` solo en `platform/mail`, y que no hay ciclos entre archivos ni entre módulos.

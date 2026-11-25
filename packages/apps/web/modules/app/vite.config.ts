@@ -62,6 +62,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api\/pedidos/, ""),
       },
+      // Mismo backend; prefijo propio del módulo business-dashboard (dashboard general del administrador).
+      "/api/dashboard": {
+        target: API_URL,
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api\/dashboard/, ""),
+      },
       // Mismo backend; prefijo propio del módulo business-setup (configuración inicial del negocio, del administrador).
       "/api/business-setup": {
         target: API_URL,

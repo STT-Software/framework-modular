@@ -1,7 +1,8 @@
 import { LIMITS, QUEUE_COLORS, QUEUE_MODES, type QueueColor } from './catalog';
-import type { Queue, TurnosRules } from './configuration';
+import type { Queue, QueueField, TurnosRules } from './configuration';
 import { TurnosInvalidError } from './errors';
 import { isInt, isRecord, Issues } from './issues';
+import { parseFields, type QueueFieldInput } from './queue-fields';
 import { effectiveOf, isValidPrefix, normalizePrefix } from './rules';
 
 export interface QueueInput {
@@ -15,9 +16,11 @@ export interface QueueInput {
     busyLimit?: number | null;
     fullLimit?: number | null;
   } | null;
+  /** What the queue asks when a turn is created. Left out, the queue keeps the fields it has (none for a new queue). */
+  fields?: QueueFieldInput[] | null;
 }
 
-export type ParsedQueue = Omit<Queue, 'id' | 'source'>;
+export type ParsedQueue = Omit<Queue, 'id' | 'source' | 'status'>;
 
 const sameName = (a: string, b: string) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
 
@@ -27,7 +30,7 @@ const sameName = (a: string, b: string) => a.toLocaleLowerCase() === b.toLocaleL
  *
  * @throws TurnosInvalidError (`invalid-queue`) with every problem found.
  */
-export function parseQueue(input: QueueInput, context: { rules: TurnosRules; others: readonly Queue[]; defaultColor: QueueColor }): ParsedQueue {
+export function parseQueue(input: QueueInput, context: { rules: TurnosRules; others: readonly Queue[]; defaultColor: QueueColor; currentFields?: readonly QueueField[] }): ParsedQueue {
   const issues = new Issues();
   const name = typeof input.name === 'string' ? input.name.trim() : '';
   if (name.length < LIMITS.queueName.min || name.length > LIMITS.queueName.max) {
@@ -75,6 +78,7 @@ export function parseQueue(input: QueueInput, context: { rules: TurnosRules; oth
       );
     }
   }
+  const fields = input.fields === undefined || input.fields === null ? [...(context.currentFields ?? [])] : parseFields(input.fields, issues);
   if (issues.any || !color || !mode) throw new TurnosInvalidError('invalid-queue', issues.fields);
-  return { name, color, mode, averageMinutes: input.averageMinutes, overrides };
+  return { name, color, mode, averageMinutes: input.averageMinutes, overrides, fields };
 }

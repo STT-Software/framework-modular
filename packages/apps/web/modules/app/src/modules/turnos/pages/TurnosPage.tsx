@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { NectoLogo } from "@/brand/NectoLogo";
 import { adminAccessStore } from "@/modules/business-access";
+import { useDashboardReady } from "@/modules/business-dashboard";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
 import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
@@ -193,6 +194,8 @@ const TurnosPage = observer(() => {
 
   const state = store.state;
   const ready = store.status === "ready" && state !== null;
+  // El atajo al dashboard solo existe cuando todo está preparado (el servidor lo dice); quien configura por primera vez no lo ve.
+  const dashboardReady = useDashboardReady(isOperator ? undefined : businessId, state?.progress.readyAt ?? "");
   const withTurnos = adminAccessStore.businesses.filter((business) => business.modules.includes("turnos"));
   const index = TURNOS_STEPS.indexOf(view);
   const copy = COPY[view];
@@ -207,6 +210,11 @@ const TurnosPage = observer(() => {
           <NectoLogo width={161} height={23} />
         </Link>
         <div className="nt-header-context">
+          {!isOperator && businessId && dashboardReady ? (
+            <Link to={`/business/app/${businessId}`} className="nt-secondary" style={{ textDecoration: "none", whiteSpace: "nowrap" }}>
+              ← Volver al dashboard
+            </Link>
+          ) : null}
           <RoleShieldBadge role={isOperator ? "Operador" : "Administrador"} />
           <span className="nt-module-label">
             <Icon paths={ICONS.queue} />
@@ -386,7 +394,8 @@ const TurnosPage = observer(() => {
         open={saved}
         onClose={() => {
           setSaved(false);
-          if (businessId) navigate(`/business/setup/${businessId}`);
+          // Con la configuración preparada, el administrador entra a su dashboard (desde ahí abre Turnos).
+          if (businessId) navigate(`/business/app/${businessId}`);
         }}
       />
       <p className="nt-sr-only" role="status" aria-live="polite">

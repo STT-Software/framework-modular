@@ -2,7 +2,7 @@
 La **configuración de Turnos** de un negocio, hecha por su **administrador**, y la **vista de su operador**. El diseño sale de la referencia
 `necto-configuracion-turnos` (carpeta `referencias html/`, ignorada por git), **sin** sus controles de demostración (el código `123456`, los
 datos de ejemplo, la «maqueta local»). Qué puede hacer cada persona, qué valores son válidos y cómo se heredan las reglas lo decide el servidor
-(`necto-api`, módulo `turnos`; contrato completo en su README). **Todavía no** emite ni atiende turnos, no hay llamados, pantalla de sala ni estadísticas.
+(`necto-api`, módulo `turnos`; contrato completo en su README). La **operación** (turnos en marcha, tablero, encuestas, equipo y pantalla de sala) está en la sección «Operación» al final.
 ## Rutas
 | Ruta | Pantalla |
 |------|----------|
@@ -54,3 +54,16 @@ turnos/
 ├── components/                      ProfilePanel, QueuesPanel, RulesPanel, OperatorsPanel, ReviewPanel y sus diálogos
 └── styles/turnos.css                Estilos de la referencia (prefijo `nt-`)
 ```
+
+## Operación (`/business/app/:businessId/turnos/:section/:id`)
+Referencia `necto-dashboard-turnos` (sin sus controles de demostración). Es la misma sesión de `business-access`; las vistas y filas de cada persona las dice el servidor y se leen en cada petición.
+| Sección | Quién | Qué hace |
+|---------|-------|----------|
+| `dashboard` (Inicio) | operador con `home` · administrador | Atendiendo ahora, espera, emitidos, satisfacción, pulso de filas, volumen por hora, equipo y actividad, contados de turnos reales. |
+| `tickets` (Mis turnos) | `my-turns` · administrador | Lista con búsqueda, filtros y paginación que resuelve el servidor; detalle con historial y cancelar. |
+| `create` / `created/:id` | `create-turn` · administrador | Elegir fila, datos del cliente y campos adicionales de la fila; `clientRequestId` evita turnos dobles. |
+| `queues` / `board/:id` | `queues` · administrador | Estado de cada fila; tablero esperando / atendiendo / listos con llamar, completar y «no asistió». El administrador crea, edita, pausa y elimina filas. |
+| `surveys` | `surveys` · administrador | Satisfacción real (sin respuestas, «—»); el administrador configura la encuesta. |
+| `team` · `display` | solo administrador | Operadores (vistas, filas, estado) y pantalla de sala. |
+- **En vivo:** `operation.store` abre el canal SSE con `fetch` y el token; cada evento vuelve a leer lo que muestra la pantalla. `access.updated` relee vistas y filas; `access.revoked` cierra la pantalla con un aviso.
+- Una sección sin permiso muestra «Un espacio a tu medida» (el servidor además la rechaza). El administrador también atiende, con su propia identidad.

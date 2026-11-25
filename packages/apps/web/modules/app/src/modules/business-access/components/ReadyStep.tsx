@@ -5,6 +5,14 @@ import { useFocusHeading } from "../hooks/useFocusHeading";
 import { adminAccessStore } from "../stores/adminAccess.store";
 import { SlideArt } from "./BrandScenes";
 
+/** La sección de Turnos a la que lleva cada vista de operador (los ids son los del contrato del servidor). */
+const TURNOS_SECTION_OF_VIEW: Record<string, string> = {
+  home: "dashboard",
+  "my-turns": "tickets",
+  "create-turn": "create",
+  queues: "queues",
+  surveys: "surveys",
+};
 /**
  * Step 5: automated loading/transition screen.
  * Replaces the redundant static confirmation step with a cinematic 8-second animated transition:
@@ -28,11 +36,13 @@ export const ReadyStep = observer(() => {
   const name = isOperator
     ? access?.businessName
     : business?.name ?? access?.businessName ?? "tu negocio";
+  // El administrador entra a su dashboard (que lo manda a la configuración si falta algo); el operador, directo a la primera vista
+  // de su módulo que tiene permitida, sin pasar por el dashboard general.
   const target = isOperator
     ? isPedidosOperator
       ? `/business/pedidos/${access?.businessId}/operator`
-      : `/business/turnos/${access?.businessId}/operator`
-    : `/business/setup/${access?.businessId}`;
+      : `/business/app/${access?.businessId}/turnos/${TURNOS_SECTION_OF_VIEW[access?.firstView ?? ""] ?? "dashboard"}`
+    : `/business/app/${access?.businessId}`;
 
   const stageMessages = [
     "Verificando credenciales de acceso…",

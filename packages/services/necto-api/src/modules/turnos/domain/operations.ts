@@ -6,10 +6,11 @@ import {
   TURNOS_PROFILE_IDS,
   profileById,
   type QueueColor,
+  type QueueStatus,
   type SetupStep,
   type TurnosProfileId,
 } from './catalog';
-import type { Operator, Queue, TurnosConfiguration } from './configuration';
+import type { Queue, TurnosConfiguration } from './configuration';
 import {
   OnlyQueueWithOperatorsError,
   OperatorNotFoundError,
@@ -21,6 +22,7 @@ import {
 import { Issues } from './issues';
 import { parseOperator, type OperatorInput } from './operators';
 import { parseQueue, type QueueInput } from './queues';
+import { parseRoomScreen, parseSurveyConfig, DEFAULT_ROOM_SCREEN, DEFAULT_SURVEY, type RoomScreenInput, type SurveyInput } from './settings';
 import { DEFAULT_RULES, parseRules, queuesWithCrossedLimits, type RulesInput } from './rules';
 
 export type IdGenerator = () => string;
@@ -41,6 +43,8 @@ export function newConfiguration(businessId: string, now: Date): TurnosConfigura
     rules: { ...DEFAULT_RULES },
     queues: [],
     operators: [],
+    roomScreen: { ...DEFAULT_ROOM_SCREEN },
+    survey: { ...DEFAULT_SURVEY, channels: { ...DEFAULT_SURVEY.channels } },
     currentStep: null,
     visitedSteps: [],
     readyAt: null,
@@ -61,6 +65,8 @@ function suggestionsOf(profile: TurnosProfileId, ids: IdGenerator): Queue[] {
     averageMinutes: suggested.averageMinutes,
     source: profile,
     overrides: { prefix: null, urgentMinutes: null, busyLimit: null, fullLimit: null },
+    status: 'active' as const,
+    fields: [],
   }));
 }
 
@@ -117,7 +123,7 @@ export function addQueue(config: TurnosConfiguration, input: QueueInput, now: Da
     throw new TurnosInvalidError('invalid-queue', { name: [`A business can have at most ${LIMITS.queuesPerBusiness} queues`] });
   }
   const parsed = parseQueue(input, { rules: config.rules, others: config.queues, defaultColor: colorAt(config.queues.length) });
-  return edited({ ...config, queues: [...config.queues, { id: ids(), source: 'custom', ...parsed }] }, now);
+  return edited({ ...config, queues: [...config.queues, { id: ids(), source: 'custom', ...parsed, status: 'active' as const }] }, now);
 }
 
 export function updateQueue(config: TurnosConfiguration, queueId: string, input: QueueInput, now: Date): TurnosConfiguration {
@@ -127,6 +133,7 @@ export function updateQueue(config: TurnosConfiguration, queueId: string, input:
     rules: config.rules,
     others: config.queues.filter((queue) => queue.id !== queueId),
     defaultColor: current.color,
+    currentFields: current.fields,
   });
   return edited({ ...config, queues: config.queues.map((queue) => (queue.id === queueId ? { ...queue, ...parsed } : queue)) }, now);
 }
@@ -173,7 +180,21 @@ export function removeQueue(config: TurnosConfiguration, queueId: string, reassi
     const kept = operator.queueIds.filter((id) => id !== queueId);
     return { ...operator, queueIds: kept.length > 0 ? kept : [target.get(operator.id)!] };
   });
-  return edited({ ...config, queues: remaining, operators }, now);
+  // A queue that is gone is also taken out of the room screen and survey selections; a selection left empty goes back to "all".
+  const keep = (ids: string[] | null) => {
+    const left = ids?.filter((id) => id !== queueId) ?? null;
+    return left && left.length > 0 ? left : null;
+  };
+  return edited(
+    {
+      ...config,
+      queues: remaining,
+      operators,
+      roomScreen: { ...config.roomScreen, queueIds: keep(config.roomScreen.queueIds) },
+      survey: { ...config.survey, queueIds: keep(config.survey.queueIds) },
+    },
+    now,
+  );
 }
 
 export function addOperator(config: TurnosConfiguration, input: OperatorInput, now: Date, ids: IdGenerator = randomUUID): TurnosConfiguration {
@@ -181,13 +202,16 @@ export function addOperator(config: TurnosConfiguration, input: OperatorInput, n
     throw new TurnosInvalidError('invalid-operator', { email: [`A business can have at most ${LIMITS.operatorsPerBusiness} operators`] });
   }
   const parsed = parseOperator(input, { queues: config.queues, others: config.operators });
-  return edited({ ...config, operators: [...config.operators, { id: ids(), createdAt: now, ...parsed }] }, now);
+  const activatedAt = parsed.status === 'active' ? now : null;
+  return edited({ ...config, operators: [...config.operators, { id: ids(), createdAt: now, ...parsed, activatedAt }] }, now);
 }
 
 export function updateOperator(config: TurnosConfiguration, operatorId: string, input: OperatorInput, now: Date): TurnosConfiguration {
-  if (!config.operators.some((operator) => operator.id === operatorId)) throw new OperatorNotFoundError();
-  const parsed = parseOperator(input, { queues: config.queues, others: config.operators.filter((operator) => operator.id !== operatorId) });
-  return edited({ ...config, operators: config.operators.map((operator) => (operator.id === operatorId ? { ...operator, ...parsed } : operator)) }, now);
+  const current = config.operators.find((operator) => operator.id === operatorId);
+  if (!current) throw new OperatorNotFoundError();
+  const parsed = parseOperator(input, { queues: config.queues, others: config.operators.filter((operator) => operator.id !== operatorId), current });
+  const activatedAt = current.activatedAt ?? (parsed.status === 'active' ? now : null);
+  return edited({ ...config, operators: config.operators.map((operator) => (operator.id === operatorId ? { ...operator, ...parsed, activatedAt } : operator)) }, now);
 }
 
 /** Removes only the assignment to Turnos of this business. The person, their email and their other accesses are not touched. */
@@ -230,4 +254,33 @@ export function markReady(config: TurnosConfiguration, now: Date): TurnosConfigu
   if (Object.keys(problems).length > 0) throw new TurnosIncompleteError(problems);
   if (config.readyAt) return config;
   return { ...config, readyAt: now, currentStep: 'review', visitedSteps: config.visitedSteps.includes('review') ? config.visitedSteps : [...config.visitedSteps, 'review'], updatedAt: now };
+}
+
+/**
+ * The first sign-in of an email makes every operator of this business that was still pending active. It is not an edit of the
+ * configuration (it does not clear "ready"); an operator who is already active or was switched off is left as is.
+ * Returns the same object when there was nothing to activate.
+ */
+export function activatePendingOperator(config: TurnosConfiguration, email: string, now: Date): TurnosConfiguration {
+  if (!config.operators.some((operator) => operator.email === email && operator.status === 'pending')) return config;
+  const operators = config.operators.map((operator) =>
+    operator.email === email && operator.status === 'pending' ? { ...operator, status: 'active' as const, activatedAt: now } : operator,
+  );
+  return { ...config, operators, updatedAt: now };
+}
+/**
+ * Pauses or resumes a queue. A paused queue takes no new turns and keeps the ones it has. It is an operational switch, not a change
+ * of the configuration: it does not clear "ready". Repeating it changes nothing.
+ */
+export function setQueueStatus(config: TurnosConfiguration, queueId: string, status: QueueStatus, now: Date): TurnosConfiguration {
+  const queue = config.queues.find((candidate) => candidate.id === queueId);
+  if (!queue) throw new QueueNotFoundError();
+  if (queue.status === status) return config;
+  return { ...config, queues: config.queues.map((candidate) => (candidate.id === queueId ? { ...candidate, status } : candidate)), updatedAt: now };
+}
+export function setRoomScreen(config: TurnosConfiguration, input: RoomScreenInput, now: Date): TurnosConfiguration {
+  return { ...config, roomScreen: parseRoomScreen(input, config.queues), updatedAt: now };
+}
+export function setSurveyConfig(config: TurnosConfiguration, input: SurveyInput, now: Date): TurnosConfiguration {
+  return { ...config, survey: parseSurveyConfig(input, config.queues), updatedAt: now };
 }

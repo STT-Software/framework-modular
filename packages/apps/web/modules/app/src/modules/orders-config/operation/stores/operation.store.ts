@@ -1,8 +1,22 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { AccessError, adminAccessStore } from "@/modules/business-access/public";
-import { pedidosApi, PedidosError, type PedidosApi } from "../../api/pedidosApi";
+import { pedidosApi, PedidosError, type OperatorBody, type PedidosApi } from "../../api/pedidosApi";
 import { ordersConfigErrorMessage } from "../../ordersConfig.store";
-import { ALL_OPERATOR_STAGES, type PedidosOperatorView } from "../../types";
+import { validateOperatorInput } from "../../validation";
+import {
+  ALL_OPERATOR_STAGES,
+  type OperatorInput,
+  type OrderOperator,
+  type PedidosApiOperator,
+  type PedidosApiResponse,
+  type PedidosOperatorView,
+} from "../../types";
+
+/** Resultado de una operación del equipo de Pedidos, con el mensaje listo para mostrar. */
+export interface PedidosOperatorMutationResult {
+  ok: boolean;
+  message?: string;
+}
 
 export type PedidosOperatorStatus = "idle" | "loading" | "ready" | "unavailable" | "signed-out" | "error";
 
@@ -13,7 +27,7 @@ export interface PedidosOperatorAccessAdapter {
 }
 
 export interface PedidosOperationStoreDeps {
-  api?: Pick<PedidosApi, "get" | "operator">;
+  api?: Pick<PedidosApi, "get" | "operator" | "createOperator" | "updateOperator" | "deleteOperator">;
   access?: PedidosOperatorAccessAdapter;
 }
 
@@ -28,10 +42,15 @@ export class PedidosOperationStore {
 
   isAdmin = false;
   operatorCount = 0;
+  /** El equipo real de Pedidos (solo el administrador lo recibe). */
+  operators: OrderOperator[] = [];
+  /** Hay una operación del equipo en curso. */
+  operatorsBusy = false;
 
+  private businessId = "";
   private loadRequestId = 0;
   private readonly deps: {
-    api: Pick<PedidosApi, "get" | "operator">;
+    api: Pick<PedidosApi, "get" | "operator" | "createOperator" | "updateOperator" | "deleteOperator">;
     access: PedidosOperatorAccessAdapter;
   };
 
@@ -50,7 +69,8 @@ export class PedidosOperationStore {
       },
     };
 
-    makeAutoObservable<PedidosOperationStore, "loadRequestId" | "deps">(this, {
+    makeAutoObservable<PedidosOperationStore, "businessId" | "loadRequestId" | "deps">(this, {
+      businessId: false,
       loadRequestId: false,
       deps: false,
     });
@@ -58,6 +78,7 @@ export class PedidosOperationStore {
 
   async load(businessId: string): Promise<void> {
     const requestId = ++this.loadRequestId;
+    this.businessId = businessId;
     this.status = "loading";
     this.error = null;
     try {
@@ -74,8 +95,8 @@ export class PedidosOperationStore {
         runInAction(() => { this.status = "unavailable"; });
         return;
       }
-      const { view, operatorCount } = await this.deps.access.withToken(async token => {
-        if (role === "operator") return { view: await this.deps.api.operator(token, businessId), operatorCount: 1 };
+      const { view, operatorCount, operators } = await this.deps.access.withToken(async token => {
+        if (role === "operator") return { view: await this.deps.api.operator(token, businessId), operatorCount: 1, operators: [] };
         const config = await this.deps.api.get(token, businessId);
         const admin = config.candidateOperators?.find(candidate => candidate.sources.includes("admin"));
         return {
@@ -88,12 +109,14 @@ export class PedidosOperationStore {
             schedule: config.schedule, modalities: config.modalities, confirmationMode: config.fulfillment.confirmationMode,
           },
           operatorCount: config.operators.length,
+          operators: mapOperators(config.operators),
         };
       });
       if (requestId !== this.loadRequestId) return;
       runInAction(() => {
         this.isAdmin = role === "admin";
         this.operatorCount = operatorCount;
+        this.operators = operators;
         this.view = view;
         this.status = "ready";
       });
@@ -119,10 +142,97 @@ export class PedidosOperationStore {
     this.loadRequestId += 1;
     this.isAdmin = false;
     this.operatorCount = 0;
+    this.operators = [];
+    this.operatorsBusy = false;
     this.status = "idle";
     this.view = null;
     this.error = null;
   }
+
+  /** Añade un operador al equipo de Pedidos y deja el estado con lo que confirmó el servidor. */
+  async addOperator(input: OperatorInput): Promise<PedidosOperatorMutationResult> {
+    return this.mutateOperators(
+      operator => validateOperatorInput(operator, this.operators),
+      (token, body) => this.deps.api.createOperator(token, this.businessId, body),
+      input,
+    );
+  }
+
+  /** Actualiza un operador existente (nombre, correo, teléfono y etapas). */
+  async updateOperator(operatorId: string, input: OperatorInput): Promise<PedidosOperatorMutationResult> {
+    if (!this.operators.some(operator => operator.id === operatorId)) {
+      return { ok: false, message: "El operador ya no está en el equipo." };
+    }
+    return this.mutateOperators(
+      operator => validateOperatorInput(operator, this.operators, operatorId),
+      (token, body) => this.deps.api.updateOperator(token, this.businessId, operatorId, body),
+      input,
+    );
+  }
+
+  /** Retira a un operador del equipo de Pedidos. */
+  async removeOperator(operatorId: string): Promise<PedidosOperatorMutationResult> {
+    if (!this.operators.some(operator => operator.id === operatorId)) {
+      return { ok: false, message: "El operador ya no está en el equipo." };
+    }
+    const requestId = this.loadRequestId;
+    this.operatorsBusy = true;
+    try {
+      const response = await this.deps.access.withToken(token => this.deps.api.deleteOperator(token, this.businessId, operatorId));
+      if (requestId !== this.loadRequestId) return { ok: false, message: "La operación fue cancelada." };
+      runInAction(() => this.applyOperators(response.operators));
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, message: ordersConfigErrorMessage(error) };
+    } finally {
+      if (requestId === this.loadRequestId) runInAction(() => { this.operatorsBusy = false; });
+    }
+  }
+
+  private async mutateOperators(
+    validate: (input: OperatorInput) => ReturnType<typeof validateOperatorInput>,
+    send: (token: string, body: OperatorBody) => Promise<PedidosApiResponse>,
+    input: OperatorInput,
+  ): Promise<PedidosOperatorMutationResult> {
+    const validation = validate(input);
+    if (!validation.ok) return { ok: false, message: validation.message };
+    const requestId = this.loadRequestId;
+    this.operatorsBusy = true;
+    try {
+      const response = await this.deps.access.withToken(token =>
+        send(token, {
+          name: validation.value.name,
+          email: validation.value.email,
+          phone: validation.value.phone ?? null,
+          stages: validation.value.stages,
+        }),
+      );
+      if (requestId !== this.loadRequestId) return { ok: false, message: "La operación fue cancelada." };
+      runInAction(() => this.applyOperators(response.operators));
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, message: ordersConfigErrorMessage(error) };
+    } finally {
+      if (requestId === this.loadRequestId) runInAction(() => { this.operatorsBusy = false; });
+    }
+  }
+
+  private applyOperators(operators: PedidosApiOperator[]): void {
+    this.operators = mapOperators(operators);
+    this.operatorCount = this.operators.length;
+  }
+}
+
+/** El operador tal como lo devuelve la API, en la forma que usa la interfaz. */
+function mapOperators(operators: PedidosApiOperator[]): OrderOperator[] {
+  return operators.map(operator => ({
+    id: operator.id,
+    name: operator.name,
+    email: operator.email,
+    phone: operator.phone ?? undefined,
+    stages: [...operator.stages],
+    role: "operator",
+  }));
 }
 
 export const pedidosOperationStore = new PedidosOperationStore();

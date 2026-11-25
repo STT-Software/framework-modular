@@ -6,6 +6,7 @@ import { BusinessAppShell, Empty, type NavItem } from "@/modules/business-dashbo
 import "../../styles/orders-config.css";
 import { OperationDashboard } from "../components/OperationDashboard";
 import { SalesWorkspace } from "../components/SalesWorkspace";
+import { OperatorsPage } from "./OperatorsPage";
 import { salesSections } from "../sections";
 import { pedidosOperationStore as store } from "../stores/operation.store";
 
@@ -33,8 +34,6 @@ const PedidosOperationPage = observer(() => {
   if (section !== "dashboard" && !selected) return <Navigate to={base + "/dashboard"} replace />;
   if (id && section !== "orders" && section !== "incidents") return <Navigate to={base + "/" + section} replace />;
   const title = selected?.name ?? "Inicio de Pedidos";
-  const configPath = `/business/pedidos/${businessId}/profile`;
-  const home = `/business/app/${businessId}`;
   const nav: NavItem[] = [
     { to: base + "/dashboard", label: "Inicio", icon: "grid", current: !selected },
     ...salesSections.map(item => ({ to: base + "/" + item.id, label: item.name, icon: item.icon, current: item === selected })),
@@ -43,22 +42,32 @@ const PedidosOperationPage = observer(() => {
     await adminAccessStore.leave("Cerraste sesión.");
     navigate("/business/access", { replace: true });
   };
+  // «Inicio» y «Operadores» usan el mismo marco que Turnos (`nd-`); el resto del espacio de Pedidos conserva su propio diseño.
+  const team = selected?.id === "operators";
 
   return (
-    <BusinessAppShell businessId={businessId} businessName={view.business.name} businessSubtitle="Módulo de Pedidos" navTitle="VENTAS"
-      nav={nav} homeLink={store.isAdmin ? { to: home, label: "Mi negocio" } : undefined}
-      logoTo={store.isAdmin ? home : base + "/dashboard"}
+    <BusinessAppShell businessId={businessId} businessName={view.business.name} businessSubtitle="Módulo de Pedidos" navTitle="PEDIDOS"
+      nav={nav}
+      logoTo={base + "/dashboard"}
       person={{ name: view.operator.name, email: view.operator.email, roleLabel: store.isAdmin ? "Administrador del negocio" : "Operador · Pedidos", isAdmin: store.isAdmin }}
       crumbs={[{ label: "Pedidos", href: base + "/dashboard" }, { label: title }]}
-      settingsTo={store.isAdmin ? configPath : undefined} onSignOut={() => void signOut()} documentTitle={title}
-      dataStatus={selected ? "Vista previa en memoria" : undefined}>
-      <div className="oc-root">
-        <SalesWorkspace key={businessId + ":" + view.operator.id} view={view} section={selected?.id} detailId={id}
-          openSection={(target, detail) => navigate(base + "/" + target + (detail ? "/" + encodeURIComponent(detail) : ""))}>
-          <OperationDashboard view={view} operatorCount={store.operatorCount}
-            onOpenConfig={store.isAdmin ? () => navigate(configPath) : undefined} />
-        </SalesWorkspace>
-      </div>
+      onSignOut={() => void signOut()} documentTitle={title}
+      dataStatus={selected && !team ? "Vista previa en memoria" : undefined}>
+      {!selected ? (
+        <OperationDashboard view={view} operatorCount={store.operatorCount} operators={store.operators} isAdmin={store.isAdmin}
+          onOpenOrders={() => navigate(base + "/orders")}
+          onOpenIncidents={() => navigate(base + "/incidents")}
+          onOpenOperators={store.isAdmin ? () => navigate(base + "/operators") : undefined} />
+      ) : team ? (
+        <OperatorsPage />
+      ) : (
+        <div className="oc-root">
+          <SalesWorkspace key={businessId + ":" + view.operator.id} view={view} section={selected.id} detailId={id}
+            openSection={(target, detail) => navigate(base + "/" + target + (detail ? "/" + encodeURIComponent(detail) : ""))}>
+            {null}
+          </SalesWorkspace>
+        </div>
+      )}
     </BusinessAppShell>
   );
 });

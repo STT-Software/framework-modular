@@ -77,7 +77,7 @@ const DashboardPage = observer(() => {
   const open = (module: DashboardModuleView) => {
     if (module.id === "turnos") navigate(module.setup.status === "ready" ? turnosPath(businessId) : `/business/turnos/${businessId}/profile`);
     else if (module.id === "pedidos")
-      navigate(module.setup.status === "ready" ? `/business/app/${businessId}/pedidos/dashboard` : `/business/pedidos/${businessId}/profile`);
+      navigate(`/business/app/${businessId}/pedidos/dashboard`);
     else setDetail(module);
   };
   const signOut = async () => {
@@ -205,7 +205,7 @@ function ModuleCard({ module, onOpen }: { module: DashboardModuleView; onOpen: (
   const ready = module.setup.status === "ready";
   const indicators = module.indicators?.turnos;
   const label =
-    module.id === "turnos" || module.id === "pedidos" ? (ready ? `Abrir ${module.name}` : "Configurar") : "Ver detalles";
+    module.id === "pedidos" ? "Abrir Pedidos" : module.id === "turnos" ? (ready ? `Abrir ${module.name}` : "Configurar") : "Ver detalles";
   return (
     <article className="nd-card nd-module-card">
       <div className="nd-module-card-top">

@@ -33,7 +33,7 @@ export const BaseAppShell: React.FC<BaseAppShellProps> = observer(({
       <div
         style={{ transitionDuration: uiStore.isSidebarVisible ? "340ms" : "280ms" }}
         className={`flex min-w-0 ${pantallaFija ? "h-screen overflow-hidden" : "min-h-screen"} flex-1 flex-col transition-[margin-left] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
-          uiStore.isSidebarVisible ? "xl:ml-[290px]" : "xl:ml-[72px]"
+          !sidebar ? "xl:ml-0" : uiStore.isSidebarVisible ? "xl:ml-[290px]" : "xl:ml-[72px]"
         }`}
       >
         {/* Header as a floating rounded panel */}

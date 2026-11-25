@@ -99,7 +99,7 @@ export const OrdersConfigPage = observer(() => {
     }
     const result = await store.completeSetup();
     if (!result.ok) return;
-    navigate(`/business/setup/${businessId}`);
+    navigate(`/business/app/${businessId}/pedidos/dashboard`);
   };
 
   const handlePrev = async () => {
@@ -244,17 +244,12 @@ export const OrdersConfigPage = observer(() => {
                       active: true,
                       onSelect: () => undefined,
                     },
-                    ...(business?.modules.includes("turnos") ||
-                    adminAccessStore.businesses.find((b) => b.id === businessId)?.modules.includes("turnos")
-                      ? [
-                          {
-                            id: "turnos",
-                            label: "Módulo de Turnos",
-                            description: "Ir a la configuración de Turnos",
-                            onSelect: () => navigate(`/business/turnos/${businessId}/profile`),
-                          },
-                        ]
-                      : []),
+                    {
+                      id: "operacion",
+                      label: "Operación de Pedidos",
+                      description: "Ir al espacio de trabajo del módulo",
+                      onSelect: () => navigate(`/business/app/${businessId}/pedidos/dashboard`),
+                    },
                   ]
                 : []
             }

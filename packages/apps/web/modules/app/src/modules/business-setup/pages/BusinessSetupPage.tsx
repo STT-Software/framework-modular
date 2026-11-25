@@ -181,6 +181,7 @@ const BusinessSetupPage = observer(() => {
       <>
         <PageMeta title={`Necto · Espacio de trabajo de ${name}`} />
         <BusinessWorkspaceShell
+          hideSidebar
           className="no-root"
           businessId={businessId ?? ""}
           businessName={state ? state.profile.name : name}
@@ -266,15 +267,6 @@ const BusinessSetupPage = observer(() => {
           {ready && (
             <ModulesView
               onStart={() => void go(startStep)}
-              onOpenModule={(moduleId) => {
-                if (moduleId === "pedidos" && businessId) {
-                  navigate(`/business/app/${businessId}/pedidos/dashboard`);
-                  return;
-                }
-                if (moduleId === "turnos" && businessId) {
-                  navigate(`/business/turnos/${businessId}/review`);
-                }
-              }}
               onConfigure={(moduleId) => {
                 const targetModule = state?.modules.find((m) => m.id === moduleId);
                 const entryStep = targetModule?.settings.status === "ready" ? "review" : "profile";

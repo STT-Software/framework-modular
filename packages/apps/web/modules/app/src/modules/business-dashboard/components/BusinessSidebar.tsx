@@ -10,9 +10,7 @@ import {
   AlertHexaIcon,
   TruckDelivery,
   TableIcon,
-  ChatIcon,
   PieChartIcon,
-  PlugInIcon,
   GroupIcon,
   InfoIcon,
   ArrowRightIcon,
@@ -39,7 +37,7 @@ export interface BusinessSidebarProps {
   businessName: string;
   /** «Espacio de trabajo» en el dashboard general, «Módulo de Turnos» dentro de Turnos. */
   businessSubtitle: string;
-  /** Título de la sección de navegación («MI NEGOCIO», «VENTAS», «TURNOS»). */
+  /** Título de la sección de navegación («MI NEGOCIO», «PEDIDOS», «TURNOS»). */
   navTitle: string;
   items: SidebarItem[];
   /** Un enlace suelto sobre la navegación (en Turnos o Pedidos, vuelve a «Mi negocio»). */
@@ -116,7 +114,7 @@ export const BusinessLogoCollapsed = observer(({ to }: { to: string }) => {
   );
 });
 
-const VENTAS_WATERMARK = (
+const ORDERS_WATERMARK = (
   <svg viewBox="0 0 100 80" fill="none" className="w-24 h-20 opacity-25 dark:opacity-10 stroke-current text-gray-400 dark:text-white">
     <path d="M10 70 L50 20 L90 50" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     <circle cx="50" cy="20" r="8" strokeWidth="2" />
@@ -175,19 +173,16 @@ const BusinessSidebarContent = observer((props: BusinessSidebarProps) => {
   })();
 
   const basePedidos = `/business/app/${resolvedBusinessId}/pedidos`;
-  const baseConfig = `/business/pedidos/${resolvedBusinessId}`;
 
-  // Las 9 opciones canónicas del flyout de Ventas (StockFlow)
-  const ventasFlyoutItems = [
+  // Las 7 opciones canónicas del flyout de Pedidos (StockFlow)
+  const ordersFlyoutItems = [
     { id: "inicio", label: "Dashboard", path: `${basePedidos}/dashboard`, Icono: GridIcon },
     { id: "tablero", label: "Gestión de pedidos", path: `${basePedidos}/orders`, Icono: ListIcon },
     { id: "novedades", label: "Gestión de novedades", path: `${basePedidos}/incidents`, Icono: AlertHexaIcon },
     { id: "transportadoras", label: "Transportadoras", path: `${basePedidos}/carriers`, Icono: TruckDelivery },
     { id: "catalogo", label: "Catálogo", path: `${basePedidos}/catalog`, Icono: TableIcon },
-    { id: "chats", label: "Conversaciones", path: `${basePedidos}/chats`, Icono: ChatIcon },
     { id: "analitica", label: "Analítica", path: `${basePedidos}/analytics`, Icono: PieChartIcon },
-    { id: "configuracion", label: "Ajuste de Pedidos", path: `${baseConfig}/profile`, Icono: PlugInIcon },
-    { id: "operadores", label: "Operadores", path: `${baseConfig}/operators`, Icono: GroupIcon },
+    { id: "operadores", label: "Operadores", path: `${basePedidos}/operators`, Icono: GroupIcon },
   ];
 
   const [flyoutModulo, setFlyoutModulo] = useState<string | null>(null);
@@ -229,19 +224,21 @@ const BusinessSidebarContent = observer((props: BusinessSidebarProps) => {
 
   // En modo contraído (rail)
   if (!isExpanded) {
-    const isVentasActive = pathname.includes("/pedidos");
-    const isHomeActive = pathname === homeLink?.to || pathname === `/business/app/${resolvedBusinessId}` || pathname === `/business/app/${resolvedBusinessId}/modules`;
-    const settingsItem = accountItems[0] || (isVentasActive ? { to: `${baseConfig}/profile`, label: "Configuración", icon: "settings" as IconName } : null);
+    const isPedidosActive = pathname.includes("/pedidos");
+    const isHomeActive = isPedidosActive
+      ? pathname === `${basePedidos}/dashboard` || pathname === basePedidos || pathname === `${basePedidos}/`
+      : pathname === homeLink?.to || pathname === `/business/app/${resolvedBusinessId}` || pathname === `/business/app/${resolvedBusinessId}/modules`;
+    const settingsItem = accountItems[0] || null;
     const isSettingsActive = settingsItem ? pathname.startsWith(settingsItem.to) : false;
-    const isVentasFlyoutOpen = flyoutModulo === "pedidos";
+    const isPedidosFlyoutOpen = flyoutModulo === "pedidos";
 
-    // Si es Turnos (no Ventas ni pantalla general con Pedidos), mantener items simples si se desea
-    const isVentasModule = navTitle === "VENTAS" || isVentasActive || Boolean(resolvedBusinessId);
+    // El botón del módulo aparece en todo el espacio del negocio (Pedidos, Turnos o la pantalla general)
+    const isPedidosModule = navTitle === "PEDIDOS" || isPedidosActive || Boolean(resolvedBusinessId);
 
     return (
       <nav className="flex flex-col flex-initial" aria-label="Menú rápido">
         {/* FLYOUT SUBMENU PANEL (Flotante a la derecha del rail contraído estilo StockFlow) */}
-        {isVentasFlyoutOpen && (
+        {isPedidosFlyoutOpen && (
           <div
             ref={flyoutRef}
             className="fixed left-[72px] xl:left-[76px] top-1/2 -translate-y-1/2 z-50 w-72 rounded-3xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200/90 dark:border-gray-800 shadow-2xl p-3 flex flex-col gap-1.5 animate-flyout-lateral"
@@ -249,7 +246,7 @@ const BusinessSidebarContent = observer((props: BusinessSidebarProps) => {
             {/* Tarjeta Banner del módulo */}
             <div className="relative overflow-hidden rounded-2xl bg-[#F6F7F9] dark:bg-gray-800/70 border border-gray-200/60 dark:border-gray-700/60 p-4 mb-1">
               <div className="absolute right-0 bottom-0 pointer-events-none translate-x-2 translate-y-1">
-                {VENTAS_WATERMARK}
+                {ORDERS_WATERMARK}
               </div>
 
               <button
@@ -268,7 +265,7 @@ const BusinessSidebarContent = observer((props: BusinessSidebarProps) => {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
-                    Ventas
+                    Pedidos
                   </h3>
                 </div>
               </div>
@@ -276,7 +273,7 @@ const BusinessSidebarContent = observer((props: BusinessSidebarProps) => {
 
             {/* Lista de opciones del flyout */}
             <div className="max-h-[calc(100vh-220px)] overflow-y-auto no-scrollbar py-1 flex flex-col gap-0.5">
-              {ventasFlyoutItems.map((item) => {
+              {ordersFlyoutItems.map((item) => {
                 const active = pathname === item.path || (item.path.endsWith("/dashboard") && (pathname === basePedidos || pathname === `${basePedidos}/`));
                 const Icono = item.Icono;
                 return (
@@ -309,7 +306,7 @@ const BusinessSidebarContent = observer((props: BusinessSidebarProps) => {
         <div ref={railRef} className="flex flex-col items-center justify-center gap-2.5 w-full py-1">
           {/* Botón Inicio en Rail Mode */}
           <Link
-            to={homeLink?.to ?? `/business/app/${resolvedBusinessId}`}
+            to={isPedidosActive ? `${basePedidos}/dashboard` : (homeLink?.to ?? `/business/app/${resolvedBusinessId}`)}
             title="Inicio"
             aria-label="Inicio"
             className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ease-out hover:scale-110 active:scale-95 cursor-pointer ${
@@ -326,15 +323,15 @@ const BusinessSidebarContent = observer((props: BusinessSidebarProps) => {
             </span>
           </Link>
 
-          {/* Módulo Ventas / Pedidos: Botón que abre el flyout submenu */}
-          {isVentasModule && (
+          {/* Módulo Pedidos: Botón que abre el flyout submenu */}
+          {isPedidosModule && (
             <button
               type="button"
-              title="Ventas"
-              aria-label="Ventas"
-              onClick={() => setFlyoutModulo(isVentasFlyoutOpen ? null : "pedidos")}
+              title="Pedidos"
+              aria-label="Pedidos"
+              onClick={() => setFlyoutModulo(isPedidosFlyoutOpen ? null : "pedidos")}
               className={`group flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ease-out hover:scale-110 active:scale-95 cursor-pointer ${
-                isVentasActive || isVentasFlyoutOpen
+                isPedidosActive || isPedidosFlyoutOpen
                   ? "text-brand-500 bg-brand-50 dark:bg-brand-500/15 dark:text-brand-400 scale-105"
                   : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100/70 dark:hover:bg-white/5"
               }`}

@@ -149,6 +149,7 @@ export interface BusinessWorkspaceShellProps {
   signingOut?: boolean;
   disabled?: boolean;
   className?: string;
+  hideSidebar?: boolean;
   children: ReactNode;
 }
 
@@ -191,6 +192,7 @@ export const BusinessWorkspaceShell = observer(
     signingOut = false,
     disabled = false,
     className,
+    hideSidebar = false,
     children,
   }: BusinessWorkspaceShellProps) => {
     const breadcrumbItems: BreadcrumbItem[] = [
@@ -202,35 +204,48 @@ export const BusinessWorkspaceShell = observer(
       <BaseAppShell
         className="ws ws-enter"
         sidebar={
-          <BaseAppSidebar
-            logo={
-              <Link
-                className="ws-brand flex items-center"
-                to={homePath}
-                onClick={() => uiStore.closeMobileSidebar()}
-                title={`NECTO · ${businessName}`}
-                aria-label={`Necto, inicio de ${businessName}`}
-              >
-                <NectoLogo width={144} height={21} />
-              </Link>
-            }
-            bareRail
-          >
-            <BusinessSidebarContent
-              businessName={businessName}
-              roleLabel={roleLabel}
-              navItems={navItems}
-              onSwitchSpace={onSwitchSpace}
-              onSignOut={onSignOut}
-              signingOut={signingOut}
-            />
-          </BaseAppSidebar>
+          hideSidebar ? undefined : (
+            <BaseAppSidebar
+              logo={
+                <Link
+                  className="ws-brand flex items-center"
+                  to={homePath}
+                  onClick={() => uiStore.closeMobileSidebar()}
+                  title={`NECTO · ${businessName}`}
+                  aria-label={`Necto, inicio de ${businessName}`}
+                >
+                  <NectoLogo width={144} height={21} />
+                </Link>
+              }
+              bareRail
+            >
+              <BusinessSidebarContent
+                businessName={businessName}
+                roleLabel={roleLabel}
+                navItems={navItems}
+                onSwitchSpace={onSwitchSpace}
+                onSignOut={onSignOut}
+                signingOut={signingOut}
+              />
+            </BaseAppSidebar>
+          )
         }
         header={
           <BaseAppHeader
             leftContent={
               <div className="flex items-center gap-3 min-w-0">
-                <ToggleAppSidebar collapsedSlot={<BusinessRailMark to={homePath} />} />
+                {hideSidebar ? (
+                  <Link
+                    to={homePath}
+                    className="flex items-center shrink-0 pr-2"
+                    title={`NECTO · ${businessName}`}
+                    aria-label={`Necto, inicio de ${businessName}`}
+                  >
+                    <NectoLogo width={144} height={21} />
+                  </Link>
+                ) : (
+                  <ToggleAppSidebar collapsedSlot={<BusinessRailMark to={homePath} />} />
+                )}
 
                 <ConfigBusinessSwitcher
                   currentBusinessId={businessId}
@@ -385,13 +400,13 @@ const BusinessSidebarContent = observer(
             {salesItems.length > 0 && (
               <div className="relative">
                 <button type="button" ref={salesButton} className={railButtonClass(salesItems.some(item => item.active))}
-                  onClick={() => setSalesOpen(open => !open)} aria-expanded={salesOpen} aria-label="Ventas">
+                  onClick={() => setSalesOpen(open => !open)} aria-expanded={salesOpen} aria-label="Pedidos">
                   <OrdersBagIcon />
-                  <span className={RAIL_TOOLTIP_CLASSES}>Ventas</span>
+                  <span className={RAIL_TOOLTIP_CLASSES}>Pedidos</span>
                 </button>
                 <ShellDropdown isOpen={salesOpen} triggerRef={salesButton} onClose={() => setSalesOpen(false)}
-                  aria-label="Ventas" className="absolute left-full top-1/2 z-50 ml-4 w-64 -translate-y-1/2 rounded-2xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-gray-900">
-                  <strong className="mb-2 block rounded-xl bg-gray-50 p-3 text-sm dark:bg-gray-800">Ventas</strong>
+                  aria-label="Pedidos" className="absolute left-full top-1/2 z-50 ml-4 w-64 -translate-y-1/2 rounded-2xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-gray-900">
+                  <strong className="mb-2 block rounded-xl bg-gray-50 p-3 text-sm dark:bg-gray-800">Pedidos</strong>
                   {salesItems.map(item => (
                     <Link key={item.id} to={item.path} onClick={() => setSalesOpen(false)}
                       aria-current={item.active ? "page" : undefined}
@@ -478,7 +493,7 @@ const BusinessSidebarContent = observer(
 
           {salesItems.length > 0 && (
             <div>
-              <MenuSectionHeader title="Ventas" collapsible isCollapsed={Boolean(collapsedSections.sales)}
+              <MenuSectionHeader title="Pedidos" collapsible isCollapsed={Boolean(collapsedSections.sales)}
                 onToggle={() => toggleSection("sales")} />
               {!collapsedSections.sales && (
                 <ul className="flex flex-col gap-1" onClick={() => uiStore.closeMobileSidebar()}>

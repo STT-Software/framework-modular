@@ -13,7 +13,7 @@ interface ModulesViewProps {
 }
 
 /** La primera pantalla: el espacio de trabajo del negocio con sus módulos habilitados, indicadores y estado de configuración. */
-export const ModulesView = observer(({ onStart, onConfigure, onOpenModule }: ModulesViewProps) => {
+export const ModulesView = observer(({ onStart, onConfigure }: ModulesViewProps) => {
   const state = businessSetupStore.state;
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [openingModuleId, setOpeningModuleId] = useState<string | null>(null);
@@ -23,42 +23,12 @@ export const ModulesView = observer(({ onStart, onConfigure, onOpenModule }: Mod
   if (!state) return null;
   const count = state.modules.length;
   const ready = state.progress.baseReady;
-  const started = state.progress.currentStep !== null;
-
-  const readyModules = state.modules.filter((m) => m.settings.status === "ready");
-  const readyModulesCount = readyModules.length;
-  const primaryModule =
-    readyModules.find((m) => m.id === "pedidos" || m.id === "turnos") ??
-    state.modules.find((m) => m.id === "pedidos" || m.id === "turnos") ??
-    state.modules[0] ??
-    null;
-
-  const pedidosModule = state.modules.find((m) => m.id === "pedidos");
-  const turnosModule = state.modules.find((m) => m.id === "turnos");
-  const totalOperators = state.modules.reduce((acc, m) => acc + (m.settings.summary?.operatorCount ?? 0), 0);
-  const activeChannelsCount =
-    (pedidosModule?.settings.summary?.modalityCount ?? 0) + (turnosModule?.settings.summary?.queueCount ?? 0);
 
   const rawPersonName =
     adminAccessStore.access?.personName ??
     adminAccessStore.accesses.find((a) => a.businessId === state.business.id)?.personName ??
     "Administrador";
   const firstName = rawPersonName.trim().split(/\s+/)[0] || "Administrador";
-
-  const handlePrimaryHeroAction = () => {
-    if (primaryModule && primaryModule.settings.status === "ready" && onOpenModule) {
-      setOpeningModuleId(primaryModule.id);
-      setTimeout(() => onOpenModule(primaryModule.id), 350);
-      return;
-    }
-    if (primaryModule) {
-      setOpeningModuleId(primaryModule.id);
-      setTimeout(() => onConfigure(primaryModule.id), 350);
-      return;
-    }
-    setStartingBase(true);
-    setTimeout(onStart, 350);
-  };
 
   return (
     <section className="no-enter" aria-labelledby="no-modules-title">
@@ -88,82 +58,6 @@ export const ModulesView = observer(({ onStart, onConfigure, onOpenModule }: Mod
 
       {/* 3-SLIDE ANNOUNCEMENT HERO BANNER */}
       <WorkspaceAnnouncementBanner />
-
-      {/* 4 KPI CARDS */}
-      <div className="no-ws-kpi-grid" aria-label="Indicadores del negocio">
-        <article className="no-ws-kpi-card">
-          <div className="no-ws-kpi-head">
-            <span className="no-ws-kpi-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <rect x="4" y="4" width="6" height="6" rx="1.5" />
-                <rect x="14" y="4" width="6" height="6" rx="1.5" />
-                <rect x="4" y="14" width="6" height="6" rx="1.5" />
-                <rect x="14" y="14" width="6" height="6" rx="1.5" />
-              </svg>
-            </span>
-            <span className="no-ws-kpi-label">Módulos habilitados</span>
-          </div>
-          <strong className="no-ws-kpi-value">{count}</strong>
-          <span className="no-ws-kpi-foot">Asignados a este negocio</span>
-        </article>
-
-        <article className="no-ws-kpi-card">
-          <div className="no-ws-kpi-head">
-            <span className="no-ws-kpi-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M5 7h14l1 13H4L5 7Zm3 0V5a4 4 0 0 1 8 0v2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-            <span className="no-ws-kpi-label">
-              {pedidosModule ? "Modalidades y filas" : "Filas de atención"}
-            </span>
-          </div>
-          <strong className="no-ws-kpi-value">{activeChannelsCount}</strong>
-          <span className="no-ws-kpi-foot">
-            {pedidosModule && turnosModule
-              ? "En Pedidos y Turnos"
-              : pedidosModule
-                ? "En el módulo de Pedidos"
-                : "En el módulo de Turnos"}
-          </span>
-        </article>
-
-        <article className="no-ws-kpi-card">
-          <div className="no-ws-kpi-head">
-            <span className="no-ws-kpi-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="m5 12 5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-            <span className="no-ws-kpi-label">Módulos preparados</span>
-          </div>
-          <strong className="no-ws-kpi-value">
-            {readyModulesCount} <small>hoy</small>
-          </strong>
-          <span className="no-ws-kpi-foot">Durante esta jornada</span>
-        </article>
-
-        <article className="no-ws-kpi-card">
-          <div className="no-ws-kpi-head">
-            <span className="no-ws-kpi-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" strokeLinecap="round" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" strokeLinecap="round" />
-              </svg>
-            </span>
-            <span className="no-ws-kpi-label">Operadores activos</span>
-          </div>
-          <strong className="no-ws-kpi-value">{totalOperators}</strong>
-          <span className="no-ws-kpi-foot">
-            {pedidosModule && turnosModule
-              ? "Equipo de Pedidos y Turnos"
-              : pedidosModule
-                ? "Equipo de Pedidos"
-                : "Equipo de Turnos"}
-          </span>
-        </article>
-      </div>
 
       <div className="no-section-heading">
         <div>
@@ -197,19 +91,6 @@ export const ModulesView = observer(({ onStart, onConfigure, onOpenModule }: Mod
                         : "Configuración pendiente"}
                   </span>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                    {isModuleReady && onOpenModule && (module.id === "pedidos" || module.id === "turnos") && (
-                      <button
-                        type="button"
-                        className="no-ws-open-module-btn"
-                        disabled={openingModuleId !== null}
-                        onClick={() => {
-                          setOpeningModuleId(module.id);
-                          setTimeout(() => onOpenModule(module.id), 350);
-                        }}
-                      >
-                        {isOpening ? "Abriendo…" : `Abrir ${module.name}`}
-                      </button>
-                    )}
                     <button
                       type="button"
                       className={isOpening ? "is-loading" : undefined}

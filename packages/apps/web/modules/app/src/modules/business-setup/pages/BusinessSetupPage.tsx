@@ -3,6 +3,7 @@ import "@/css/business-configuration.css";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import { useDashboardReady } from "@/modules/business-dashboard";
 import { NectoLogo } from "@/brand/NectoLogo";
 import { adminAccessStore } from "@/modules/business-access";
 import type { ModuleId } from "@/modules/businesses";
@@ -114,6 +115,8 @@ const BusinessSetupPage = observer(() => {
   };
 
   const state = store.state;
+  // El atajo al dashboard solo existe cuando todo está preparado (el servidor lo dice); quien configura por primera vez no lo ve.
+  const dashboardReady = useDashboardReady(businessId, `${state?.progress.baseReadyAt ?? ""}|${state?.modules.map((module) => module.settings.status).join(",") ?? ""}`);
   const ready = store.status === "ready" && state !== null;
   const administered = adminAccessStore.businesses;
   const name = state?.profile.name ?? "tu negocio";
@@ -127,7 +130,7 @@ const BusinessSetupPage = observer(() => {
           <NectoLogo width={161} height={23} />
         </Link>
         <div className="no-header-actions">
-          {businessId ? (
+          {businessId && dashboardReady ? (
             <Link to={`/business/app/${businessId}`} className="no-secondary" style={{ textDecoration: "none", whiteSpace: "nowrap" }}>
               ← Volver al dashboard
             </Link>

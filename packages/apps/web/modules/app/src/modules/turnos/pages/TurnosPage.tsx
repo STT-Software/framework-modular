@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { NectoLogo } from "@/brand/NectoLogo";
 import { adminAccessStore } from "@/modules/business-access";
+import { useDashboardReady } from "@/modules/business-dashboard";
 import { ThemeIconButton } from "@/shell";
 import { PageMeta } from "@/shell/meta";
 import { RoleShieldBadge } from "@/components/configuration/RoleShieldBadge";
@@ -193,6 +194,8 @@ const TurnosPage = observer(() => {
 
   const state = store.state;
   const ready = store.status === "ready" && state !== null;
+  // El atajo al dashboard solo existe cuando todo está preparado (el servidor lo dice); quien configura por primera vez no lo ve.
+  const dashboardReady = useDashboardReady(isOperator ? undefined : businessId, state?.progress.readyAt ?? "");
   const withTurnos = adminAccessStore.businesses.filter((business) => business.modules.includes("turnos"));
   const index = TURNOS_STEPS.indexOf(view);
   const copy = COPY[view];
@@ -207,7 +210,7 @@ const TurnosPage = observer(() => {
           <NectoLogo width={161} height={23} />
         </Link>
         <div className="nt-header-context">
-          {!isOperator && businessId ? (
+          {!isOperator && businessId && dashboardReady ? (
             <Link to={`/business/app/${businessId}`} className="nt-secondary" style={{ textDecoration: "none", whiteSpace: "nowrap" }}>
               ← Volver al dashboard
             </Link>

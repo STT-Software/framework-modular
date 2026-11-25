@@ -20,3 +20,8 @@
 
 .nd-mobile-brand{display:none}.nd-mobile-brand svg{width:23px;height:23px;stroke:none}.nd-mobile-brand svg path{stroke:none}
 @media(max-width:760px){.nd-mobile-brand{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:23px}.nd-breadcrumb{white-space:nowrap}}
+/* Dentro del marco compartido (BaseAppShell): sin su propia barra lateral, ni fondo, ni alto de pantalla. */
+.nd-root.nd-embedded{min-height:0;display:block;background:transparent;isolation:auto;position:relative;flex:1;display:flex;flex-direction:column}
+.nd-embedded .nd-main{padding:4px 2px 12px;max-width:none}
+.nd-embedded .nd-footer{padding:10px 2px 0}
+.nd-embedded .nd-toast{left:50%}

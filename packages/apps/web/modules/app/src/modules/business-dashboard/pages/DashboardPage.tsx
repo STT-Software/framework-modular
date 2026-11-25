@@ -91,7 +91,7 @@ const DashboardPage = observer(() => {
       ]}
       logoTo={`/business/app/${businessId}`}
       person={{ name: personName, email: adminAccessStore.email, roleLabel: "Administrador del negocio", isAdmin: true }}
-      breadcrumb={<strong>Mi negocio</strong>}
+      crumbs={modulesView ? [{ label: "Mi negocio", href: `/business/app/${businessId}` }, { label: "Mis módulos" }] : [{ label: "Mi negocio" }]}
       settingsTo={`/business/setup/${businessId}`}
       activity={store.activity.map((entry) => ({ text: activityText(entry.type, entry.ticket.code, entry.queue.name, entry.automatic), at: entry.at }))}
       onSignOut={() => void signOut()}

@@ -111,21 +111,7 @@ const OperationPage = observer(() => {
       homeLink={admin ? { to: `/business/app/${businessId}`, label: "Mi negocio" } : undefined}
       logoTo={admin ? `/business/app/${businessId}` : base(businessId, firstSection ?? "dashboard")}
       person={{ name: store.personName, email: adminAccessStore.email, roleLabel: admin ? "Administrador del negocio" : "Operador · Turnos", isAdmin: admin }}
-      breadcrumb={
-        admin ? (
-          <>
-            <Link to={`/business/app/${businessId}`}>Mi negocio</Link>
-            <span>/</span>
-            <strong>Turnos</strong>
-          </>
-        ) : (
-          <>
-            <strong>Turnos</strong>
-            <span>/</span>
-            Operador
-          </>
-        )
-      }
+      crumbs={admin ? [{ label: "Mi negocio", href: `/business/app/${businessId}` }, { label: "Turnos", href: base(businessId, "dashboard") }, { label: TITLES[section] ?? "Turnos" }] : [{ label: "Turnos", href: base(businessId, firstSection ?? "dashboard") }, { label: TITLES[section] ?? "Turnos" }]}
       settingsTo={admin ? `/business/turnos/${businessId}/profile` : undefined}
       activity={(activity.data ?? []).map((entry) => ({ text: activityText(entry.type, entry.ticket.code, entry.queue.name, entry.automatic), at: entry.at }))}
       live={store.live}

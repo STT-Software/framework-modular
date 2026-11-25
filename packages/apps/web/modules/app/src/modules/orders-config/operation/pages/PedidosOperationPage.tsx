@@ -45,7 +45,7 @@ const PedidosOperationPage = observer(() => {
   };
 
   return (
-    <BusinessAppShell businessName={view.business.name} businessSubtitle="Módulo de Pedidos" navTitle="VENTAS"
+    <BusinessAppShell businessId={businessId} businessName={view.business.name} businessSubtitle="Módulo de Pedidos" navTitle="VENTAS"
       nav={nav} homeLink={store.isAdmin ? { to: home, label: "Mi negocio" } : undefined}
       logoTo={store.isAdmin ? home : base + "/dashboard"}
       person={{ name: view.operator.name, email: view.operator.email, roleLabel: store.isAdmin ? "Administrador del negocio" : "Operador · Pedidos", isAdmin: store.isAdmin }}

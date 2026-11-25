@@ -26,7 +26,7 @@ export const BusinessTopbar = observer(({ logoTo, crumbs, person, hasActivity, o
     <BaseAppHeader
       leftContent={
         <div className="flex items-center gap-3 min-w-0">
-          <ToggleAppSidebar collapsedSlot={<BusinessRailMark to={logoTo} />} />
+          <ToggleAppSidebar />
           <Breadcrumb separator="chevron" items={items} className="hidden md:flex items-center min-w-0" />
         </div>
       }

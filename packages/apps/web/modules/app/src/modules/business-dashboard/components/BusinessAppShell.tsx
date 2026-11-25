@@ -22,6 +22,7 @@ export interface ActivityItem {
   at: string;
 }
 export interface BusinessAppShellProps {
+  businessId?: string;
   businessName: string;
   /** «Espacio de trabajo» en el dashboard general, «Módulo de Turnos» dentro de Turnos. */
   businessSubtitle: string;
@@ -70,6 +71,7 @@ export const BusinessAppShell = observer((props: BusinessAppShellProps) => {
       <BaseAppShell
         sidebar={
           <BusinessSidebar
+            businessId={props.businessId}
             businessName={props.businessName}
             businessSubtitle={props.businessSubtitle}
             navTitle={props.navTitle}

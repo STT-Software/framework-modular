@@ -180,7 +180,7 @@ export const IncidentDialog = ({
                   </div>
                 </SummaryCard>
 
-                <SummaryCard caption="Carrier">
+                <SummaryCard caption="Transportadora">
                   <div className="flex items-center gap-2">
                     <CarrierLogo
                       carrier={carrierByName(incident.carrier)}

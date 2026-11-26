@@ -32,7 +32,9 @@ const PedidosOperationPage = observer(() => {
   const base = `/business/app/${businessId}/pedidos`;
   const selected = salesSections.find(item => item.id === section);
   if (section !== "dashboard" && !selected) return <Navigate to={base + "/dashboard"} replace />;
-  if (id && section !== "orders" && section !== "incidents") return <Navigate to={base + "/" + section} replace />;
+  if (id && section !== "orders" && section !== "incidents" && section !== "conversations") {
+    return <Navigate to={base + "/" + section} replace />;
+  }
   const title = selected?.name ?? "Inicio de Pedidos";
   const nav: NavItem[] = [
     { to: base + "/dashboard", label: "Inicio", icon: "grid", current: !selected },
@@ -51,8 +53,7 @@ const PedidosOperationPage = observer(() => {
       logoTo={base + "/dashboard"}
       person={{ name: view.operator.name, email: view.operator.email, roleLabel: store.isAdmin ? "Administrador del negocio" : "Operador · Pedidos", isAdmin: store.isAdmin }}
       crumbs={[{ label: "Pedidos", href: base + "/dashboard" }, { label: title }]}
-      onSignOut={() => void signOut()} documentTitle={title}
-      dataStatus={selected && !team ? "Vista previa en memoria" : undefined}>
+      onSignOut={() => void signOut()} documentTitle={title}>
       {!selected ? (
         <OperationDashboard view={view} operatorCount={store.operatorCount} operators={store.operators} isAdmin={store.isAdmin}
           onOpenOrders={() => navigate(base + "/orders")}
@@ -62,7 +63,7 @@ const PedidosOperationPage = observer(() => {
         <OperatorsPage />
       ) : (
         <div className="oc-root">
-          <SalesWorkspace key={businessId + ":" + view.operator.id} view={view} section={selected.id} detailId={id}
+          <SalesWorkspace key={businessId + ":" + view.operator.id} view={view} isAdmin={store.isAdmin} operators={store.operators} section={selected.id} detailId={id}
             openSection={(target, detail) => navigate(base + "/" + target + (detail ? "/" + encodeURIComponent(detail) : ""))}>
             {null}
           </SalesWorkspace>

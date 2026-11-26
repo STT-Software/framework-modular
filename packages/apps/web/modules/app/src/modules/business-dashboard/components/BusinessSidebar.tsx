@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { Link, NavLink, useLocation } from "react-router";
 import { NectoLogo } from "@/brand/NectoLogo";
+import { adminAccessStore } from "@/modules/business-access";
 import {
   CartIcon,
   CloseIcon,
@@ -10,6 +11,7 @@ import {
   AlertHexaIcon,
   TruckDelivery,
   TableIcon,
+  ChatIcon,
   PieChartIcon,
   GroupIcon,
   InfoIcon,
@@ -122,6 +124,15 @@ const ORDERS_WATERMARK = (
   </svg>
 );
 
+const TURNOS_WATERMARK = (
+  <svg viewBox="0 0 100 80" fill="none" className="w-24 h-20 opacity-25 dark:opacity-10 stroke-current text-gray-400 dark:text-white">
+    <path d="M15 65 C35 30, 65 30, 85 65" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="50" cy="30" r="8" strokeWidth="2" />
+    <circle cx="25" cy="50" r="5" strokeWidth="2" />
+    <circle cx="75" cy="50" r="5" strokeWidth="2" />
+  </svg>
+);
+
 /**
  * La barra lateral de la aplicación (administrador y operador):
  * - Expandida: tarjeta flotante completa con las secciones de navegación.
@@ -173,16 +184,27 @@ const BusinessSidebarContent = observer((props: BusinessSidebarProps) => {
   })();
 
   const basePedidos = `/business/app/${resolvedBusinessId}/pedidos`;
+  const baseTurnos = `/business/app/${resolvedBusinessId}/turnos`;
 
-  // Las 7 opciones canónicas del flyout de Pedidos (StockFlow)
+  // Las 8 opciones canónicas del flyout de Pedidos (StockFlow)
   const ordersFlyoutItems = [
     { id: "inicio", label: "Dashboard", path: `${basePedidos}/dashboard`, Icono: GridIcon },
     { id: "tablero", label: "Gestión de pedidos", path: `${basePedidos}/orders`, Icono: ListIcon },
     { id: "novedades", label: "Gestión de novedades", path: `${basePedidos}/incidents`, Icono: AlertHexaIcon },
     { id: "transportadoras", label: "Transportadoras", path: `${basePedidos}/carriers`, Icono: TruckDelivery },
     { id: "catalogo", label: "Catálogo", path: `${basePedidos}/catalog`, Icono: TableIcon },
+    { id: "conversaciones", label: "Conversaciones", path: `${basePedidos}/conversations`, Icono: ChatIcon },
     { id: "analitica", label: "Analítica", path: `${basePedidos}/analytics`, Icono: PieChartIcon },
     { id: "operadores", label: "Operadores", path: `${basePedidos}/operators`, Icono: GroupIcon },
+  ];
+
+  const defaultTurnosItems: Array<{ id: string; label: string; to: string; icon: IconName }> = [
+    { id: "dashboard", label: "Inicio", to: `${baseTurnos}/dashboard`, icon: "grid" },
+    { id: "tickets", label: "Mis turnos", to: `${baseTurnos}/tickets`, icon: "tickets" },
+    { id: "create", label: "Crear turno", to: `${baseTurnos}/create`, icon: "plus" },
+    { id: "queues", label: "Filas", to: `${baseTurnos}/queues`, icon: "queue" },
+    { id: "surveys", label: "Encuestas", to: `${baseTurnos}/surveys`, icon: "star" },
+    { id: "team", label: "Operadores", to: `${baseTurnos}/team`, icon: "users" },
   ];
 
   const [flyoutModulo, setFlyoutModulo] = useState<string | null>(null);
@@ -224,26 +246,55 @@ const BusinessSidebarContent = observer((props: BusinessSidebarProps) => {
 
   // En modo contraído (rail)
   if (!isExpanded) {
-    const isPedidosActive = pathname.includes("/pedidos");
+    const isPedidosActive = pathname.includes("/pedidos") || navTitle === "PEDIDOS";
+    const isTurnosActive = pathname.includes("/turnos") || navTitle === "TURNOS";
+    const isGeneralActive = !isPedidosActive && !isTurnosActive;
+
+    const currentBiz = adminAccessStore.businesses.find((b) => b.id === resolvedBusinessId);
+    const showPedidosModule = isPedidosActive || (isGeneralActive && (currentBiz ? currentBiz.modules.includes("pedidos") : true));
+    const showTurnosModule = isTurnosActive || (isGeneralActive && (currentBiz ? currentBiz.modules.includes("turnos") : true));
+
+    const homePath = isPedidosActive
+      ? `${basePedidos}/dashboard`
+      : isTurnosActive
+        ? `${baseTurnos}/dashboard`
+        : (homeLink?.to ?? `/business/app/${resolvedBusinessId}`);
+
     const isHomeActive = isPedidosActive
       ? pathname === `${basePedidos}/dashboard` || pathname === basePedidos || pathname === `${basePedidos}/`
-      : pathname === homeLink?.to || pathname === `/business/app/${resolvedBusinessId}` || pathname === `/business/app/${resolvedBusinessId}/modules`;
+      : isTurnosActive
+        ? pathname === `${baseTurnos}/dashboard` || pathname === baseTurnos || pathname === `${baseTurnos}/`
+        : pathname === homeLink?.to || pathname === `/business/app/${resolvedBusinessId}` || pathname === `/business/app/${resolvedBusinessId}/modules`;
+
     const settingsItem = accountItems[0] || null;
     const isSettingsActive = settingsItem ? pathname.startsWith(settingsItem.to) : false;
-    const isPedidosFlyoutOpen = flyoutModulo === "pedidos";
+    const isPedidosFlyoutOpen = flyoutModulo === "pedidos" && showPedidosModule;
+    const isTurnosFlyoutOpen = flyoutModulo === "turnos" && showTurnosModule;
 
-    // El botón del módulo aparece en todo el espacio del negocio (Pedidos, Turnos o la pantalla general)
-    const isPedidosModule = navTitle === "PEDIDOS" || isPedidosActive || Boolean(resolvedBusinessId);
+    const turnosFlyoutItems = isTurnosActive
+      ? items.map((it) => ({
+          id: it.to,
+          label: it.label,
+          to: it.to,
+          icon: it.icon,
+          count: it.count,
+          active: Boolean(it.current),
+        }))
+      : defaultTurnosItems.map((it) => ({
+          ...it,
+          count: undefined,
+          active: pathname === it.to || (it.to.endsWith("/dashboard") && (pathname === baseTurnos || pathname === `${baseTurnos}/`)),
+        }));
 
     return (
       <nav className="flex flex-col flex-initial" aria-label="Menú rápido">
-        {/* FLYOUT SUBMENU PANEL (Flotante a la derecha del rail contraído estilo StockFlow) */}
+        {/* FLYOUT SUBMENU PANEL - PEDIDOS */}
         {isPedidosFlyoutOpen && (
           <div
             ref={flyoutRef}
             className="fixed left-[72px] xl:left-[76px] top-1/2 -translate-y-1/2 z-50 w-72 rounded-3xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200/90 dark:border-gray-800 shadow-2xl p-3 flex flex-col gap-1.5 animate-flyout-lateral"
           >
-            {/* Tarjeta Banner del módulo */}
+            {/* Tarjeta Banner del módulo Pedidos */}
             <div className="relative overflow-hidden rounded-2xl bg-[#F6F7F9] dark:bg-gray-800/70 border border-gray-200/60 dark:border-gray-700/60 p-4 mb-1">
               <div className="absolute right-0 bottom-0 pointer-events-none translate-x-2 translate-y-1">
                 {ORDERS_WATERMARK}
@@ -271,10 +322,13 @@ const BusinessSidebarContent = observer((props: BusinessSidebarProps) => {
               </div>
             </div>
 
-            {/* Lista de opciones del flyout */}
+            {/* Lista de opciones del flyout Pedidos */}
             <div className="max-h-[calc(100vh-220px)] overflow-y-auto no-scrollbar py-1 flex flex-col gap-0.5">
               {ordersFlyoutItems.map((item) => {
-                const active = pathname === item.path || (item.path.endsWith("/dashboard") && (pathname === basePedidos || pathname === `${basePedidos}/`));
+                const active =
+                  pathname === item.path ||
+                  pathname.startsWith(`${item.path}/`) ||
+                  (item.path.endsWith("/dashboard") && (pathname === basePedidos || pathname === `${basePedidos}/`));
                 const Icono = item.Icono;
                 return (
                   <Link
@@ -302,11 +356,77 @@ const BusinessSidebarContent = observer((props: BusinessSidebarProps) => {
           </div>
         )}
 
+        {/* FLYOUT SUBMENU PANEL - TURNOS */}
+        {isTurnosFlyoutOpen && (
+          <div
+            ref={flyoutRef}
+            className="fixed left-[72px] xl:left-[76px] top-1/2 -translate-y-1/2 z-50 w-72 rounded-3xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200/90 dark:border-gray-800 shadow-2xl p-3 flex flex-col gap-1.5 animate-flyout-lateral"
+          >
+            {/* Tarjeta Banner del módulo Turnos */}
+            <div className="relative overflow-hidden rounded-2xl bg-[#F6F7F9] dark:bg-gray-800/70 border border-gray-200/60 dark:border-gray-700/60 p-4 mb-1">
+              <div className="absolute right-0 bottom-0 pointer-events-none translate-x-2 translate-y-1">
+                {TURNOS_WATERMARK}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setFlyoutModulo(null)}
+                className="absolute top-2.5 right-2.5 p-1 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors z-10 cursor-pointer"
+                title="Cerrar submenú"
+                aria-label="Cerrar submenú"
+              >
+                <CloseIcon className="h-4 w-4" />
+              </button>
+
+              <div className="relative z-1 flex flex-col gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-700 shadow-2xs border border-black/5 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white">
+                  <NavIcon name="queue" className="size-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
+                    Turnos
+                  </h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Lista de opciones del flyout Turnos */}
+            <div className="max-h-[calc(100vh-220px)] overflow-y-auto no-scrollbar py-1 flex flex-col gap-0.5">
+              {turnosFlyoutItems.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setFlyoutModulo(null)}
+                  className={`group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                    item.active
+                      ? "bg-gray-100 dark:bg-white/10 font-bold text-gray-900 dark:text-white"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"
+                  }`}
+                >
+                  <span
+                    className={`flex size-5 shrink-0 items-center justify-center transition-transform duration-150 group-hover:scale-110 ${
+                      item.active ? "text-brand-500" : "text-gray-500 dark:text-gray-400"
+                    }`}
+                  >
+                    <NavIcon name={item.icon} className="size-5" />
+                  </span>
+                  <span className="truncate">{item.label}</span>
+                  {item.count !== undefined && (
+                    <span className="ml-auto rounded-md bg-gray-100 dark:bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-gray-600 dark:text-gray-300">
+                      {item.count}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* RAIL ICONS: Opciones recogidas en el rail contraído */}
         <div ref={railRef} className="flex flex-col items-center justify-center gap-2.5 w-full py-1">
           {/* Botón Inicio en Rail Mode */}
           <Link
-            to={isPedidosActive ? `${basePedidos}/dashboard` : (homeLink?.to ?? `/business/app/${resolvedBusinessId}`)}
+            to={homePath}
             title="Inicio"
             aria-label="Inicio"
             className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ease-out hover:scale-110 active:scale-95 cursor-pointer ${
@@ -323,13 +443,32 @@ const BusinessSidebarContent = observer((props: BusinessSidebarProps) => {
             </span>
           </Link>
 
-          {/* Módulo Pedidos: Botón que abre el flyout submenu */}
-          {isPedidosModule && (
+          {/* Módulo Turnos: Botón que abre el flyout submenu de Turnos */}
+          {showTurnosModule && (
+            <button
+              type="button"
+              title="Turnos"
+              aria-label="Turnos"
+              onClick={() => setFlyoutModulo(flyoutModulo === "turnos" ? null : "turnos")}
+              className={`group flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ease-out hover:scale-110 active:scale-95 cursor-pointer ${
+                isTurnosActive || isTurnosFlyoutOpen
+                  ? "text-brand-500 bg-brand-50 dark:bg-brand-500/15 dark:text-brand-400 scale-105"
+                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100/70 dark:hover:bg-white/5"
+              }`}
+            >
+              <span className="h-5 w-5 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
+                <NavIcon name="queue" className="size-5" />
+              </span>
+            </button>
+          )}
+
+          {/* Módulo Pedidos: Botón que abre el flyout submenu de Pedidos */}
+          {showPedidosModule && (
             <button
               type="button"
               title="Pedidos"
               aria-label="Pedidos"
-              onClick={() => setFlyoutModulo(isPedidosFlyoutOpen ? null : "pedidos")}
+              onClick={() => setFlyoutModulo(flyoutModulo === "pedidos" ? null : "pedidos")}
               className={`group flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ease-out hover:scale-110 active:scale-95 cursor-pointer ${
                 isPedidosActive || isPedidosFlyoutOpen
                   ? "text-brand-500 bg-brand-50 dark:bg-brand-500/15 dark:text-brand-400 scale-105"

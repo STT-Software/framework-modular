@@ -3,6 +3,7 @@ import { ArrowTopRightOnSquareIcon, MapPinIcon, PencilSquareIcon } from "@heroic
 
 import {
     WEEKDAYS,
+    DAY_LABELS,
     SLOT_LABELS,
     SLOT_TIMES,
     DAY_INITIAL,
@@ -149,8 +150,8 @@ export const RecurringPickupCard = observer(
                 return (
                   <span
                     key={day}
-                    title={day}
-                    aria-label={day}
+                    title={DAY_LABELS[day]}
+                    aria-label={DAY_LABELS[day]}
                     className={`flex size-6 items-center justify-center rounded-full text-[10px] font-bold ${
                       active
                         ? "bg-[#212121] text-white dark:bg-white dark:text-[#212121]"
@@ -172,7 +173,7 @@ export const RecurringPickupCard = observer(
               {c.dispatcherFirstName} {c.dispatcherLastName}
             </p>
             <p className="mt-0.5 text-[11px] font-normal text-[#212121]/55 dark:text-white/45">
-              {c.packages} {c.packages === 1 ? "paquete" : "packages"} por recolección
+              {c.packages} {c.packages === 1 ? "paquete" : "paquetes"} por recolección
             </p>
           </FormSection>
         </div>

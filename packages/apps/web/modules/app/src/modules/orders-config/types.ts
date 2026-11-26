@@ -121,6 +121,7 @@ export interface PedidosOperatorView {
     id: string;
     name: string;
   };
+  profile?: OrdersProfileId;
   operator: {
     id: string;
     name: string;

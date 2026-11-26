@@ -29,3 +29,17 @@
 .dark :is(.sales-table,.sales-board section,.sales-order,.sales-table th) { background: var(--color-gray-900); border-color: var(--color-gray-700); }
 .sales-bar { display: grid; grid-template-columns: 8rem 1fr 2rem; gap: .8rem; align-items: center; margin: .75rem 0; font-size: .85rem; }
 .sales-bar progress { width: 100%; accent-color: #ff3f1a; }
+
+.conv-chat-canvas {
+  background-color: #efeae2;
+  background-image: radial-gradient(rgba(25, 0, 136, 0.055) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+.dark .conv-chat-canvas {
+  background-color: #0b141a;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+}
+.custom-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(148, 163, 184, 0.45) transparent; }
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.45); border-radius: 9999px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }

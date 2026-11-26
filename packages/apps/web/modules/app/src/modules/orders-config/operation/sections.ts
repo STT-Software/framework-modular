@@ -3,6 +3,7 @@ export const salesSections = [
   { id: "incidents", name: "Gestión de novedades", icon: "bell" },
   { id: "carriers", name: "Transportadoras", icon: "queue" },
   { id: "catalog", name: "Catálogo", icon: "grid" },
+  { id: "conversations", name: "Conversaciones", icon: "message" },
   { id: "analytics", name: "Analítica", icon: "activity" },
   { id: "operators", name: "Operadores", icon: "users" },
 ] as const;

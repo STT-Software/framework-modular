@@ -104,6 +104,7 @@ const OperationPage = observer(() => {
   const content = !known ? null : !allowed ? <NotAllowed first={firstSection} businessId={businessId} /> : <Section section={section} id={id} />;
   return (
     <BusinessAppShell
+      businessId={businessId}
       businessName={store.businessName}
       businessSubtitle="Módulo de Turnos"
       navTitle="TURNOS"

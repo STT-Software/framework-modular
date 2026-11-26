@@ -50,6 +50,9 @@ import {
   validateOrdersConfig,
   validateStep,
 } from "./validation";
+import { writeActiveBusinessProfile } from "./operation/domain/profilePresets";
+import { CatalogStore } from "./operation/stores/CatalogStore";
+import { OrdersStore } from "./operation/stores/OrdersStore";
 
 export type OrdersConfigStatus = "idle" | "loading" | "ready" | "blocked" | "unavailable" | "signed-out" | "error";
 
@@ -333,6 +336,7 @@ export class OrdersConfigStore {
     };
     this.schedule = response.schedule;
     this.suggestedProfile = response.profile.suggested;
+    writeActiveBusinessProfile(response.business.id, response.profile.id);
     this.candidateOperators = (response.candidateOperators ?? []).map((candidate) => ({
       name: candidate.name,
       email: candidate.email,
@@ -588,6 +592,8 @@ export class OrdersConfigStore {
         this.dirtySections.clear();
         this.applyServerResponse(response, { preserveDirty: false });
       });
+      new CatalogStore(id, response.profile.id).applyProfile(response.profile.id);
+      new OrdersStore(id, response.profile.id).applyProfileLabels(response.profile.id);
       return true;
     } catch (err: unknown) {
       if (requestId !== this.loadRequestId) return false;

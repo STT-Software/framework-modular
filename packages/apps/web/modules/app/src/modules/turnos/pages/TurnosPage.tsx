@@ -247,18 +247,6 @@ const TurnosPage = observer(() => {
                         active: true,
                         onSelect: () => undefined,
                       },
-                      ...(adminAccessStore.businesses
-                        .find((b) => b.id === businessId)
-                        ?.modules.includes("pedidos")
-                        ? [
-                            {
-                              id: "pedidos",
-                              label: "Módulo de Pedidos",
-                              description: "Ir a la configuración de Pedidos",
-                              onSelect: () => navigate(`/business/pedidos/${businessId}/profile`),
-                            },
-                          ]
-                        : []),
                     ]
                   : []
               }

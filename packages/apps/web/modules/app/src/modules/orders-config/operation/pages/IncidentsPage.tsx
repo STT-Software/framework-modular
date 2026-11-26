@@ -29,16 +29,38 @@ import { IncidentDialog } from "../components/IncidentDialog";
 import { CarrierLogo } from "../components/CarrierLogo";
 import { carrierByName } from "../domain/carrierDirectory";
 
-export const IncidentsPage = observer(({ store: incidentStore, activeIncidentId, setActiveIncidentId }: { store: IncidentStore; activeIncidentId?: string; setActiveIncidentId: (id: string | null) => void }) => {
+export interface IncidentsPageProps {
+  store: IncidentStore;
+  activeIncidentId?: string;
+  setActiveIncidentId?: (id: string | null) => void;
+  onOpenTracking?: (trackingNumber: string) => void;
+}
 
+export const IncidentsPage = observer(({
+  store: incidentStore,
+  activeIncidentId,
+  setActiveIncidentId,
+  onOpenTracking,
+}: IncidentsPageProps) => {
+  const [internalActiveId, setInternalActiveId] = useState<string | null>(null);
   const [statuses, setStatuses] = useState<IncidentStatus[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [text, setText] = useState("");
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
+  const [reloading, setReloading] = useState(false);
+
+  const resolvedActiveId = activeIncidentId ?? internalActiveId;
+  const updateActiveId = (id: string | null) => {
+    if (setActiveIncidentId) {
+      setActiveIncidentId(id);
+    } else {
+      setInternalActiveId(id);
+    }
+  };
 
   const incidents = filterIncidents(incidentStore.incidents, { statuses, search });
-  const currentIncident = activeIncidentId ? (incidentStore.byId(activeIncidentId) ?? null) : null;
+  const currentIncident = resolvedActiveId ? (incidentStore.byId(resolvedActiveId) ?? null) : null;
 
   const hasFilters = statuses.length > 0 || search.trim().length > 0;
 
@@ -55,17 +77,34 @@ export const IncidentsPage = observer(({ store: incidentStore, activeIncidentId,
     setMenuOpen(false);
   };
 
-  const openIncident = (n: Incident) => {
+  const handleReload = () => {
+    setReloading(true);
+    incidentStore.reload();
+    setNotice("Listado de novedades actualizado.");
+    window.setTimeout(() => setReloading(false), 450);
+    window.setTimeout(() => setNotice(null), 2600);
+  };
 
+  const openIncident = (n: Incident) => {
     incidentStore.openIncident(n.id);
-    setActiveIncidentId(n.id);
+    updateActiveId(n.id);
+  };
+
+  const handleRowClick = (n: Incident) => {
+    if (onOpenTracking) {
+      onOpenTracking(n.trackingNumber);
+      return;
+    }
+    if (canResolve(n)) {
+      openIncident(n);
+    }
   };
 
   const resolveIssue = (id: string, data: Parameters<typeof incidentStore.resolveIncident>[1]) => {
     const res = incidentStore.resolveIncident(id, data);
     if (!res.ok) return res.error;
 
-    setActiveIncidentId(null);
+    updateActiveId(null);
     setNotice(`Novedad solucionada · ${resolutionById(res.value.resolution!)?.label ?? ""}`);
     window.setTimeout(() => setNotice(null), 4200);
     return null;
@@ -221,12 +260,12 @@ export const IncidentsPage = observer(({ store: incidentStore, activeIncidentId,
             </button>
             <button
               type="button"
-              onClick={resetFilters}
-              aria-label="Restablecer filtros"
-              title="Restablecer filtros"
+              onClick={handleReload}
+              aria-label="Actualizar novedades"
+              title="Actualizar novedades"
               className="flex size-10 items-center justify-center rounded-xl border border-gray-200/90 bg-white text-gray-700 shadow-theme-xs transition-colors hover:bg-gray-50 cursor-pointer dark:border-gray-700/80 dark:bg-gray-900/80 dark:text-gray-200 dark:hover:bg-gray-800"
             >
-              <ArrowPathIcon className="size-4" />
+              <ArrowPathIcon className={`size-4 ${reloading ? "animate-spin text-brand-500" : ""}`} />
             </button>
           </form>
         </div>
@@ -236,7 +275,7 @@ export const IncidentsPage = observer(({ store: incidentStore, activeIncidentId,
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/70 dark:border-gray-800 dark:bg-white/[0.02]">
                 {[
-                  "Carrier",
+                  "Transportadora",
                   "Cliente",
                   "Fecha de creación",
                   "Orden",
@@ -259,8 +298,7 @@ export const IncidentsPage = observer(({ store: incidentStore, activeIncidentId,
               {incidents.map((n) => (
                 <tr
                   key={n.id}
-
-                  onClick={() => openIncident(n)}
+                  onClick={() => handleRowClick(n)}
                   className="cursor-pointer border-b border-gray-100 transition-colors last:border-0 hover:bg-gray-50/70 dark:border-gray-800 dark:hover:bg-gray-800/40"
                 >
 
@@ -387,7 +425,7 @@ export const IncidentsPage = observer(({ store: incidentStore, activeIncidentId,
 
       <IncidentDialog
         incident={currentIncident}
-        onClose={() => setActiveIncidentId(null)}
+        onClose={() => updateActiveId(null)}
         onResolve={resolveIssue}
       />
 

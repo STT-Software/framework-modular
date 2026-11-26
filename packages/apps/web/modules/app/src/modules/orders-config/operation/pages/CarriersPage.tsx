@@ -1,18 +1,20 @@
 import { useState } from "react";
 import { observer } from "mobx-react-lite";
 import {
+    AdjustmentsHorizontalIcon,
     ArrowDownTrayIcon,
     ArrowPathIcon,
     ArrowsUpDownIcon,
+    CheckCircleIcon,
     CheckIcon,
     FunnelIcon,
     MagnifyingGlassIcon,
     TruckIcon,
     XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 
 import { PageMeta } from "@/shell/meta";
-import { Input } from "@/elements/form/input";
 import type { PickupStore } from "../stores/PickupStore";
 import {
     PICKUP_STATUS_LABELS,
@@ -25,6 +27,13 @@ import {
     type PickupType,
 } from "../domain/pickupDomain";
 import { CARRIERS, carrierByName } from "../domain/carrierDirectory";
+import {
+    DEFAULT_CARRIER_PREFERENCES,
+    getDefaultCarrier,
+    getEnabledCarriers,
+    getFavoriteCarrier,
+    type CarrierPreferences,
+} from "../domain/carrierSelection";
 import { Modal } from "../components/Dialog";
 import { Button } from "@/elements/ui/button";
 import { PlusIcon } from "@/icons";
@@ -33,6 +42,7 @@ import { appointmentsCsv, recurringCsv, pickupFilename } from "../pickupCsv";
 import { downloadCsv } from "../csv";
 import { RecurringPickupCard } from "../components/RecurringPickupCard";
 import { PickupSettings } from "../components/PickupSettings";
+import { CarrierSettingsModal } from "../components/CarrierSettingsModal";
 
 const TYPES: { key: PickupType; label: string }[] = [
   { key: "occasional", label: "Eventual" },
@@ -61,9 +71,9 @@ const STATUS_DOT: Record<PickupStatus, string> = {
   incident: "bg-[#FF3F1A]",
 };
 
-const EMPTY_FORM = (): PickupInput => ({
+const EMPTY_FORM = (defaultCarrier = ""): PickupInput => ({
   kind: "occasional",
-  carrier: "",
+  carrier: defaultCarrier,
   warehouse: "",
   date: "",
   timeSlot: "",
@@ -149,7 +159,24 @@ const PickupRow = ({ pickup: r }: { pickup: Pickup }) => {
   );
 };
 
-export const CarriersPage = observer(({ store: pickupStore }: { store: PickupStore }) => {
+export interface CarriersPageProps {
+  store: PickupStore;
+  carrierPreferences?: CarrierPreferences;
+  onUpdateCarrierPreferences?: (prefs: CarrierPreferences) => void;
+}
+
+export const CarriersPage = observer(({
+  store: pickupStore,
+  carrierPreferences,
+  onUpdateCarrierPreferences,
+}: CarriersPageProps) => {
+  const [localPreferences, setLocalPreferences] = useState<CarrierPreferences>(
+    () => carrierPreferences ?? DEFAULT_CARRIER_PREFERENCES,
+  );
+  const [carrierSettingsOpen, setCarrierSettingsOpen] = useState(false);
+  const [reloading, setReloading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
   const [kind, setType] = useState<PickupType>("occasional");
   const [statuses, setStatuses] = useState<PickupStatus[]>([]);
   const [carrier, setCarrier] = useState<string | null>(null);
@@ -166,6 +193,34 @@ export const CarriersPage = observer(({ store: pickupStore }: { store: PickupSto
     data: RecurringPickupInput;
   } | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+
+  const activePreferences = carrierPreferences ?? localPreferences;
+  const enabledCarriers = getEnabledCarriers(activePreferences);
+  const favoriteCarrier = getFavoriteCarrier(activePreferences);
+  const defaultCarrier = getDefaultCarrier(activePreferences);
+
+  const showNotice = (message: string) => {
+    setNotice(message);
+    window.setTimeout(() => setNotice(null), 3200);
+  };
+
+  const handleSaveCarrierPreferences = (next: CarrierPreferences) => {
+    setLocalPreferences(next);
+    onUpdateCarrierPreferences?.(next);
+    const nextFavorite = getFavoriteCarrier(next);
+    showNotice(
+      nextFavorite
+        ? `Preferencias guardadas · Favorita: ${nextFavorite.name}`
+        : "Preferencias guardadas · Sin transportadora favorita",
+    );
+  };
+
+  const handleReload = () => {
+    setReloading(true);
+    pickupStore.reload();
+    showNotice("Recolecciones actualizadas.");
+    window.setTimeout(() => setReloading(false), 450);
+  };
 
   const isRecurring = kind === "recurring";
 
@@ -211,7 +266,8 @@ export const CarriersPage = observer(({ store: pickupStore }: { store: PickupSto
 
   const openForm = () => {
     setError(null);
-    setFormData(EMPTY_FORM());
+    const initialCarrier = carrier ?? defaultCarrier.name;
+    setFormData(EMPTY_FORM(initialCarrier));
   };
 
   const save = () => {
@@ -242,7 +298,11 @@ export const CarriersPage = observer(({ store: pickupStore }: { store: PickupSto
             packages: String(existing.packages),
             notes: existing.notes,
           }
-        : EMPTY_SETTINGS(carrier ?? ""),
+        : EMPTY_SETTINGS(
+            carrier && enabledCarriers.some((c) => c.name === carrier)
+              ? carrier
+              : defaultCarrier.name,
+          ),
     });
   };
 
@@ -270,6 +330,9 @@ export const CarriersPage = observer(({ store: pickupStore }: { store: PickupSto
           initial={editingSettings.data}
           editing={Boolean(editingSettings.id)}
           error={settingsError}
+          availableCarriers={enabledCarriers}
+          defaultCarrierName={defaultCarrier.name}
+          favoriteCarrierName={favoriteCarrier?.name ?? null}
           onEdit={() => setSettingsError(null)}
           onCancel={() => {
             setEditingSettings(null);
@@ -298,14 +361,25 @@ export const CarriersPage = observer(({ store: pickupStore }: { store: PickupSto
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => (isRecurring ? openSettings() : openForm())}
-          className="flex h-10 shrink-0 items-center gap-2 rounded-xl bg-[#FF3F1A] px-4 text-theme-sm font-bold text-white transition-colors hover:bg-[#FF3F1A]/90 cursor-pointer"
-        >
-          <PlusIcon className="size-4" aria-hidden="true" />
-          {isRecurring ? "Configurar recolección" : "Nueva recolección"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCarrierSettingsOpen(true)}
+            className={PILL}
+          >
+            <AdjustmentsHorizontalIcon className="size-4 text-[#212121]/60 dark:text-white/60" aria-hidden="true" />
+            <span>Configurar transportadoras</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => (isRecurring ? openSettings() : openForm())}
+            className="flex h-10 shrink-0 items-center gap-2 rounded-xl bg-[#FF3F1A] px-4 text-theme-sm font-bold text-white transition-colors hover:bg-[#FF3F1A]/90 cursor-pointer"
+          >
+            <PlusIcon className="size-4" aria-hidden="true" />
+            {isRecurring ? "Configurar recolección" : "Nueva recolección"}
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 border-b border-[#ECECEC] dark:border-white/10">
@@ -331,13 +405,28 @@ export const CarriersPage = observer(({ store: pickupStore }: { store: PickupSto
 
       <div className="flex flex-wrap items-center gap-2.5">
         {searchOpen && (
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Transportadora, bodega, código…"
-            className="h-10 w-48 shrink-0 sm:w-64"
-            aria-label="Buscar recolecciones"
-          />
+          <div className="relative flex w-48 shrink-0 items-center sm:w-64">
+            <input
+              type="text"
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Transportadora, bodega, código…"
+              aria-label="Buscar recolecciones"
+              className="h-10 w-full rounded-xl border border-[#ECECEC] bg-white pl-3.5 pr-8 text-theme-xs text-[#212121] shadow-theme-xs outline-none transition-colors placeholder:text-gray-400 focus:border-[#97D6DF] focus:ring-2 focus:ring-[#97D6DF]/25 dark:border-white/15 dark:bg-gray-900 dark:text-white dark:placeholder:text-white/30"
+            />
+            {search.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                aria-label="Limpiar búsqueda"
+                title="Limpiar búsqueda"
+                className="absolute right-2 flex size-6 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 cursor-pointer dark:hover:bg-white/10 dark:hover:text-white"
+              >
+                <XMarkIcon className="size-3.5 stroke-[2.5]" aria-hidden="true" />
+              </button>
+            )}
+          </div>
         )}
 
         <button
@@ -360,12 +449,12 @@ export const CarriersPage = observer(({ store: pickupStore }: { store: PickupSto
 
         <button
           type="button"
-          onClick={() => setStatuses((prev) => [...prev])}
-          aria-label="Volver a leer las recolecciones"
-          title="Volver a leer las recolecciones"
+          onClick={handleReload}
+          aria-label="Actualizar recolecciones"
+          title="Actualizar recolecciones"
           className={ICON_BUTTON}
         >
-          <ArrowPathIcon className="size-4" aria-hidden="true" />
+          <ArrowPathIcon className={`size-4 ${reloading ? "animate-spin text-[#FF3F1A]" : ""}`} aria-hidden="true" />
         </button>
 
         {!isRecurring && (
@@ -477,26 +566,36 @@ export const CarriersPage = observer(({ store: pickupStore }: { store: PickupSto
               </div>
               {CARRIERS.map((t) => {
                 const enabled = carrier === t.name;
+                const isFavorite = favoriteCarrier?.id === t.id;
                 return (
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => setCarrier(enabled ? null : t.name)}
+                    onClick={() => {
+                      setCarrier(enabled ? null : t.name);
+                      setMenuOpen(null);
+                    }}
                     className={`${MENU_ITEM} ${
                       enabled
                         ? "bg-[#ECECEC]/70 font-bold text-[#212121] dark:bg-white/10 dark:text-white"
                         : "text-[#212121]/75 hover:bg-[#ECECEC]/40 dark:text-white/70 dark:hover:bg-white/5"
                     }`}
                   >
-                    <span className="flex items-center gap-2">
+                    <span className="flex min-w-0 items-center gap-2">
                       {t.logo ? (
                         <img src={t.logo} alt="" className="h-3.5 max-w-[44px] object-contain" />
                       ) : (
                         <span className="size-3.5 rounded-full border border-[#ECECEC] dark:border-white/20" />
                       )}
-                      {t.name}
+                      <span className="truncate">{t.name}</span>
+                      {isFavorite && (
+                        <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9.5px] font-bold text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
+                          <StarSolidIcon className="size-2.5 text-amber-500" aria-hidden="true" />
+                          Favorita
+                        </span>
+                      )}
                     </span>
-                    {enabled && <CheckIcon className="size-3.5 text-[#FF3F1A]" aria-hidden="true" />}
+                    {enabled && <CheckIcon className="size-3.5 shrink-0 text-[#FF3F1A]" aria-hidden="true" />}
                   </button>
                 );
               })}
@@ -654,11 +753,21 @@ export const CarriersPage = observer(({ store: pickupStore }: { store: PickupSto
                 className={field}
               >
                 <option value="">Elige una…</option>
-                {CARRIERS.map((t) => (
-                  <option key={t.id} value={t.name}>
-                    {t.name}
-                  </option>
-                ))}
+                {CARRIERS.map((t) => {
+                  const isFav = favoriteCarrier?.id === t.id;
+                  const isEnabled = activePreferences.enabledIds.includes(t.id);
+                  const suffix = isFav
+                    ? " ★ Favorita"
+                    : !isEnabled
+                      ? " (Desactivada para cotizar)"
+                      : "";
+                  return (
+                    <option key={t.id} value={t.name}>
+                      {t.name}
+                      {suffix}
+                    </option>
+                  );
+                })}
               </select>
             </label>
 
@@ -745,6 +854,22 @@ export const CarriersPage = observer(({ store: pickupStore }: { store: PickupSto
             </button>
           </div>
         </Modal>
+      )}
+
+      <CarrierSettingsModal
+        open={carrierSettingsOpen}
+        preferences={activePreferences}
+        onSave={handleSaveCarrierPreferences}
+        onClose={() => setCarrierSettingsOpen(false)}
+      />
+
+      {notice && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-xl border border-gray-100 bg-white px-3.5 py-2.5 text-theme-xs text-ink-body shadow-theme-lg dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100">
+            <CheckCircleIcon className="size-4 text-success-500" aria-hidden="true" />
+            {notice}
+          </div>
+        </div>
       )}
     </div>
   );

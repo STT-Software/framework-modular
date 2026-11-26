@@ -11,6 +11,7 @@ import {
   type PedidosApiResponse,
   type PedidosOperatorView,
 } from "../../types";
+import { writeActiveBusinessProfile } from "../domain/profilePresets";
 
 /** Resultado de una operación del equipo de Pedidos, con el mensaje listo para mostrar. */
 export interface PedidosOperatorMutationResult {
@@ -96,12 +97,20 @@ export class PedidosOperationStore {
         return;
       }
       const { view, operatorCount, operators } = await this.deps.access.withToken(async token => {
-        if (role === "operator") return { view: await this.deps.api.operator(token, businessId), operatorCount: 1, operators: [] };
+        if (role === "operator") {
+          const operatorView = await this.deps.api.operator(token, businessId);
+          if (operatorView.profile) {
+            writeActiveBusinessProfile(businessId, operatorView.profile);
+          }
+          return { view: operatorView, operatorCount: 1, operators: [] };
+        }
         const config = await this.deps.api.get(token, businessId);
+        writeActiveBusinessProfile(businessId, config.profile.id);
         const admin = config.candidateOperators?.find(candidate => candidate.sources.includes("admin"));
         return {
           view: {
             business: config.business,
+            profile: config.profile.id,
             operator: {
               id: "admin", name: admin?.name ?? adminAccessStore.access?.personName ?? "Administrador",
               email: adminAccessStore.email, phone: admin?.phone ?? null, stages: [...ALL_OPERATOR_STAGES],

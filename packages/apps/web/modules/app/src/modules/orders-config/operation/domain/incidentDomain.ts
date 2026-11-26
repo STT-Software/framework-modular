@@ -282,3 +282,208 @@ export function filterIncidents(incidents: Incident[], filter: IncidentFilter): 
 export function canResolve(n: Incident): boolean {
   return n.status === "pending" || n.status === "open" || n.status === "rejected";
 }
+
+// ---------------------------------------------------------------------------
+// Delivery failure reporting (from order detail / dispatch workflow)
+// ---------------------------------------------------------------------------
+
+export type DeliveryFailureMotiveId =
+  | "no_answer"
+  | "wrong_address"
+  | "rejected"
+  | "incomplete_info"
+  | "other";
+
+export type DeliveryFailureOutcome = "retry" | "cancel";
+
+export const DELIVERY_FAILURE_MOTIVES: ReadonlyArray<{
+  id: DeliveryFailureMotiveId;
+  label: string;
+  hint: string;
+}> = [
+  {
+    id: "no_answer",
+    label: "Destinatario no contesta / no estaba",
+    hint: "Se intentó entregar en la dirección pero nadie recibió el pedido.",
+  },
+  {
+    id: "wrong_address",
+    label: "Dirección incorrecta o inaccesible",
+    hint: "La nomenclatura tiene errores o la zona no permitió el ingreso.",
+  },
+  {
+    id: "rejected",
+    label: "Cliente rechazó el pedido o el pago",
+    hint: "El destinatario canceló en puerta o rechazó el pago contra entrega.",
+  },
+  {
+    id: "incomplete_info",
+    label: "Información de entrega incompleta",
+    hint: "Faltan datos clave como torre, apartamento, barrio o referencia.",
+  },
+  {
+    id: "other",
+    label: "Otro motivo",
+    hint: "Describe con claridad lo ocurrido durante el intento de entrega.",
+  },
+];
+
+export function formatDeliveryIncidentNote(
+  motiveLabel: string,
+  detail: string,
+  outcome: DeliveryFailureOutcome,
+  now: Date = new Date(),
+): string {
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  const cleanMotive = motiveLabel.trim() || "Novedad logística";
+  const cleanDetail = detail.trim();
+  const actionLabel =
+    outcome === "retry"
+      ? "Reintentar entrega (devuelto a Listo)"
+      : "Cancelar pedido";
+
+  const motivePart = cleanDetail ? `${cleanMotive} — ${cleanDetail}` : cleanMotive;
+  return `[Novedad Logística ${hh}:${mm}] Motivo: ${motivePart} | Acción: ${actionLabel}`;
+}
+
+export function createSeedIncidents(now: Date = new Date()): Incident[] {
+  const hoursAgo = (hours: number) =>
+    new Date(now.getTime() - hours * 3600_000).toISOString();
+
+  return [
+    {
+      id: "15050058",
+      trackingNumber: "50000112926",
+      carrier: "Envía",
+      orderNumber: "P-010",
+      customer: "Alejandro Vélez",
+      phone: "+57 302 333 4455",
+      address: "Calle 45 #12-30, Apto 502",
+      city: "Bogotá",
+      reason: INCIDENT_REASONS[0],
+      status: "pending",
+      createdAt: hoursAgo(0.5),
+    },
+    {
+      id: "15048102",
+      trackingNumber: "50000112926",
+      carrier: "Envía",
+      orderNumber: "P-010",
+      customer: "Alejandro Vélez",
+      phone: "+57 302 333 4455",
+      address: "Calle 45 #12-30, Apto 502",
+      city: "Bogotá",
+      reason: INCIDENT_REASONS[1],
+      status: "resolved",
+      createdAt: hoursAgo(18),
+      resolution: "same_address",
+      notes: "Cliente confirmó entrega después de las 2 p.m. en portería.",
+      recipientName: "Alejandro Vélez",
+      recipientPhone: "+57 302 333 4455",
+      resolvedAt: hoursAgo(16.5),
+    },
+    {
+      id: "14990137",
+      trackingNumber: "50000113753",
+      carrier: "Coordinadora",
+      orderNumber: "P-009",
+      customer: "David Restrepo",
+      phone: "+57 302 111 2233",
+      address: "Carrera 68 #24-15",
+      city: "Medellín",
+      reason: INCIDENT_REASONS[1],
+      status: "open",
+      createdAt: hoursAgo(1.5),
+    },
+    {
+      id: "15050061",
+      trackingNumber: "50000112918",
+      carrier: "Servientrega",
+      orderNumber: "P-008",
+      customer: "Carolina Herrera",
+      phone: "+57 301 999 8877",
+      address: "Calle 100 #15-20, Torre B",
+      city: "Bogotá",
+      reason: INCIDENT_REASONS[2],
+      status: "pending",
+      createdAt: hoursAgo(2.4),
+    },
+    {
+      id: "14988240",
+      trackingNumber: "50000112113",
+      carrier: "TCC",
+      orderNumber: "P-007",
+      customer: "Valentina Ríos",
+      phone: "+57 301 888 9900",
+      address: "Avenida 6N #23-45",
+      city: "Cali",
+      reason: INCIDENT_REASONS[0],
+      status: "waiting",
+      createdAt: hoursAgo(9),
+    },
+    {
+      id: "15034412",
+      trackingNumber: "50000112924",
+      carrier: "Envía",
+      orderNumber: "P-006",
+      customer: "Sofía Díaz",
+      phone: "+57 301 777 3344",
+      address: "Calle 19 #4-60",
+      city: "Bogotá",
+      reason: INCIDENT_REASONS[3],
+      status: "rejected",
+      createdAt: hoursAgo(28),
+    },
+    {
+      id: "14977503",
+      trackingNumber: "50000112877",
+      carrier: "InterRapidísimo",
+      orderNumber: "P-005",
+      customer: "Andrés Gil",
+      phone: "+57 300 555 6677",
+      address: "Transversal 29 #48-12",
+      city: "Bucaramanga",
+      reason: INCIDENT_REASONS[4],
+      status: "pending",
+      createdAt: hoursAgo(31),
+    },
+    {
+      id: "14950881",
+      trackingNumber: "50000112640",
+      carrier: "Coordinadora",
+      orderNumber: "P-004",
+      customer: "Lucía Torres",
+      phone: "+57 300 444 5566",
+      address: "Carrera 43A #18-95",
+      city: "Medellín",
+      reason: INCIDENT_REASONS[1],
+      status: "resolved",
+      createdAt: hoursAgo(52),
+      resolution: "new_address",
+      notes: "Entregar en Carrera 76 #33-10, portería, preguntar por Lucía.",
+      recipientName: "Lucía Torres",
+      recipientPhone: "+57 300 444 5566",
+      newAddress: "Carrera 76 #33-10, barrio Laureles",
+      resolvedAt: hoursAgo(50),
+    },
+    {
+      id: "14899012",
+      trackingNumber: "50000112455",
+      carrier: "Servientrega",
+      orderNumber: "P-003",
+      customer: "Pedro Ramírez",
+      phone: "+57 300 333 4455",
+      address: "Calle 72 #10-34",
+      city: "Bogotá",
+      reason: INCIDENT_REASONS[5],
+      status: "resolved",
+      createdAt: hoursAgo(75),
+      resolution: "tomorrow",
+      notes: "Reintentar mañana en oficina antes de las 6 p.m.",
+      recipientName: "Pedro Ramírez",
+      recipientPhone: "+57 300 333 4455",
+      resolvedAt: hoursAgo(73),
+    },
+  ];
+}

@@ -10,7 +10,7 @@ import {
     type Weekday,
     type PickupSlot,
 } from "../domain/pickupDomain";
-import { CARRIERS } from "../domain/carrierDirectory";
+import { CARRIERS, carrierByName, type Carrier } from "../domain/carrierDirectory";
 import { field } from "../pickupFields";
 
 const FormSection = ({
@@ -43,6 +43,9 @@ interface Props {
   initial: RecurringPickupInput;
   editing: boolean;
   error: string | null;
+  availableCarriers?: Carrier[];
+  defaultCarrierName?: string;
+  favoriteCarrierName?: string | null;
   onCancel: () => void;
   onSave: (data: RecurringPickupInput) => void;
 
@@ -53,13 +56,29 @@ export const PickupSettings = ({
   initial,
   editing,
   error,
+  availableCarriers,
+  defaultCarrierName,
+  favoriteCarrierName,
   onCancel,
   onSave,
   onEdit,
 }: Props) => {
-  const [data, setData] = useState<RecurringPickupInput>(initial);
+  const [data, setData] = useState<RecurringPickupInput>(() => ({
+    ...initial,
+    carrier: initial.carrier || (!editing && defaultCarrierName ? defaultCarrierName : ""),
+  }));
 
-  const options = CARRIERS;
+  const resolvedFavoriteName =
+    favoriteCarrierName !== undefined ? favoriteCarrierName : (defaultCarrierName ?? null);
+
+  const baseCarriers = availableCarriers && availableCarriers.length > 0 ? availableCarriers : CARRIERS;
+  const options =
+    data.carrier && !baseCarriers.some((c) => c.name === data.carrier)
+      ? [
+          ...baseCarriers,
+          carrierByName(data.carrier) ?? { id: `custom-${data.carrier}`, name: data.carrier },
+        ]
+      : baseCarriers;
 
   const updateField = <K extends keyof RecurringPickupInput>(
     key: K,
@@ -136,19 +155,20 @@ export const PickupSettings = ({
       </FormSection>
 
       <FormSection
-        title="Carrier"
+        title="Transportadora"
         hint="La que pasa por la bodega. Si cambia, la recolección es otra."
       >
         <select
           value={data.carrier}
           onChange={(e) => updateField("carrier", e.target.value)}
-          aria-label="Carrier"
+          aria-label="Transportadora"
           className={`${field} max-w-sm`}
         >
           <option value="">Elige una…</option>
           {options.map((t) => (
             <option key={t.id} value={t.name}>
               {t.name}
+              {resolvedFavoriteName && t.name === resolvedFavoriteName ? " ★ Favorita" : ""}
             </option>
           ))}
         </select>

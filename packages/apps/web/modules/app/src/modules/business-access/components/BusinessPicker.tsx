@@ -14,7 +14,6 @@ interface BusinessGroup {
   categoryLabel: string;
   adminAccess: AccessGrant | null;
   operatorAccesses: AccessGrant[];
-  totalCount: number;
 }
 
 /**
@@ -44,7 +43,6 @@ export const BusinessPicker = observer(() => {
           categoryLabel: categoryLabel(access.category as CategoryId, access.categoryOther),
           adminAccess: null,
           operatorAccesses: [],
-          totalCount: 0,
         };
         map.set(access.businessId, group);
       }
@@ -53,7 +51,6 @@ export const BusinessPicker = observer(() => {
       } else {
         group.operatorAccesses.push(access);
       }
-      group.totalCount += 1;
     }
 
     return Array.from(map.values());
@@ -133,10 +130,6 @@ export const BusinessPicker = observer(() => {
             operatorCount={totalOperatorCount}
           />
         </div>
-
-        <p className="np-picker-note">
-          Esta selección solo aparece cuando tienes más de un acceso (por negocio o por rol).
-        </p>
       </aside>
 
       {/* RIGHT STAGE — Business-Grouped Parent (Admin) -> Subordinate Children (Operators) */}
@@ -162,10 +155,6 @@ export const BusinessPicker = observer(() => {
                     <span className="np-biz-category">{group.categoryLabel}</span>
                   </div>
                 </div>
-
-                <span className="np-biz-count">
-                  {group.totalCount} {group.totalCount === 1 ? "acceso" : "accesos"}
-                </span>
               </header>
 
               {/* LEVEL 1 — PARENT ACCESS: Business Administrator */}
@@ -196,7 +185,6 @@ export const BusinessPicker = observer(() => {
                         <i aria-hidden="true" />
                         <span>Administrador</span>
                       </span>
-                      <span className="np-parent-scope">Acceso principal del negocio</span>
                     </div>
 
                     <h3 className="np-parent-title">Gestión y Configuración</h3>
@@ -239,18 +227,6 @@ export const BusinessPicker = observer(() => {
               {/* LEVEL 2 — SUBORDINATE CHILD ACCESSES: Module Operators */}
               {group.operatorAccesses.length > 0 && (
                 <div className="np-children-branch" data-has-parent={Boolean(admin) || undefined}>
-                  <div className="np-children-head">
-                    <span className="np-children-kicker">
-                      {admin ? (
-                        <>
-                          <strong>Módulos subordinados</strong> · Acceso directo de operador
-                        </>
-                      ) : (
-                        <strong>Módulos asignados como operador</strong>
-                      )}
-                    </span>
-                  </div>
-
                   <div
                     className="np-children-grid"
                     data-count={group.operatorAccesses.length === 1 ? "single" : "multi"}

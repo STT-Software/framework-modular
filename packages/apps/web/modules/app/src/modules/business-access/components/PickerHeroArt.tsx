@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { ArtMark, ArtSpark } from "@/brand/SceneArt";
 
 interface PickerHeroArtProps {
@@ -7,264 +8,182 @@ interface PickerHeroArtProps {
 }
 
 /**
- * NECTO Flat Editorial Geometry hierarchy composition for /business/access ("Elige tu negocio").
- * Follows the exact SceneArt / BrandScenes visual language:
- * - Layered backdrop: dotted circle + tilted ellipse orbit, cyan halo orbs, vermilion 4-pointed sparkles, flat shadow.
- * - Top card (Parent): Administrador with crown/shield chip and cyan check badge.
- * - Centerpiece Hub: NECTO Business card with stylized editorial storefront awning, ArtMark, and flanking config/catalog satellites.
- * - Bottom branch (Children): Pedidos & Turnos operator cards linked via curved dashed hierarchy paths.
+ * NECTO Flat Editorial Geometry composition for /business/access ("Elige tu negocio").
+ * - Top centerpiece: slightly tilted white browser-style card ("ROL PRINCIPAL · Administrador")
+ *   framed by warm cream (#EFE6D3) and cyan (#97D6DF) organic shapes, flat shadow, and 2 vermilion sparkles.
+ * - Bottom row: two crisp white cards for subordinate operator modules ("Pedidos" and "Turnos")
+ *   with cream icon tiles, vermilion arrows, and clipped cyan / cream+vermilion corner accents.
  */
 export function PickerHeroArt({ activeRole }: PickerHeroArtProps) {
+  const clipBase = useId();
+  const pedidosClipId = `${clipBase}-pedidos-clip`;
+  const turnosClipId = `${clipBase}-turnos-clip`;
+
   const adminHighlighted = activeRole === "admin";
   const operatorHighlighted = activeRole === "operator";
 
   return (
     <svg
       className="np-hero-svg"
-      viewBox="0 0 460 364"
+      viewBox="0 0 540 368"
       fill="none"
       role="img"
-      aria-label="Jerarquía NECTO: Administrador conectado al negocio central y ramificado hacia los módulos subordinados de Pedidos y Turnos"
+      aria-label="Jerarquía NECTO: tarjeta principal de Administrador sobre los módulos subordinados de Pedidos y Turnos"
     >
-      {/* ── LAYER 1: Orbital Backdrop (SceneArt language) ── */}
-      <circle className="np-art-orbit" cx="230" cy="182" r="142" />
-      <ellipse
-        className="np-art-orbit-solid"
-        cx="230"
-        cy="182"
-        rx="196"
-        ry="98"
-        transform="rotate(-20 230 182)"
-      />
+      <defs>
+        <clipPath id={pedidosClipId}>
+          <rect x="6" y="244" width="256" height="114" rx="18" />
+        </clipPath>
+        <clipPath id={turnosClipId}>
+          <rect x="278" y="244" width="256" height="114" rx="18" />
+        </clipPath>
+      </defs>
 
-      {/* Cyan accent orbs with soft halos */}
+      {/* ── TOP BACKDROP: Organic Cream & Cyan Shapes + Flat Shadow + Sparkles ── */}
       <g aria-hidden="true">
-        <circle className="np-art-cyan-halo" cx="42" cy="238" r="12" />
-        <circle className="np-art-badge-bg" cx="42" cy="238" r="5.5" />
-        <circle className="np-art-cyan-halo" cx="412" cy="90" r="10.5" />
-        <circle className="np-art-badge-bg" cx="412" cy="90" r="4.8" />
-      </g>
-
-      {/* Four-pointed sparkles */}
-      <g className="np-art-sparks" aria-hidden="true">
-        <ArtSpark cx={72} cy={62} size={18} />
-        <ArtSpark cx={396} cy={246} size={14} />
-      </g>
-      <g className="np-art-sparks-cyan" aria-hidden="true">
-        <ArtSpark cx={364} cy={42} size={12} />
-      </g>
-
-      {/* Flat ground shadow */}
-      <ellipse className="np-art-shadow" cx="230" cy="352" rx="168" ry="8.5" />
-
-      {/* ── LAYER 2: Hierarchy Connectors & Satellite Links ── */}
-      {/* Admin -> Business Hub */}
-      <path
-        className="np-art-tree-link"
-        data-active={adminHighlighted || undefined}
-        d="M230 72 V112"
-      />
-      <circle
-        cx="230"
-        cy="92"
-        r="3.5"
-        className={adminHighlighted ? "np-art-node-active" : "np-art-node"}
-      />
-
-      {/* Side satellites -> Business Hub */}
-      <path className="np-art-sat-link" d="M77 160 Q95 166 113 166" />
-      <path className="np-art-sat-link" d="M383 176 Q365 176 347 174" />
-
-      {/* Business Hub -> Subordinate Operator Modules */}
-      <path
-        className="np-art-tree-link"
-        data-active={operatorHighlighted || undefined}
-        d="M230 232 C230 258 118 246 118 276"
-      />
-      <path
-        className="np-art-tree-link"
-        data-active={operatorHighlighted || undefined}
-        d="M230 232 C230 258 342 246 342 276"
-      />
-      <circle
-        cx="230"
-        cy="232"
-        r="5"
-        className={operatorHighlighted ? "np-art-node-active" : "np-art-node"}
-      />
-
-      {/* ── LAYER 3: Flanking Satellites (Catalog & Team/Config) ── */}
-      {/* Left satellite: Catalog / Inventory token */}
-      <g transform="translate(52 156) rotate(-10)">
-        <rect x="-24" y="-24" width="48" height="48" rx="15" className="np-art-card" />
-        <rect x="-15" y="-15" width="30" height="30" rx="9" className="np-art-chip-cream" />
+        {/* Soft warm cream organic backdrop */}
         <path
-          className="np-art-icon"
-          d="M-7 -4 L0 -8 L7 -4 V4 L0 8 L-7 4 Z M-7 -4 L0 0 L7 -4 M0 0 V8"
+          className="np-art-blob-cream"
+          d="M118 76 C168 24 274 6 356 26 C428 44 446 112 406 164 C368 214 234 220 144 206 C76 196 58 138 118 76 Z"
         />
+        {/* Soft cyan organic accent on bottom-right */}
+        <ellipse
+          className="np-art-blob-cyan"
+          cx="392"
+          cy="176"
+          rx="62"
+          ry="36"
+          transform="rotate(-16 392 176)"
+        />
+        {/* Subtle flat ground shadow */}
+        <ellipse className="np-art-shadow" cx="270" cy="214" rx="154" ry="8.5" />
+
+        {/* Two four-pointed vermilion sparkles */}
+        <g className="np-art-sparks">
+          <ArtSpark cx={444} cy={40} size={26} />
+          <ArtSpark cx={98} cy={150} size={20} />
+        </g>
       </g>
 
-      {/* Right satellite: Team / Config settings token */}
-      <g transform="translate(408 176) rotate(9)">
-        <rect x="-24" y="-24" width="48" height="48" rx="15" className="np-art-card" />
-        <rect x="-15" y="-15" width="30" height="30" rx="9" className="np-art-chip-cyan" />
-        <circle cx="0" cy="0" r="4" className="np-art-icon" />
-        <path
-          className="np-art-icon"
-          d="M0 -8.5 V-6.5 M0 6.5 V8.5 M-8.5 0 H-6.5 M6.5 0 H8.5 M-6 -6 L-4.5 -4.5 M4.5 4.5 L6 6 M6 -6 L4.5 -4.5 M-4.5 4.5 L-6 6"
-        />
-      </g>
-
-      {/* ── LAYER 4: Top Parent Card — Administrador ── */}
-      <g transform="translate(230 42)">
+      {/* ── CENTERPIECE CARD: ROL PRINCIPAL · Administrador (Slightly Tilted) ── */}
+      <g transform="rotate(-2.2 270 116)">
         <rect
-          x="-116"
-          y="-29"
-          width="232"
-          height="58"
-          rx="18"
-          className={adminHighlighted ? "np-art-card is-highlighted" : "np-art-card"}
+          x="120"
+          y="32"
+          width="300"
+          height="168"
+          rx="20"
+          className={adminHighlighted ? "np-art-main-card is-highlighted" : "np-art-main-card"}
         />
-        {/* Icon chip */}
-        <rect
-          x="-103"
-          y="-18"
-          width="36"
-          height="36"
-          rx="11"
-          className={adminHighlighted ? "np-art-chip-orange" : "np-art-chip-cream"}
-        />
-        {/* Admin user + shield glyph */}
-        <circle cx="-85" cy="-4.5" r="4.6" className={adminHighlighted ? "np-art-icon-accent" : "np-art-icon"} />
-        <path
-          d="M-93.5 8.5 C-92 2.5 -78 2.5 -76.5 8.5"
-          className={adminHighlighted ? "np-art-icon-accent" : "np-art-icon"}
-        />
-        {/* Copy */}
-        <text x="-56" y="-4" className="np-art-eyebrow-text">
+
+        {/* Top browser header: NECTO N mark + 3 indigo hollow circles */}
+        <ArtMark x={144} y={48} size={28} />
+        <circle cx="352" cy="62" r="5.2" className="np-art-win-dot" />
+        <circle cx="372" cy="62" r="5.2" className="np-art-win-dot" />
+        <circle cx="392" cy="62" r="5.2" className="np-art-win-dot" />
+        <line x1="121" y1="86" x2="419" y2="86" className="np-art-rule" />
+
+        {/* Storefront icon inside warm cream tile */}
+        <rect x="142" y="99" width="58" height="58" rx="15" className="np-art-chip-cream" />
+        <g transform="translate(171 128)">
+          {/* Storefront body */}
+          <path
+            d="M-13 1 V12 C-13 13.8 -11.5 15 -9.8 15 H9.8 C11.5 15 13 13.8 13 12 V1"
+            className="np-art-shop-body"
+          />
+          {/* Vermilion scalloped awning */}
+          <path
+            d="M-13.5 -12 H13.5 L16.5 -2.5 C16.5 1 13.6 3.2 10.6 3.2 C8.5 3.2 6.8 2 5.6 0.4 C4.3 2.2 2.3 3.2 0 3.2 C-2.3 3.2 -4.3 2.2 -5.6 0.4 C-6.8 2 -8.5 3.2 -10.6 3.2 C-13.6 3.2 -16.5 1 -16.5 -2.5 Z"
+            className="np-art-shop-awning"
+          />
+        </g>
+
+        {/* Primary role copy */}
+        <text x="214" y="113" className="np-art-eyebrow-text">
           ROL PRINCIPAL
         </text>
-        <text x="-56" y="12.5" className="np-art-card-title">
+        <text x="214" y="135" className="np-art-main-title">
           Administrador
         </text>
-        {/* Cyan check badge */}
-        <g transform="translate(108 -22)">
-          <circle r="13.5" className="np-art-cyan-halo" />
-          <circle r="10.5" className="np-art-badge-bg" />
-          <path d="M-4 0.5 L-1 3.5 L4.5 -3" className="np-art-badge-check" />
-        </g>
+        <text x="214" y="152" className="np-art-main-subtitle">
+          Gestión y configuración del negocio.
+        </text>
+
+        {/* Minimal editorial skeleton bars */}
+        <rect x="142" y="169" width="256" height="7" rx="3.5" className="np-art-bar" />
+        <rect x="142" y="181" width="120" height="7" rx="3.5" className="np-art-bar" />
       </g>
 
-      {/* ── LAYER 5: Centerpiece Hero Card — Negocio Central NECTO ── */}
-      <g transform="translate(230 172) rotate(-2)">
-        {/* Outer editorial card */}
+      {/* ── BOTTOM ROW: Subordinate Module Cards (Pedidos & Turnos) ── */}
+      {/* Left Card: Pedidos */}
+      <g>
         <rect
-          x="-118"
-          y="-58"
-          width="236"
-          height="116"
-          rx="20"
-          className={adminHighlighted ? "np-art-hub is-highlighted" : "np-art-hub"}
+          x="6"
+          y="244"
+          width="256"
+          height="114"
+          rx="18"
+          className={operatorHighlighted ? "np-art-sub-card is-highlighted-cyan" : "np-art-sub-card"}
         />
-
-        {/* Stylized flat-editorial storefront awning strip along the top edge */}
-        <g transform="translate(-104 -46)">
-          <rect x="0" y="0" width="38" height="14" rx="5" className="np-art-awning-orange" />
-          <rect x="42" y="0" width="38" height="14" rx="5" className="np-art-awning-cream" />
-          <rect x="84" y="0" width="40" height="14" rx="5" className="np-art-awning-orange" />
-          <rect x="128" y="0" width="38" height="14" rx="5" className="np-art-awning-cream" />
-          <rect x="170" y="0" width="38" height="14" rx="5" className="np-art-awning-orange" />
+        {/* Clipped cyan organic corner accent */}
+        <g clipPath={`url(#${pedidosClipId})`} aria-hidden="true">
+          <ellipse cx="238" cy="364" rx="46" ry="30" transform="rotate(-14 238 364)" className="np-art-corner-cyan" />
         </g>
 
-        {/* NECTO Brand Mark tile */}
-        <rect x="-102" y="-18" width="48" height="48" rx="14" className="np-art-chip-orange" />
-        <ArtMark x={-91} y={-7} size={26} />
-
-        {/* Hub copy */}
-        <text x="-42" y="-3" className="np-art-eyebrow-text">
-          NEGOCIO CENTRAL
-        </text>
-        <text x="-42" y="13.5" className="np-art-hub-title">
-          Gestión y Config.
-        </text>
-        <text x="-42" y="28" className="np-art-meta-text">
-          Catálogo · Equipo · Módulos
-        </text>
-
-        {/* Editorial divider & live status footer */}
-        <line x1="-102" y1="40" x2="102" y2="40" className="np-art-rule" />
-        <g transform="translate(-102 47)">
-          <circle cx="4" cy="2" r="3" className="np-art-dot-orange" />
-          <circle cx="14" cy="2" r="3" className="np-art-badge-bg" />
-          <circle cx="24" cy="2" r="3" className="np-art-indigo-dot" />
-          <text x="36" y="5" className="np-art-eyebrow-text">
-            CONTROL COMPLETO
-          </text>
+        {/* Shopping bag tile */}
+        <rect x="24" y="274" width="54" height="54" rx="14" className="np-art-chip-cream" />
+        <g transform="translate(51 301)">
+          <path
+            d="M-9.5 -4.5 H9.5 L11.5 12 C11.6 13.2 10.6 14 9.5 14 H-9.5 C-10.6 14 -11.6 13.2 -11.5 12 Z M-5.5 -4.5 V-7.5 C-5.5 -10.8 -3 -13 0 -13 C3 -13 5.5 -10.8 5.5 -7.5 V-4.5"
+            className="np-art-icon"
+          />
         </g>
-        {/* Right-aligned mini status pill */}
-        <rect x="46" y="43.5" width="56" height="11" rx="5.5" className="np-art-chip-cyan" />
-        <text x="74" y="51.2" textAnchor="middle" className="np-art-pill-micro">
-          EN LÍNEA
-        </text>
-      </g>
 
-      {/* ── LAYER 6: Subordinate Child Cards — Pedidos & Turnos ── */}
-      {/* Bottom-left: Pedidos */}
-      <g transform="translate(116 308) rotate(-2)">
-        <rect
-          x="-90"
-          y="-30"
-          width="180"
-          height="60"
-          rx="16"
-          className={operatorHighlighted ? "np-art-card is-highlighted-cyan" : "np-art-card"}
-        />
-        <rect x="-78" y="-18" width="36" height="36" rx="10" className="np-art-chip-cyan" />
-        {/* Shopping bag icon */}
-        <path
-          d="M-66.5 -4.5 H-53.5 L-52.5 8 H-67.5 L-66.5 -4.5 Z M-63.5 -4.5 V-7.2 A3.5 3.5 0 0 1 -56.5 -7.2 V-4.5"
-          className="np-art-icon"
-        />
-        <text x="-32" y="-4" className="np-art-eyebrow-text">
-          OPERADOR
-        </text>
-        <text x="-32" y="12.5" className="np-art-card-title">
+        {/* Pedidos copy */}
+        <text x="92" y="287" className="np-art-sub-title">
           Pedidos
         </text>
-        <g transform="translate(82 -24)">
-          <circle r="12.5" className="np-art-cyan-halo" />
-          <circle r="10" className="np-art-badge-bg" />
-          <path d="M-3.8 0.5 L-1 3.3 L4.3 -2.8" className="np-art-badge-check" />
-        </g>
+        <text x="92" y="307" className="np-art-sub-desc">
+          Gestión de solicitudes,
+        </text>
+        <text x="92" y="323" className="np-art-sub-desc">
+          estados y entregas.
+        </text>
       </g>
 
-      {/* Bottom-right: Turnos */}
-      <g transform="translate(344 308) rotate(2)">
+      {/* Right Card: Turnos */}
+      <g>
         <rect
-          x="-90"
-          y="-30"
-          width="180"
-          height="60"
-          rx="16"
-          className={operatorHighlighted ? "np-art-card is-highlighted-cyan" : "np-art-card"}
+          x="278"
+          y="244"
+          width="256"
+          height="114"
+          rx="18"
+          className={operatorHighlighted ? "np-art-sub-card is-highlighted-cyan" : "np-art-sub-card"}
         />
-        <rect x="-78" y="-18" width="36" height="36" rx="10" className="np-art-chip-cyan" />
-        {/* Queue list icon */}
-        <path d="M-61 -5.5 H-51 M-61 0 H-51 M-61 5.5 H-51" className="np-art-icon" />
-        <circle cx="-66" cy="-5.5" r="1.4" className="np-art-indigo-dot" />
-        <circle cx="-66" cy="0" r="1.4" className="np-art-indigo-dot" />
-        <circle cx="-66" cy="5.5" r="1.4" className="np-art-indigo-dot" />
-        <text x="-32" y="-4" className="np-art-eyebrow-text">
-          OPERADOR
-        </text>
-        <text x="-32" y="12.5" className="np-art-card-title">
+        {/* Clipped cream + vermilion organic corner accent */}
+        <g clipPath={`url(#${turnosClipId})`} aria-hidden="true">
+          <ellipse cx="492" cy="364" rx="44" ry="28" transform="rotate(-10 492 364)" className="np-art-corner-cream" />
+          <ellipse cx="524" cy="358" rx="28" ry="24" transform="rotate(-18 524 358)" className="np-art-corner-orange" />
+        </g>
+
+        {/* Calendar / Queue tile */}
+        <rect x="296" y="274" width="54" height="54" rx="14" className="np-art-chip-cream" />
+        <g transform="translate(323 301)">
+          <rect x="-11.5" y="-9.5" width="23" height="21" rx="4.5" className="np-art-icon" />
+          <path d="M-11.5 -2.5 H11.5 M-5.5 -13 V-7.5 M5.5 -13 V-7.5 M-6 2.5 H2 M-6 7 H5" className="np-art-icon" />
+        </g>
+
+        {/* Turnos copy */}
+        <text x="364" y="287" className="np-art-sub-title">
           Turnos
         </text>
-        <g transform="translate(82 -24)">
-          <circle r="12.5" className="np-art-cyan-halo" />
-          <circle r="10" className="np-art-badge-bg" />
-          <path d="M-3.8 0.5 L-1 3.3 L4.3 -2.8" className="np-art-badge-check" />
-        </g>
+        <text x="364" y="307" className="np-art-sub-desc">
+          Control de filas y
+        </text>
+        <text x="364" y="323" className="np-art-sub-desc">
+          llamados de atención.
+        </text>
       </g>
     </svg>
   );

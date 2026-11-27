@@ -15,7 +15,7 @@ const TURNOS_SECTION_OF_VIEW: Record<string, string> = {
 };
 /**
  * Step 5: automated loading/transition screen.
- * Replaces the redundant static confirmation step with a cinematic 8-second animated transition:
+ * Replaces the redundant static confirmation step with a snappy 4-second animated transition:
  * the white canvas displaces the orange side panel, the vector illustration glides to the center,
  * and a flat, pure-orange progress bar fills below it without glow or shine effects.
  */
@@ -55,12 +55,12 @@ export const ReadyStep = observer(() => {
     "¡Todo listo! Ingresando a tu espacio…",
   ];
 
-  // Exactly 8 seconds (8000ms) with staggered natural pacing:
+  // Exactly 4 seconds (4000ms) with staggered natural pacing:
   // avanza (0-32%), se detiene (32-35%), avanza con fuerza (35-72%), se detiene (72-75%), avanza al final (75-100%)
   useEffect(() => {
     if (!access) return;
 
-    const DURATION = 8000;
+    const DURATION = 4000;
     const startTime = Date.now();
 
     const interval = setInterval(() => {
@@ -68,25 +68,25 @@ export const ReadyStep = observer(() => {
       let pct = 0;
       let stage = 0;
 
-      if (elapsed < 1600) {
+      if (elapsed < 800) {
         // Surge 1: arranque inicial decidido hasta ~32%
-        pct = (elapsed / 1600) * 32;
+        pct = (elapsed / 800) * 32;
         stage = 0;
-      } else if (elapsed < 3200) {
+      } else if (elapsed < 1600) {
         // Pausa 1: se detiene / verificación de credenciales (~32% a 35%)
-        pct = 32 + ((elapsed - 1600) / 1600) * 3;
+        pct = 32 + ((elapsed - 800) / 800) * 3;
         stage = 0;
-      } else if (elapsed < 5200) {
+      } else if (elapsed < 2600) {
         // Surge 2: avance con fuerza cargando el entorno (~35% a 72%)
-        pct = 35 + ((elapsed - 3200) / 2000) * 37;
+        pct = 35 + ((elapsed - 1600) / 1000) * 37;
         stage = 1;
-      } else if (elapsed < 6600) {
+      } else if (elapsed < 3300) {
         // Pausa 2: se detiene sincronizando módulos (~72% a 75%)
-        pct = 72 + ((elapsed - 5200) / 1400) * 3;
+        pct = 72 + ((elapsed - 2600) / 700) * 3;
         stage = 2;
-      } else if (elapsed < 8000) {
+      } else if (elapsed < 4000) {
         // Surge 3: avance fluido y continuo hasta 100%
-        pct = 75 + ((elapsed - 6600) / 1400) * 25;
+        pct = 75 + ((elapsed - 3300) / 700) * 25;
         stage = 3;
       } else {
         pct = 100;

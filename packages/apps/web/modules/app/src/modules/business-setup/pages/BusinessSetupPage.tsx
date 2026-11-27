@@ -1,5 +1,6 @@
 import "../styles/business-setup.css";
 import "@/css/business-configuration.css";
+import "../styles/setup-home.css";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -182,6 +183,8 @@ const BusinessSetupPage = observer(() => {
         <PageMeta title={`Necto · Espacio de trabajo de ${name}`} />
         <BusinessWorkspaceShell
           hideSidebar
+          hideBreadcrumb
+          seamless
           className="no-root"
           businessId={businessId ?? ""}
           businessName={state ? state.profile.name : name}
@@ -237,36 +240,43 @@ const BusinessSetupPage = observer(() => {
           disabled={store.saving}
         >
           {store.status === "loading" || store.status === "idle" ? (
-            <SkeletonGroup className="sk-stack" style={{ ["--sk-gap" as string]: "16px" }}>
-              <Skeleton width="45%" height={30} />
-              <Skeleton width="70%" height={14} />
-              <Skeleton height={56} radius={12} style={{ marginTop: 8 }} />
-              <Skeleton height={56} radius={12} />
-              <Skeleton height={56} radius={12} />
-              <Skeleton width={160} height={44} radius={10} style={{ marginTop: 8 }} />
-            </SkeletonGroup>
+            <div className="sh-skeleton-wrap">
+              <Skeleton height={240} radius={22} />
+              <Skeleton width={160} height={24} radius={8} />
+              <SkeletonGroup className="sh-skeleton-grid">
+                <Skeleton height={148} radius={16} />
+                <Skeleton height={148} radius={16} />
+              </SkeletonGroup>
+              <Skeleton height={44} radius={8} />
+            </div>
           ) : null}
           {store.status === "unavailable" && (
-            <div className="no-empty-modules">
-              <h3>Este negocio ya no está disponible para ti</h3>
-              <p>Pudo haberse pausado o asignarse a otra persona. Entra de nuevo para ver los negocios que administras.</p>
-              <Link className="no-primary" to="/business/access">
-                Ir al acceso
-              </Link>
+            <div className="sh-state-frame">
+              <div className="no-empty-modules">
+                <h3>Este negocio ya no está disponible para ti</h3>
+                <p>Pudo haberse pausado o asignarse a otra persona. Entra de nuevo para ver los negocios que administras.</p>
+                <Link className="no-primary" to="/business/access">
+                  Ir al acceso
+                </Link>
+              </div>
             </div>
           )}
           {store.status === "error" && (
-            <div className="no-empty-modules">
-              <h3>No pudimos abrir la configuración</h3>
-              <p>{store.error}</p>
-              <button type="button" className="no-primary" onClick={() => businessId && void store.load(businessId)}>
-                Reintentar
-              </button>
+            <div className="sh-state-frame">
+              <div className="no-empty-modules">
+                <h3>No pudimos abrir la configuración</h3>
+                <p>{store.error}</p>
+                <button type="button" className="no-primary" onClick={() => businessId && void store.load(businessId)}>
+                  Reintentar
+                </button>
+              </div>
             </div>
           )}
           {ready && (
             <ModulesView
+              dashboardReady={dashboardReady}
               onStart={() => void go(startStep)}
+              onOpenStep={(step) => void go(step)}
               onConfigure={(moduleId) => {
                 const targetModule = state?.modules.find((m) => m.id === moduleId);
                 const entryStep = targetModule?.settings.status === "ready" ? "review" : "profile";
@@ -280,6 +290,14 @@ const BusinessSetupPage = observer(() => {
                 }
                 store.setHoursScope(moduleId as ModuleId);
                 void go("data");
+              }}
+              onOpenOperation={(moduleId) => {
+                if (!businessId) return;
+                if (moduleId === "pedidos") {
+                  navigate(`/business/app/${businessId}/pedidos/dashboard`);
+                  return;
+                }
+                navigate(`/business/app/${businessId}`);
               }}
             />
           )}

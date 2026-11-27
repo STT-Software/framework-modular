@@ -1,5 +1,6 @@
 import "../styles/business-access.css";
 import "@/css/business-configuration.css";
+import "../styles/business-picker.css";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
@@ -85,7 +86,7 @@ const BusinessAccessPage = observer(() => {
           <span>© 2026 Necto</span>
         </footer>
       </div>
-      <BrandPanel view={view} />
+      {view !== "negocios" && <BrandPanel view={view} />}
       <HelpDialog kind={help} onClose={() => setHelp(null)} />
     </section>
   );

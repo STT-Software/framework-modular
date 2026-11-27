@@ -1,23 +1,70 @@
 import { observer } from "mobx-react-lite";
-import { useId, useState } from "react";
-import { useNavigate } from "react-router";
+import { useId, useMemo, useState } from "react";
 import { categoryLabel, type CategoryId } from "@/modules/businesses";
+import type { AccessGrant } from "../api/businessAccessApi";
 import { useFocusHeading } from "../hooks/useFocusHeading";
 import { adminAccessStore } from "../stores/adminAccess.store";
+import { PickerHeroArt } from "./PickerHeroArt";
 
 type ChoiceStatus = "idle" | "loading" | "success";
 
+interface BusinessGroup {
+  businessId: string;
+  businessName: string;
+  categoryLabel: string;
+  adminAccess: AccessGrant | null;
+  operatorAccesses: AccessGrant[];
+  totalCount: number;
+}
+
 /**
  * Step 4, only for people with more than one access: a business in a role, just the ones the server authorized.
- * Clean, elevated NECTO selector cards that distinguish between Business Admin and Operator roles.
+ * Full-screen asymmetric 2-column Access Portal (distinct from /business/setup):
+ * - Left rail: session identity + hierarchical NECTO flat-editorial vector art.
+ * - Right stage: businesses grouped by businessId with clear Parent (Administrador) -> Child (Operador) nesting.
  */
 export const BusinessPicker = observer(() => {
   const store = adminAccessStore;
   const headingRef = useFocusHeading();
   const baseId = useId();
-  const navigate = useNavigate();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [hoveredRole, setHoveredRole] = useState<"admin" | "operator" | null>(null);
+  const [instantFocus, setInstantFocus] = useState(false);
   const [choiceStatus, setChoiceStatus] = useState<ChoiceStatus>("idle");
+
+  const groups = useMemo<BusinessGroup[]>(() => {
+    const map = new Map<string, BusinessGroup>();
+
+    for (const access of store.accesses) {
+      let group = map.get(access.businessId);
+      if (!group) {
+        group = {
+          businessId: access.businessId,
+          businessName: access.businessName,
+          categoryLabel: categoryLabel(access.category as CategoryId, access.categoryOther),
+          adminAccess: null,
+          operatorAccesses: [],
+          totalCount: 0,
+        };
+        map.set(access.businessId, group);
+      }
+      if (access.role === "admin") {
+        group.adminAccess = access;
+      } else {
+        group.operatorAccesses.push(access);
+      }
+      group.totalCount += 1;
+    }
+
+    return Array.from(map.values());
+  }, [store.accesses]);
+
+  const hasAnyAdmin = groups.some((g) => g.adminAccess !== null);
+  const totalOperatorCount = groups.reduce((acc, g) => acc + g.operatorAccesses.length, 0);
+
+  const selectedRole = selectedKey
+    ? (store.accesses.find((a) => a.key === selectedKey)?.role ?? null)
+    : null;
 
   const handleSelect = async (key: string) => {
     if (store.busy || choiceStatus !== "idle") return;
@@ -34,135 +81,275 @@ export const BusinessPicker = observer(() => {
   };
 
   return (
-    <section className="na-view-enter" aria-labelledby={`${baseId}-title`}>
-      <span className="na-eyebrow">
-        <i />
-        TUS ESPACIOS EN NECTO
-      </span>
-      <h1 id={`${baseId}-title`} ref={headingRef} tabIndex={-1}>
-        ¿Dónde comenzamos<span>?</span>
-      </h1>
-      <p className="na-description">
-        Tu correo tiene acceso a estos negocios. Elige a cuál quieres entrar y con qué rol.
-      </p>
+    <section
+      className="np-portal"
+      data-instant-focus={instantFocus || undefined}
+      aria-labelledby={`${baseId}-title`}
+    >
+      {/* LEFT RAIL — Identity, Context & Hierarchical NECTO Flat Editorial Vector */}
+      <aside className="np-rail">
+        <div className="np-rail-head">
+          <span className="np-eyebrow">
+            <i aria-hidden="true" />
+            <span>TUS ESPACIOS EN NECTO</span>
+          </span>
 
-      <div className="na-business-picker">
-        {store.accesses.map((access) => {
-          const isOperator = access.role === "operator";
-          const operatorModule = isOperator ? access.modules[0] : undefined;
-          const isPedidosOperator = isOperator && operatorModule === "pedidos";
-          const isSelected = selectedKey === access.key;
-          const isDimmed = selectedKey !== null && !isSelected;
-          const status = isSelected ? choiceStatus : "idle";
+          <h1 id={`${baseId}-title`} ref={headingRef} tabIndex={-1} className="np-title">
+            ¿Dónde comenzamos<span>?</span>
+          </h1>
 
-          const operatorBadge = isPedidosOperator ? "Operador · Pedidos" : "Operador · Turnos";
-          const cardTitle = isOperator
-            ? isPedidosOperator
-              ? "Gestión de Pedidos"
-              : "Atención y Turnos"
-            : "Gestión y Configuración";
-          const cardDesc = isOperator
-            ? isPedidosOperator
-              ? "Confirmación, preparación y despacho de pedidos."
-              : "Control de filas, llamado de tickets y atención."
-            : "Módulos, catálogo, inventario y administración general.";
+          <p className="np-subtitle">
+            Elige si entras a administrar el negocio completo o directo a operar un módulo asignado.
+          </p>
+
+          {store.email && (
+            <div className="np-email-pill">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="3" />
+                <path d="m4 7 8 6 8-6" />
+              </svg>
+              <span>{store.email}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="np-rail-art">
+          <PickerHeroArt
+            activeRole={selectedRole ?? hoveredRole}
+            hasAdmin={hasAnyAdmin}
+            operatorCount={totalOperatorCount}
+          />
+        </div>
+
+        <p className="np-picker-note">
+          Esta selección solo aparece cuando tienes más de un acceso (por negocio o por rol).
+        </p>
+      </aside>
+
+      {/* RIGHT STAGE — Business-Grouped Parent (Admin) -> Subordinate Children (Operators) */}
+      <div className="np-stage">
+        {groups.map((group) => {
+          const admin = group.adminAccess;
+          const adminSelected = admin ? selectedKey === admin.key : false;
+          const adminDimmed = selectedKey !== null && !adminSelected;
+          const adminStatus = adminSelected ? choiceStatus : "idle";
 
           return (
-            <button
-              key={access.key}
-              type="button"
-              className={`na-business-card ${isOperator ? "is-operator" : "is-admin"}${
-                isDimmed ? " is-dimmed" : ""
-              }${status === "loading" ? " is-loading" : ""}${status === "success" ? " is-success" : ""}`}
-              aria-label={`Entrar a ${access.businessName} como ${
-                isOperator ? (isPedidosOperator ? "operador de Pedidos" : "operador de Turnos") : "administrador"
-              }`}
-              disabled={store.busy || choiceStatus !== "idle"}
-              onClick={() => void handleSelect(access.key)}
-            >
-              <div className={`na-card-icon-wrap ${isOperator ? "is-operator" : "is-admin"}`}>
-                {isPedidosOperator ? (
-                  <svg viewBox="0 0 24 24" aria-hidden="true" className="na-icon-svg">
-                    <path d="M5 7h14l1 14H4L5 7Zm3 0V5a4 4 0 0 1 8 0v2m-8 7 3 3 5-5" />
-                  </svg>
-                ) : isOperator ? (
-                  <svg viewBox="0 0 24 24" aria-hidden="true" className="na-icon-svg">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" aria-hidden="true" className="na-icon-svg">
-                    <path d="M3 21h18M3 7v14M21 7v14M6 11h2M6 15h2M11 11h2M11 15h2M16 11h2M16 15h2M2 7l10-4 10 4" />
-                  </svg>
-                )}
-              </div>
-
-              <div className="na-card-body">
-                <div className="na-card-top-row">
-                  <span className="na-card-business-name">{access.businessName}</span>
-                  <span className={`na-role-badge ${isOperator ? "na-role-operator" : "na-role-admin"}`}>
-                    <i className="na-badge-dot" />
-                    {isOperator ? operatorBadge : "Administrador"}
+            <article key={group.businessId} className="np-biz-group" aria-label={group.businessName}>
+              {/* Business Identity Header */}
+              <header className="np-biz-header">
+                <div className="np-biz-id">
+                  <span className="np-biz-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M3 21h18M4 9v12M20 9v12M3 9l2-5h14l2 5M9 21v-6h6v6" />
+                    </svg>
                   </span>
+                  <div className="np-biz-copy">
+                    <h2 className="np-biz-name">{group.businessName}</h2>
+                    <span className="np-biz-category">{group.categoryLabel}</span>
+                  </div>
                 </div>
 
-                <h3 className="na-card-title">{cardTitle}</h3>
+                <span className="np-biz-count">
+                  {group.totalCount} {group.totalCount === 1 ? "acceso" : "accesos"}
+                </span>
+              </header>
 
-                <p className="na-card-desc">
-                  {categoryLabel(access.category as CategoryId, access.categoryOther)} · {cardDesc}
-                </p>
-              </div>
+              {/* LEVEL 1 — PARENT ACCESS: Business Administrator */}
+              {admin && (
+                <button
+                  type="button"
+                  className="np-parent-card"
+                  data-active={(selectedKey === admin.key || hoveredRole === "admin") || undefined}
+                  data-dimmed={adminDimmed || undefined}
+                  data-status={adminStatus}
+                  aria-label={`Entrar a ${group.businessName} como administrador`}
+                  disabled={store.busy || choiceStatus !== "idle"}
+                  onMouseEnter={() => {
+                    setInstantFocus(false);
+                    setHoveredRole("admin");
+                  }}
+                  onMouseLeave={() => setHoveredRole(null)}
+                  onFocus={() => {
+                    setInstantFocus(true);
+                    setHoveredRole("admin");
+                  }}
+                  onBlur={() => setHoveredRole(null)}
+                  onClick={() => void handleSelect(admin.key)}
+                >
+                  <div className="np-parent-main">
+                    <div className="np-parent-badges">
+                      <span className="np-role-pill is-admin">
+                        <i aria-hidden="true" />
+                        <span>Administrador</span>
+                      </span>
+                      <span className="np-parent-scope">Acceso principal del negocio</span>
+                    </div>
 
-              <div className="na-card-action" aria-hidden="true">
-                {status === "loading" ? (
-                  <svg viewBox="0 0 24 24" className="na-action-spinner">
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="9"
-                      stroke={isOperator ? "#0e7090" : "#190088"}
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeDasharray="14 42"
-                      fill="none"
-                    />
-                  </svg>
-                ) : status === "success" ? (
-                  <svg viewBox="0 0 24 24" className="na-action-check">
-                    <circle cx="12" cy="12" r="10" fill="#ecfdf3" stroke="#12b76a" strokeWidth="1.5" />
-                    <path
-                      d="m8 12 3 3 5-6"
-                      stroke="#12b76a"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      fill="none"
-                    />
-                  </svg>
-                ) : (
-                  <div className="na-action-circle">
-                    <svg viewBox="0 0 20 20" className="na-action-arrow">
-                      <path
-                        d="M4.167 10h11.666m-5-5 5 5-5 5"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    <h3 className="np-parent-title">Gestión y Configuración</h3>
+                    <p className="np-parent-desc">
+                      Control completo del negocio: datos base, horarios, catálogo, equipo y todos los módulos.
+                    </p>
                   </div>
-                )}
-              </div>
-            </button>
+
+                  <div className="np-parent-action">
+                    <span className="np-parent-cta">
+                      {adminStatus === "loading" ? (
+                        <>
+                          <svg viewBox="0 0 24 24" className="na-action-spinner np-btn-icon" aria-hidden="true">
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="9"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeDasharray="14 42"
+                              fill="none"
+                            />
+                          </svg>
+                          <span>Ingresando…</span>
+                        </>
+                      ) : adminStatus === "success" ? (
+                        <span>Listo ✓</span>
+                      ) : (
+                        <>
+                          <span>Administrar negocio</span>
+                          <span className="np-arrow" aria-hidden="true">→</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </button>
+              )}
+
+              {/* LEVEL 2 — SUBORDINATE CHILD ACCESSES: Module Operators */}
+              {group.operatorAccesses.length > 0 && (
+                <div className="np-children-branch" data-has-parent={Boolean(admin) || undefined}>
+                  <div className="np-children-head">
+                    <span className="np-children-kicker">
+                      {admin ? "Módulos subordinados · Acceso directo de operador" : "Módulos asignados como operador"}
+                    </span>
+                  </div>
+
+                  <div
+                    className="np-children-grid"
+                    data-count={group.operatorAccesses.length === 1 ? "single" : "multi"}
+                  >
+                    {group.operatorAccesses.map((access) => {
+                      const isPedidos = access.modules[0] === "pedidos";
+                      const isSelected = selectedKey === access.key;
+                      const isDimmed = selectedKey !== null && !isSelected;
+                      const status = isSelected ? choiceStatus : "idle";
+
+                      const roleBadge = isPedidos ? "Operador · Pedidos" : "Operador · Turnos";
+                      const title = isPedidos ? "Gestión de Pedidos" : "Atención y Turnos";
+                      const desc = isPedidos
+                        ? "Confirmación, preparación y despacho de pedidos."
+                        : "Control de filas, llamado de tickets y atención.";
+
+                      return (
+                        <button
+                          key={access.key}
+                          type="button"
+                          className="np-child-card"
+                          data-dimmed={isDimmed || undefined}
+                          data-status={status}
+                          aria-label={`Entrar a ${group.businessName} como ${
+                            isPedidos ? "operador de Pedidos" : "operador de Turnos"
+                          }`}
+                          disabled={store.busy || choiceStatus !== "idle"}
+                          onMouseEnter={() => {
+                            setInstantFocus(false);
+                            setHoveredRole("operator");
+                          }}
+                          onMouseLeave={() => setHoveredRole(null)}
+                          onFocus={() => {
+                            setInstantFocus(true);
+                            setHoveredRole("operator");
+                          }}
+                          onBlur={() => setHoveredRole(null)}
+                          onClick={() => void handleSelect(access.key)}
+                        >
+                          <div className="np-child-top">
+                            <span className="np-child-icon" aria-hidden="true">
+                              {isPedidos ? (
+                                <svg viewBox="0 0 24 24">
+                                  <path d="M5 7h14l1 14H4L5 7Zm3 0V5a4 4 0 0 1 8 0v2m-8 7 3 3 5-5" />
+                                </svg>
+                              ) : (
+                                <svg viewBox="0 0 24 24">
+                                  <path d="M8 5h12M8 12h12M8 19h12" />
+                                  <circle cx="3.5" cy="5" r="1" />
+                                  <circle cx="3.5" cy="12" r="1" />
+                                  <circle cx="3.5" cy="19" r="1" />
+                                </svg>
+                              )}
+                            </span>
+
+                            <span className="np-role-pill is-operator">
+                              <i aria-hidden="true" />
+                              <span>{roleBadge}</span>
+                            </span>
+                          </div>
+
+                          <div className="np-child-body">
+                            <h3 className="np-child-title">{title}</h3>
+                            <p className="np-child-desc">{desc}</p>
+                          </div>
+
+                          <div className="np-child-foot">
+                            <span className="np-child-cta">
+                              {status === "loading"
+                                ? "Ingresando…"
+                                : status === "success"
+                                  ? "Listo"
+                                  : isPedidos
+                                    ? "Operar Pedidos"
+                                    : "Operar Turnos"}
+                            </span>
+
+                            <span className="np-child-arrow" aria-hidden="true">
+                              {status === "loading" ? (
+                                <svg viewBox="0 0 24 24" className="na-action-spinner">
+                                  <circle
+                                    cx="12"
+                                    cy="12"
+                                    r="9"
+                                    stroke="currentColor"
+                                    strokeWidth="2.4"
+                                    strokeLinecap="round"
+                                    strokeDasharray="14 42"
+                                    fill="none"
+                                  />
+                                </svg>
+                              ) : status === "success" ? (
+                                <svg viewBox="0 0 24 24" className="na-action-check">
+                                  <circle cx="12" cy="12" r="10" fill="#97D6DF" stroke="#190088" strokeWidth="1.5" />
+                                  <path
+                                    d="m8 12 3 3 5-6"
+                                    stroke="#190088"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    fill="none"
+                                  />
+                                </svg>
+                              ) : (
+                                "→"
+                              )}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </article>
           );
         })}
       </div>
-
-      <p className="na-picker-note">
-        Esta selección solo aparece cuando tienes más de un acceso (por negocio o por rol).
-      </p>
     </section>
   );
 });

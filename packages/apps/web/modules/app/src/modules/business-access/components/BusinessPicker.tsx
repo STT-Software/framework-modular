@@ -103,12 +103,22 @@ export const BusinessPicker = observer(() => {
           </p>
 
           {store.email && (
-            <div className="np-email-pill">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="3" y="5" width="18" height="14" rx="3" />
-                <path d="m4 7 8 6 8-6" />
-              </svg>
-              <span>{store.email}</span>
+            <div className="np-account-row">
+              <div className="np-email-pill">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="14" rx="3" />
+                  <path d="m4 7 8 6 8-6" />
+                </svg>
+                <span>{store.email}</span>
+              </div>
+              <button
+                type="button"
+                className="np-switch-account-btn"
+                disabled={store.busy || choiceStatus !== "idle"}
+                onClick={() => void store.leave("Ingresa el correo de la cuenta con la que quieres continuar.")}
+              >
+                Usar otra cuenta
+              </button>
             </div>
           )}
         </div>
@@ -228,7 +238,13 @@ export const BusinessPicker = observer(() => {
                 <div className="np-children-branch" data-has-parent={Boolean(admin) || undefined}>
                   <div className="np-children-head">
                     <span className="np-children-kicker">
-                      {admin ? "Módulos subordinados · Acceso directo de operador" : "Módulos asignados como operador"}
+                      {admin ? (
+                        <>
+                          <strong>Módulos subordinados</strong> · Acceso directo de operador
+                        </>
+                      ) : (
+                        <strong>Módulos asignados como operador</strong>
+                      )}
                     </span>
                   </div>
 

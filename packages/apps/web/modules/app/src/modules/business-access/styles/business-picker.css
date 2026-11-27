@@ -1,9 +1,7 @@
 /* ==========================================================================
    BUSINESS ACCESS — FULL-SCREEN HIERARCHICAL ACCESS PORTAL ("Elige tu negocio")
-   Distinct visual paradigm from /business/setup (no cream top hero banner).
-   Asymmetric 2-column full-screen portal:
-     Left rail (38%): Identity + hierarchical NECTO flat-editorial SVG art
-     Right stage (62%): Business containers with Parent (Admin) -> Subordinate Children (Operators)
+   Asymmetric 2-column portal with subtle NECTO corner brand geometry,
+   isometric storefront hierarchy diagram, and crisp indigo card framing.
 
    Canonical NECTO Typography (DM Sans: 300 / 400 / 700):
      36px Bold · 24px Bold · 16px Bold/Regular · 14px Bold/Regular · 12px Bold/Regular
@@ -25,31 +23,73 @@
   --np-dark: #212121;
   --np-cream: #efe6d3;
 
-  --np-canvas: #f7f7f8;
+  --np-canvas: #f8f8fa;
   --np-surface: #ffffff;
-  --np-border: #dfe3ec;
-  --np-muted: #525866;
+  --np-frame-border: rgba(25, 0, 136, 0.52);
+  --np-card-border: rgba(25, 0, 136, 0.42);
+  --np-soft-border: rgba(25, 0, 136, 0.16);
+  --np-muted: #4b5563;
 
   background: var(--np-canvas);
   color: var(--np-dark);
   font-family: "DM Sans", sans-serif;
+  overflow-x: clip;
 }
 
 .dark .na-root[data-view="negocios"] {
   --np-canvas: #0b101d;
   --np-surface: #131a2b;
-  --np-border: rgba(255, 255, 255, 0.1);
+  --np-frame-border: rgba(151, 214, 223, 0.32);
+  --np-card-border: rgba(151, 214, 223, 0.24);
+  --np-soft-border: rgba(255, 255, 255, 0.12);
   --np-dark: #e5e7eb;
   --np-muted: #94a3b8;
   --np-cream: #1c2238;
   --np-gray: rgba(255, 255, 255, 0.08);
 }
 
+/* Subtle organic NECTO corner shapes on the full-screen canvas */
+.na-root[data-view="negocios"]::before,
+.na-root[data-view="negocios"]::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.na-root[data-view="negocios"]::before {
+  top: -120px;
+  right: -90px;
+  width: 390px;
+  height: 270px;
+  border-radius: 52% 48% 54% 46% / 58% 42% 58% 42%;
+  background: rgba(239, 230, 211, 0.62);
+}
+
+.dark .na-root[data-view="negocios"]::before {
+  background: rgba(239, 230, 211, 0.06);
+}
+
+.na-root[data-view="negocios"]::after {
+  bottom: -110px;
+  left: -90px;
+  width: 280px;
+  height: 220px;
+  border-radius: 56% 44% 48% 52% / 50% 54% 46% 50%;
+  background: rgba(151, 214, 223, 0.48);
+}
+
+.dark .na-root[data-view="negocios"]::after {
+  background: rgba(151, 214, 223, 0.09);
+}
+
 .na-root[data-view="negocios"] .na-auth {
   flex: 1 1 100% !important;
   width: 100% !important;
   min-height: 100svh;
-  background: var(--np-canvas);
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 .na-root[data-view="negocios"] .na-brand {
@@ -57,36 +97,55 @@
 }
 
 .na-root[data-view="negocios"] .na-header {
-  width: min(90%, 1340px);
+  width: 82%;
+  max-width: 1760px;
   margin: 0 auto;
-  padding: 24px 0 16px;
+  padding: 28px 0 16px;
 }
 
 .na-root[data-view="negocios"] .na-signout-btn {
   font-size: 14px;
   font-weight: 400;
-  color: var(--np-dark);
-  background: var(--np-surface);
-  border-color: var(--np-border);
+  color: var(--np-indigo);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1.15px solid var(--np-card-border);
+  border-radius: 10px;
+}
+
+.dark .na-root[data-view="negocios"] .na-signout-btn {
+  color: #ffffff;
+  background: rgba(19, 26, 43, 0.8);
+}
+
+.na-root[data-view="negocios"] .na-theme {
+  border: 1.15px solid var(--np-card-border);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--np-indigo);
+}
+
+.dark .na-root[data-view="negocios"] .na-theme {
+  background: rgba(19, 26, 43, 0.8);
+  color: var(--np-cyan);
 }
 
 .na-root[data-view="negocios"] .na-main {
   flex: 1;
-  width: min(90%, 1340px);
-  max-width: none !important;
+  width: 82%;
+  max-width: 1760px !important;
   margin: 0 auto;
-  padding: 16px 0 36px;
+  padding: 18px 0 28px;
   align-items: center;
 }
 
 .na-root[data-view="negocios"] .na-auth-footer {
-  width: min(90%, 1340px);
+  width: 82%;
+  max-width: 1760px;
   margin: 0 auto;
-  padding: 16px 0 24px;
+  padding: 14px 0 24px;
+  justify-content: flex-end;
   font-size: 12px;
   font-weight: 400;
   color: var(--np-muted);
-  border-top: 1px solid var(--np-gray);
 }
 
 /* --------------------------------------------------------------------------
@@ -95,18 +154,17 @@
 .np-portal {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(320px, 0.86fr) minmax(0, 1.34fr);
-  gap: clamp(32px, 4.4vw, 68px);
-  align-items: start;
+  grid-template-columns: minmax(360px, 0.84fr) minmax(0, 1.36fr);
+  gap: clamp(40px, 4.8vw, 84px);
+  align-items: center;
 }
 
-/* Left Rail: Identity + Vector */
+/* Left Rail: Identity + Isometric Hierarchy Vector */
 .np-rail {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   min-width: 0;
-  padding-top: 6px;
 }
 
 .np-rail-head {
@@ -140,7 +198,7 @@
 
 /* Insulate canonical typography from business-configuration.css !important rules */
 .na-root[data-view="negocios"] h1.np-title {
-  margin: 12px 0 0 !important;
+  margin: 10px 0 0 !important;
   font-size: 36px !important;
   font-weight: 700 !important;
   line-height: 1.12 !important;
@@ -159,15 +217,23 @@
 
 .na-root[data-view="negocios"] p.np-subtitle {
   margin: 12px 0 0 !important;
-  max-width: 38ch !important;
+  max-width: 36ch !important;
   font-size: 16px !important;
   font-weight: 400 !important;
   line-height: 1.5 !important;
   color: var(--np-dark) !important;
 }
 
+.np-account-row {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  max-width: 100%;
+}
+
 .np-email-pill {
-  margin-top: 18px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -175,10 +241,31 @@
   padding: 7px 14px;
   border-radius: 999px;
   background: var(--np-surface);
-  border: 1px solid var(--np-border);
+  border: 1.15px solid var(--np-soft-border);
   font-size: 14px;
   font-weight: 400;
   color: var(--np-dark);
+}
+
+.np-switch-account-btn {
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--np-indigo);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: opacity 160ms ease;
+}
+
+.dark .np-switch-account-btn {
+  color: var(--np-cyan);
+}
+
+.np-switch-account-btn:hover:not(:disabled) {
+  opacity: 0.78;
 }
 
 .np-email-pill svg {
@@ -203,7 +290,7 @@
 }
 
 .np-rail-art {
-  margin: 4px 0;
+  margin: 4px 0 0;
   width: 100%;
 }
 
@@ -211,17 +298,17 @@
   margin: 0 !important;
   font-size: 12px !important;
   font-weight: 400 !important;
-  line-height: 1.55 !important;
+  line-height: 1.5 !important;
   color: var(--np-muted) !important;
 }
 
 /* --------------------------------------------------------------------------
-   3. Flat Editorial Vector Art Tokens (SceneArt / RegisterScenes spec)
+   3. Flat Editorial Isometric Hierarchy Vector Tokens
    -------------------------------------------------------------------------- */
 .np-hero-svg {
   display: block;
   width: 100%;
-  max-width: 440px;
+  max-width: 500px;
   height: auto;
   overflow: visible;
   font-family: "DM Sans", sans-serif;
@@ -229,199 +316,154 @@
 
 .np-art-orbit {
   fill: none;
-  stroke: rgba(25, 0, 136, 0.22);
+  stroke: rgba(25, 0, 136, 0.28);
   stroke-width: 1.25;
-  stroke-dasharray: 3 7;
-}
-
-.np-art-orbit-solid {
-  fill: none;
-  stroke: rgba(25, 0, 136, 0.12);
-  stroke-width: 1.1;
+  stroke-dasharray: 2.5 5.5;
 }
 
 .dark .np-art-orbit {
-  stroke: rgba(255, 255, 255, 0.42);
-}
-
-.dark .np-art-orbit-solid {
-  stroke: rgba(255, 255, 255, 0.22);
+  stroke: rgba(255, 255, 255, 0.36);
 }
 
 .np-art-sparks .sa-art-spark {
   fill: #ff3f1a;
-  opacity: 0.9;
+  opacity: 0.92;
 }
 
 .dark .np-art-sparks .sa-art-spark {
-  fill: #ffffff;
-  opacity: 0.88;
+  fill: #ff5633;
 }
 
 .np-art-shadow {
-  fill: rgba(25, 0, 136, 0.06);
+  fill: rgba(25, 0, 136, 0.08);
 }
 
 .dark .np-art-shadow {
-  fill: rgba(0, 0, 0, 0.48);
+  fill: rgba(0, 0, 0, 0.5);
 }
 
 .np-art-tree-link {
   fill: none;
-  stroke: rgba(25, 0, 136, 0.42);
-  stroke-width: 1.5;
-  stroke-dasharray: 3 5;
+  stroke: #190088;
+  stroke-width: 1.65;
+  stroke-dasharray: 4 4.5;
   stroke-linecap: round;
+  opacity: 0.85;
   transition:
     stroke 180ms ease,
     stroke-width 180ms ease;
 }
 
 .dark .np-art-tree-link {
-  stroke: rgba(151, 214, 223, 0.55);
+  stroke: #97d6df;
 }
 
 .np-art-tree-link[data-active="true"] {
   stroke: #ff3f1a;
-  stroke-width: 2;
+  stroke-width: 2.1;
   stroke-dasharray: none;
 }
 
-.np-art-junction {
-  fill: #97d6df;
+/* White pill nodes stay crisp white even in dark mode (NECTO vector rule) */
+.np-art-pill {
+  fill: #ffffff;
   stroke: #190088;
   stroke-width: 1.4;
-  transition: fill 180ms ease;
+  transition:
+    stroke 180ms ease,
+    stroke-width 180ms ease;
 }
 
-.np-art-junction.is-active {
-  fill: #ff3f1a;
-}
-
-/* Vector cards stay crisp pure white #FFFFFF even in dark mode (canonical NECTO rule) */
-.np-art-card {
-  fill: #ffffff;
-  stroke: #dfe4ef;
-  stroke-width: 1.3;
-  transition: stroke 180ms ease;
-}
-
-.np-art-card.is-highlighted {
+.np-art-pill.is-highlighted {
   stroke: #ff3f1a;
-  stroke-width: 1.8;
+  stroke-width: 1.9;
 }
 
-.np-art-card.is-highlighted-cyan {
+.np-art-pill.is-highlighted-cyan {
   stroke: #190088;
-  stroke-width: 1.8;
+  stroke-width: 2;
 }
 
-.np-art-cream-tint {
-  fill: #efe6d3;
+.np-art-pill-label {
+  fill: #190088;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
-.np-art-orange-tint {
-  fill: rgba(255, 63, 26, 0.12);
-}
-
-.np-art-orange-dot {
-  fill: #ff3f1a;
-}
-
-.np-art-cyan-soft {
-  fill: rgba(151, 214, 223, 0.34);
-}
-
-.np-art-cyan-dot {
-  fill: #97d6df;
-}
-
-.np-art-cyan-halo {
-  fill: #97d6df;
-  opacity: 0.28;
+.np-art-icon {
+  fill: none;
+  stroke: #190088;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .np-art-indigo-dot {
   fill: #190088;
 }
 
-.np-art-soft {
-  fill: #f3f5fa;
+.np-art-badge-bg {
+  fill: #97d6df;
 }
 
-.np-art-rule {
-  stroke: #dfe4ef;
-  stroke-width: 1;
-}
-
-.np-art-label {
-  fill: #190088;
-  opacity: 0.55;
-  font-size: 6.5px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-
-.np-art-title {
-  fill: #190088;
-  font-size: 11.5px;
-  font-weight: 700;
-}
-
-.np-art-pill-accent {
-  fill: #ff3f1a;
-  font-size: 7.5px;
-  font-weight: 700;
-}
-
-.np-art-row-title {
-  fill: #190088;
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.np-art-row-sub {
-  fill: #212121;
-  opacity: 0.68;
-  font-size: 7.2px;
-  font-weight: 400;
-}
-
-.np-art-mini-stroke {
+.np-art-badge-check {
   fill: none;
+  stroke: #190088;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Isometric Storefront Surfaces */
+.np-iso-front-wall,
+.np-iso-roof-top,
+.np-iso-sign-face,
+.np-iso-side-window {
+  fill: #ffffff;
+  stroke: #190088;
+  stroke-width: 1.55;
+  stroke-linejoin: round;
+}
+
+.np-iso-side-wall {
+  fill: #d8f1f5;
+  stroke: #190088;
+  stroke-width: 1.55;
+  stroke-linejoin: round;
+}
+
+.np-iso-dark-window,
+.np-iso-roof-edge {
+  fill: #190088;
   stroke: #190088;
   stroke-width: 1.4;
-  stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.np-art-icon {
-  fill: none;
+.np-iso-door {
+  fill: #eceff7;
   stroke: #190088;
-  stroke-width: 1.5;
-  stroke-linecap: round;
+  stroke-width: 1.45;
   stroke-linejoin: round;
 }
 
-.np-art-check-wrap .sa-art-cyan {
-  fill: #97d6df;
-}
-
-.np-art-check-wrap .sa-art-cyan-halo {
-  fill: #97d6df;
-  opacity: 0.26;
-}
-
-.np-art-check-wrap .sa-art-check {
-  fill: none;
+.np-iso-stripe-orange {
+  fill: #ff3f1a;
   stroke: #190088;
-  stroke-width: 1.8;
-  stroke-linecap: round;
+  stroke-width: 1.35;
+  stroke-linejoin: round;
+}
+
+.np-iso-stripe-white {
+  fill: #ffffff;
+  stroke: #190088;
+  stroke-width: 1.35;
   stroke-linejoin: round;
 }
 
 /* --------------------------------------------------------------------------
-   4. Right Stage — Business Groups with Parent (Admin) -> Children (Operators)
+   4. Right Stage — Crisp Indigo-Framed Business Container + Parent/Child Tree
    -------------------------------------------------------------------------- */
 .np-stage {
   display: flex;
@@ -431,18 +473,13 @@
 }
 
 .np-biz-group {
-  border-radius: 22px;
+  border-radius: 24px;
   background: var(--np-surface);
-  border: 1.3px solid var(--np-border);
-  padding: clamp(22px, 2.6vw, 30px);
+  border: 1.25px solid var(--np-frame-border);
+  padding: clamp(28px, 3.2vw, 40px);
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  box-shadow: 0 10px 30px -24px rgba(25, 0, 136, 0.14);
-}
-
-.dark .np-biz-group {
-  box-shadow: 0 14px 36px -22px rgba(0, 0, 0, 0.55);
+  gap: 24px;
 }
 
 /* Business Header */
@@ -451,21 +488,19 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--np-gray);
 }
 
 .np-biz-id {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   min-width: 0;
 }
 
 .np-biz-mark {
-  width: 46px;
-  height: 46px;
-  border-radius: 13px;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
   background: var(--np-cream);
   color: var(--np-indigo);
   display: grid;
@@ -478,8 +513,8 @@
 }
 
 .np-biz-mark svg {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.6;
@@ -515,7 +550,7 @@
 
 .np-biz-count {
   flex-shrink: 0;
-  padding: 5px 12px;
+  padding: 6px 13px;
   border-radius: 999px;
   background: var(--np-gray);
   font-size: 12px;
@@ -533,7 +568,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 5px 11px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
@@ -557,12 +592,12 @@
 }
 
 .dark .np-role-pill.is-admin {
-  background: rgba(183, 173, 255, 0.18);
+  background: rgba(183, 173, 255, 0.2);
   color: #ffffff;
 }
 
 .np-role-pill.is-operator {
-  background: rgba(151, 214, 223, 0.36);
+  background: rgba(151, 214, 223, 0.42);
   color: #190088;
 }
 
@@ -579,18 +614,18 @@
   background: #97d6df;
 }
 
-/* LEVEL 1 — PARENT CARD (Primary Business Administrator Access) */
+/* LEVEL 1 — PARENT CARD (Warm Cream #EFE6D3 Primary Business Administrator Access) */
 .np-parent-card {
   position: relative;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 22px 24px;
-  border-radius: 16px;
+  gap: 28px;
+  padding: 26px 30px;
+  border-radius: 18px;
   background: var(--np-cream);
-  border: 1.5px solid rgba(25, 0, 136, 0.14);
+  border: 1.25px solid transparent;
   text-align: left;
   color: var(--np-dark);
   transition:
@@ -601,7 +636,7 @@
 }
 
 .dark .np-parent-card {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--np-soft-border);
 }
 
 .np-parent-card:active:not(:disabled) {
@@ -637,14 +672,12 @@
 
 .np-parent-scope {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 400;
   color: var(--np-indigo);
-  opacity: 0.72;
 }
 
 .dark .np-parent-scope {
   color: var(--np-cyan);
-  opacity: 0.85;
 }
 
 .na-root[data-view="negocios"] h3.np-parent-title {
@@ -662,10 +695,10 @@
 
 .na-root[data-view="negocios"] p.np-parent-desc {
   margin: 0 !important;
-  max-width: 48ch !important;
+  max-width: 46ch !important;
   font-size: 14px !important;
   font-weight: 400 !important;
-  line-height: 1.5 !important;
+  line-height: 1.48 !important;
   color: var(--np-dark) !important;
 }
 
@@ -677,8 +710,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
-  padding: 0 20px;
+  min-height: 48px;
+  padding: 0 26px;
   border-radius: 12px;
   background: var(--np-orange);
   color: #ffffff;
@@ -698,34 +731,11 @@
   transition: transform 160ms var(--np-ease-out);
 }
 
-/* LEVEL 2 — SUBORDINATE CHILDREN BRANCH (Nested Module Operator Accesses) */
+/* LEVEL 2 — SUBORDINATE CHILDREN SECTION (Clean Flush Alignment, No Left Line) */
 .np-children-branch {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.np-children-branch[data-has-parent="true"] {
-  position: relative;
-  margin-left: 16px;
-  padding-left: 22px;
-  border-left: 2px dashed rgba(151, 214, 223, 0.9);
-}
-
-.dark .np-children-branch[data-has-parent="true"] {
-  border-left-color: rgba(151, 214, 223, 0.35);
-}
-
-.np-children-branch[data-has-parent="true"]::before {
-  content: "";
-  position: absolute;
-  left: -5px;
-  top: 6px;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--np-cyan);
-  border: 1.5px solid var(--np-indigo);
+  gap: 16px;
 }
 
 .np-children-head {
@@ -734,16 +744,24 @@
 }
 
 .np-children-kicker {
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--np-dark);
+}
+
+.np-children-kicker strong {
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--np-muted);
+  color: var(--np-indigo);
+}
+
+.dark .np-children-kicker strong {
+  color: #ffffff;
 }
 
 .np-children-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 20px;
 }
 
 .np-children-grid[data-count="single"] {
@@ -754,16 +772,18 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 14px;
-  padding: 18px 20px;
-  border-radius: 15px;
+  gap: 18px;
+  min-height: 186px;
+  padding: 24px 26px;
+  border-radius: 18px;
   background: var(--np-surface);
-  border: 1.3px solid var(--np-border);
+  border: 1.15px solid var(--np-card-border);
   text-align: left;
   color: var(--np-dark);
   transition:
     border-color 180ms ease,
     background-color 160ms ease,
+    box-shadow 180ms ease,
     transform 150ms var(--np-ease-out),
     opacity 180ms ease;
 }
@@ -790,14 +810,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
 .np-child-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: rgba(151, 214, 223, 0.26);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(151, 214, 223, 0.28);
   color: var(--np-indigo);
   display: grid;
   place-items: center;
@@ -810,8 +830,8 @@
 }
 
 .np-child-icon svg {
-  width: 19px;
-  height: 19px;
+  width: 22px;
+  height: 22px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.6;
@@ -842,14 +862,13 @@
   margin: 0 !important;
   font-size: 14px !important;
   font-weight: 400 !important;
-  line-height: 1.45 !important;
-  color: var(--np-muted) !important;
+  line-height: 1.48 !important;
+  color: var(--np-dark) !important;
 }
 
 .np-child-foot {
   margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid var(--np-gray);
+  padding-top: 6px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -872,7 +891,7 @@
   justify-content: center;
   width: 24px;
   height: 24px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--np-indigo);
   transition: transform 160ms var(--np-ease-out);
@@ -888,7 +907,7 @@
 @media (hover: hover) and (pointer: fine) {
   .np-parent-card:hover:not(:disabled) {
     border-color: var(--np-indigo);
-    box-shadow: 0 12px 26px -18px rgba(25, 0, 136, 0.24);
+    box-shadow: 0 12px 26px -18px rgba(25, 0, 136, 0.22);
     transform: translateY(-1px);
   }
 
@@ -902,7 +921,7 @@
 
   .np-child-card:hover:not(:disabled) {
     border-color: var(--np-indigo);
-    background: #fafcfd;
+    box-shadow: 0 10px 24px -18px rgba(25, 0, 136, 0.2);
     transform: translateY(-1px);
   }
 
@@ -916,7 +935,7 @@
   }
 }
 
-.np-portal[data-instant-focus="true"] .np-art-card,
+.np-portal[data-instant-focus="true"] .np-art-pill,
 .np-portal[data-instant-focus="true"] .np-art-tree-link,
 .np-portal[data-instant-focus="true"] .np-parent-card,
 .np-portal[data-instant-focus="true"] .np-child-card {
@@ -976,11 +995,6 @@
   .np-parent-cta {
     width: 100%;
     justify-content: center;
-  }
-
-  .np-children-branch[data-has-parent="true"] {
-    margin-left: 8px;
-    padding-left: 16px;
   }
 
   .np-children-grid {

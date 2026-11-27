@@ -150,6 +150,8 @@ export interface BusinessWorkspaceShellProps {
   disabled?: boolean;
   className?: string;
   hideSidebar?: boolean;
+  hideBreadcrumb?: boolean;
+  seamless?: boolean;
   children: ReactNode;
 }
 
@@ -193,6 +195,8 @@ export const BusinessWorkspaceShell = observer(
     disabled = false,
     className,
     hideSidebar = false,
+    hideBreadcrumb = false,
+    seamless = false,
     children,
   }: BusinessWorkspaceShellProps) => {
     const breadcrumbItems: BreadcrumbItem[] = [
@@ -202,7 +206,7 @@ export const BusinessWorkspaceShell = observer(
 
     return (
       <BaseAppShell
-        className="ws ws-enter"
+        className={cn("ws ws-enter", seamless && "ws-seamless")}
         sidebar={
           hideSidebar ? undefined : (
             <BaseAppSidebar
@@ -232,12 +236,13 @@ export const BusinessWorkspaceShell = observer(
         }
         header={
           <BaseAppHeader
+            className={hideSidebar ? "setup-home-header" : undefined}
             leftContent={
               <div className="flex items-center gap-3 min-w-0">
                 {hideSidebar ? (
                   <Link
                     to={homePath}
-                    className="flex items-center shrink-0 pr-2"
+                    className="ws-brand setup-home-brand flex items-center shrink-0 pr-2"
                     title={`NECTO · ${businessName}`}
                     aria-label={`Necto, inicio de ${businessName}`}
                   >
@@ -248,6 +253,7 @@ export const BusinessWorkspaceShell = observer(
                 )}
 
                 <ConfigBusinessSwitcher
+                  className={hideSidebar ? "setup-home-switcher" : undefined}
                   currentBusinessId={businessId}
                   currentBusinessName={businessName}
                   subtitle={subtitle}
@@ -258,19 +264,23 @@ export const BusinessWorkspaceShell = observer(
                   onSelect={onSelectBusiness}
                 />
 
-                <span
-                  className="hidden md:block h-5 w-px bg-gray-200/80 dark:bg-white/10 shrink-0"
-                  aria-hidden="true"
-                />
+                {!hideBreadcrumb && (
+                  <>
+                    <span
+                      className="hidden md:block h-5 w-px bg-gray-200/80 dark:bg-white/10 shrink-0"
+                      aria-hidden="true"
+                    />
 
-                <Breadcrumb
-                  separator="chevron"
-                  items={breadcrumbItems}
-                  className="hidden md:flex items-center min-w-0"
-                />
+                    <Breadcrumb
+                      separator="chevron"
+                      items={breadcrumbItems}
+                      className="hidden md:flex items-center min-w-0"
+                    />
+                  </>
+                )}
               </div>
             }
-            mobileLogo={
+            mobileLogo={!hideSidebar && (
               <Link
                 className="ws-brand sm:hidden flex items-center"
                 to={homePath}
@@ -278,7 +288,7 @@ export const BusinessWorkspaceShell = observer(
               >
                 <NectoLogo width={116} height={17} />
               </Link>
-            }
+            )}
           >
             <div className="flex items-center gap-2.5 sm:gap-3">
               <RoleShieldBadge role={roleLabel} />

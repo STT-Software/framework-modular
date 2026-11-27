@@ -117,7 +117,10 @@ export const BusinessPicker = observer(() => {
                 disabled={store.busy || choiceStatus !== "idle"}
                 onClick={() => void store.leave("Ingresa el correo de la cuenta con la que quieres continuar.")}
               >
-                Usar otra cuenta
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M16 3h5v5M21 3l-6 6M8 21H3v-5M3 21l6-6" />
+                </svg>
+                <span>Usar otra cuenta</span>
               </button>
             </div>
           )}

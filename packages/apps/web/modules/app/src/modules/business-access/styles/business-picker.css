@@ -154,8 +154,8 @@
 .np-portal {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(360px, 0.84fr) minmax(0, 1.36fr);
-  gap: clamp(40px, 4.8vw, 84px);
+  grid-template-columns: minmax(420px, 0.96fr) minmax(0, 1.24fr);
+  gap: clamp(40px, 4.6vw, 76px);
   align-items: center;
 }
 
@@ -248,24 +248,52 @@
 }
 
 .np-switch-account-btn {
-  padding: 4px 2px;
-  border: 0;
-  background: transparent;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 15px;
+  border-radius: 10px;
+  border: 1.25px solid var(--np-indigo);
+  background: var(--np-surface);
+  font-size: 14px;
   font-weight: 700;
+  line-height: 1;
   color: var(--np-indigo);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  white-space: nowrap;
   cursor: pointer;
-  transition: opacity 160ms ease;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    transform 140ms var(--np-ease-out);
+}
+
+.np-switch-account-btn svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
 }
 
 .dark .np-switch-account-btn {
+  border-color: var(--np-cyan);
+  background: rgba(151, 214, 223, 0.1);
   color: var(--np-cyan);
 }
 
-.np-switch-account-btn:hover:not(:disabled) {
-  opacity: 0.78;
+.np-switch-account-btn:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.np-switch-account-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .np-email-pill svg {
@@ -303,12 +331,12 @@
 }
 
 /* --------------------------------------------------------------------------
-   3. Flat Editorial Isometric Hierarchy Vector Tokens
+   3. Flat Editorial Hierarchy Vector Tokens (SceneArt / BrandScenes Language)
    -------------------------------------------------------------------------- */
 .np-hero-svg {
   display: block;
   width: 100%;
-  max-width: 500px;
+  max-width: 580px;
   height: auto;
   overflow: visible;
   font-family: "DM Sans", sans-serif;
@@ -316,13 +344,31 @@
 
 .np-art-orbit {
   fill: none;
-  stroke: rgba(25, 0, 136, 0.28);
+  stroke: rgba(25, 0, 136, 0.24);
   stroke-width: 1.25;
   stroke-dasharray: 2.5 5.5;
 }
 
+.np-art-orbit-solid {
+  fill: none;
+  stroke: rgba(25, 0, 136, 0.14);
+  stroke-width: 1.1;
+}
+
 .dark .np-art-orbit {
   stroke: rgba(255, 255, 255, 0.36);
+}
+
+.dark .np-art-orbit-solid {
+  stroke: rgba(255, 255, 255, 0.2);
+}
+
+.np-art-cyan-halo {
+  fill: rgba(151, 214, 223, 0.28);
+}
+
+.dark .np-art-cyan-halo {
+  fill: rgba(151, 214, 223, 0.22);
 }
 
 .np-art-sparks .sa-art-spark {
@@ -334,24 +380,30 @@
   fill: #ff5633;
 }
 
+.np-art-sparks-cyan .sa-art-spark {
+  fill: #97d6df;
+  opacity: 0.95;
+}
+
 .np-art-shadow {
   fill: rgba(25, 0, 136, 0.08);
 }
 
 .dark .np-art-shadow {
-  fill: rgba(0, 0, 0, 0.5);
+  fill: rgba(0, 0, 0, 0.45);
 }
 
 .np-art-tree-link {
   fill: none;
   stroke: #190088;
-  stroke-width: 1.65;
+  stroke-width: 1.75;
   stroke-dasharray: 4 4.5;
   stroke-linecap: round;
-  opacity: 0.85;
+  opacity: 0.78;
   transition:
     stroke 180ms ease,
-    stroke-width 180ms ease;
+    stroke-width 180ms ease,
+    opacity 180ms ease;
 }
 
 .dark .np-art-tree-link {
@@ -360,47 +412,156 @@
 
 .np-art-tree-link[data-active="true"] {
   stroke: #ff3f1a;
-  stroke-width: 2.1;
+  stroke-width: 2.2;
   stroke-dasharray: none;
+  opacity: 1;
 }
 
-/* White pill nodes stay crisp white even in dark mode (NECTO vector rule) */
-.np-art-pill {
+.np-art-sat-link {
+  fill: none;
+  stroke: rgba(25, 0, 136, 0.34);
+  stroke-width: 1.3;
+  stroke-dasharray: 1.5 4.5;
+  stroke-linecap: round;
+}
+
+.dark .np-art-sat-link {
+  stroke: rgba(255, 255, 255, 0.42);
+}
+
+.np-art-node {
   fill: #ffffff;
   stroke: #190088;
+  stroke-width: 1.8;
+}
+
+.np-art-node-active {
+  fill: #ff3f1a;
+  stroke: #ffffff;
+  stroke-width: 1.8;
+}
+
+/* White cards stay pure white #FFFFFF even in dark mode (NECTO SceneArt rule) */
+.np-art-card,
+.np-art-hub {
+  fill: #ffffff;
+  stroke: #dfe4ef;
   stroke-width: 1.4;
+  filter: drop-shadow(0 6px 14px rgba(25, 0, 136, 0.07));
   transition:
     stroke 180ms ease,
     stroke-width 180ms ease;
 }
 
-.np-art-pill.is-highlighted {
-  stroke: #ff3f1a;
-  stroke-width: 1.9;
+.np-art-hub {
+  stroke: rgba(25, 0, 136, 0.32);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 10px 22px rgba(25, 0, 136, 0.1));
 }
 
-.np-art-pill.is-highlighted-cyan {
+.dark .np-art-card,
+.dark .np-art-hub {
+  stroke: rgba(255, 255, 255, 0.9);
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.38));
+}
+
+.np-art-card.is-highlighted,
+.np-art-hub.is-highlighted {
+  stroke: #ff3f1a;
+  stroke-width: 2;
+}
+
+.np-art-card.is-highlighted-cyan {
   stroke: #190088;
   stroke-width: 2;
 }
 
-.np-art-pill-label {
-  fill: #190088;
-  font-size: 13.5px;
+.dark .np-art-card.is-highlighted-cyan {
+  stroke: #97d6df;
+  stroke-width: 2.2;
+}
+
+.np-art-chip-cream {
+  fill: #efe6d3;
+}
+
+.np-art-chip-orange {
+  fill: rgba(255, 63, 26, 0.12);
+}
+
+.np-art-chip-cyan {
+  fill: rgba(151, 214, 223, 0.32);
+}
+
+.np-art-awning-orange {
+  fill: #ff3f1a;
+}
+
+.np-art-awning-cream {
+  fill: #efe6d3;
+}
+
+.np-art-eyebrow-text {
+  fill: rgba(25, 0, 136, 0.58);
+  font-size: 7.5px;
   font-weight: 700;
-  letter-spacing: -0.015em;
+  letter-spacing: 0.1em;
+}
+
+.np-art-card-title {
+  fill: #190088;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.np-art-hub-title {
+  fill: #190088;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.np-art-meta-text {
+  fill: #4b5563;
+  font-size: 9.5px;
+  font-weight: 400;
+}
+
+.np-art-pill-micro {
+  fill: #190088;
+  font-size: 6.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.np-art-rule {
+  stroke: rgba(25, 0, 136, 0.12);
+  stroke-width: 1.1;
 }
 
 .np-art-icon {
   fill: none;
   stroke: #190088;
-  stroke-width: 1.6;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.np-art-icon-accent {
+  fill: none;
+  stroke: #ff3f1a;
+  stroke-width: 1.75;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .np-art-indigo-dot {
   fill: #190088;
+}
+
+.np-art-dot-orange {
+  fill: #ff3f1a;
 }
 
 .np-art-badge-bg {
@@ -412,53 +573,6 @@
   stroke: #190088;
   stroke-width: 1.9;
   stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* Isometric Storefront Surfaces */
-.np-iso-front-wall,
-.np-iso-roof-top,
-.np-iso-sign-face,
-.np-iso-side-window {
-  fill: #ffffff;
-  stroke: #190088;
-  stroke-width: 1.55;
-  stroke-linejoin: round;
-}
-
-.np-iso-side-wall {
-  fill: #d8f1f5;
-  stroke: #190088;
-  stroke-width: 1.55;
-  stroke-linejoin: round;
-}
-
-.np-iso-dark-window,
-.np-iso-roof-edge {
-  fill: #190088;
-  stroke: #190088;
-  stroke-width: 1.4;
-  stroke-linejoin: round;
-}
-
-.np-iso-door {
-  fill: #eceff7;
-  stroke: #190088;
-  stroke-width: 1.45;
-  stroke-linejoin: round;
-}
-
-.np-iso-stripe-orange {
-  fill: #ff3f1a;
-  stroke: #190088;
-  stroke-width: 1.35;
-  stroke-linejoin: round;
-}
-
-.np-iso-stripe-white {
-  fill: #ffffff;
-  stroke: #190088;
-  stroke-width: 1.35;
   stroke-linejoin: round;
 }
 
@@ -905,6 +1019,16 @@
    5. Hover Gating (Strict Pointer-Fine) & Choreographed Entrance
    -------------------------------------------------------------------------- */
 @media (hover: hover) and (pointer: fine) {
+  .np-switch-account-btn:hover:not(:disabled) {
+    background: var(--np-indigo);
+    color: #ffffff;
+  }
+
+  .dark .np-switch-account-btn:hover:not(:disabled) {
+    background: var(--np-cyan);
+    color: #190088;
+  }
+
   .np-parent-card:hover:not(:disabled) {
     border-color: var(--np-indigo);
     box-shadow: 0 12px 26px -18px rgba(25, 0, 136, 0.22);
@@ -935,7 +1059,8 @@
   }
 }
 
-.np-portal[data-instant-focus="true"] .np-art-pill,
+.np-portal[data-instant-focus="true"] .np-art-card,
+.np-portal[data-instant-focus="true"] .np-art-hub,
 .np-portal[data-instant-focus="true"] .np-art-tree-link,
 .np-portal[data-instant-focus="true"] .np-parent-card,
 .np-portal[data-instant-focus="true"] .np-child-card {

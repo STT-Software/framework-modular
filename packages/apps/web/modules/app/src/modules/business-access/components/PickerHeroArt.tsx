@@ -7,188 +7,262 @@ interface PickerHeroArtProps {
 }
 
 /**
- * NECTO Flat Editorial Geometry hierarchy diagram for /business/access ("Elige tu negocio").
- * Top capsule: Administrador (parent) -> dashed drop into the isometric NECTO storefront ->
- * branching downward to Pedidos & Turnos capsules, all encircled by a subtle dotted orbit
- * with four-pointed vermilion sparkles and cyan check badges.
+ * NECTO Flat Editorial Geometry hierarchy composition for /business/access ("Elige tu negocio").
+ * Follows the exact SceneArt / BrandScenes visual language:
+ * - Layered backdrop: dotted circle + tilted ellipse orbit, cyan halo orbs, vermilion 4-pointed sparkles, flat shadow.
+ * - Top card (Parent): Administrador with crown/shield chip and cyan check badge.
+ * - Centerpiece Hub: NECTO Business card with stylized editorial storefront awning, ArtMark, and flanking config/catalog satellites.
+ * - Bottom branch (Children): Pedidos & Turnos operator cards linked via curved dashed hierarchy paths.
  */
 export function PickerHeroArt({ activeRole }: PickerHeroArtProps) {
   const adminHighlighted = activeRole === "admin";
   const operatorHighlighted = activeRole === "operator";
 
-  // 5 scalloped isometric awning stripes across the front-left facade of the centered shop
-  const awningRibs = [0, 1, 2, 3, 4].map((i) => {
-    const t0 = i / 5;
-    const t1 = (i + 1) / 5;
-    const tx0 = 159 + (235 - 159) * t0;
-    const ty0 = 148 + (175 - 148) * t0;
-    const tx1 = 159 + (235 - 159) * t1;
-    const ty1 = 148 + (175 - 148) * t1;
-    const bx0 = tx0 - 8;
-    const by0 = ty0 + 17;
-    const bx1 = tx1 - 8;
-    const by1 = ty1 + 17;
-    const cx = (bx0 + bx1) / 2 - 1.5;
-    const cy = (by0 + by1) / 2 + 6.5;
-
-    return {
-      index: i,
-      isOrange: i % 2 === 0,
-      d: `M${tx0.toFixed(1)} ${ty0.toFixed(1)} L${tx1.toFixed(1)} ${ty1.toFixed(1)} L${bx1.toFixed(1)} ${by1.toFixed(1)} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${bx0.toFixed(1)} ${by0.toFixed(1)} Z`,
-    };
-  });
-
   return (
     <svg
       className="np-hero-svg"
-      viewBox="0 0 460 350"
+      viewBox="0 0 460 364"
       fill="none"
       role="img"
-      aria-label="Jerarquía NECTO: Administrador conectado al negocio y ramificado hacia Pedidos y Turnos"
+      aria-label="Jerarquía NECTO: Administrador conectado al negocio central y ramificado hacia los módulos subordinados de Pedidos y Turnos"
     >
-      {/* Subtle dotted orbital backdrop */}
+      {/* ── LAYER 1: Orbital Backdrop (SceneArt language) ── */}
+      <circle className="np-art-orbit" cx="230" cy="182" r="142" />
       <ellipse
-        className="np-art-orbit"
-        cx="232"
-        cy="184"
-        rx="142"
-        ry="114"
-        transform="rotate(-14 232 184)"
+        className="np-art-orbit-solid"
+        cx="230"
+        cy="182"
+        rx="196"
+        ry="98"
+        transform="rotate(-20 230 182)"
       />
 
-      {/* Four-pointed vermilion sparkles */}
-      <g className="np-art-sparks" aria-hidden="true">
-        <ArtSpark cx={96} cy={104} size={16} />
-        <ArtSpark cx={376} cy={176} size={13} />
+      {/* Cyan accent orbs with soft halos */}
+      <g aria-hidden="true">
+        <circle className="np-art-cyan-halo" cx="42" cy="238" r="12" />
+        <circle className="np-art-badge-bg" cx="42" cy="238" r="5.5" />
+        <circle className="np-art-cyan-halo" cx="412" cy="90" r="10.5" />
+        <circle className="np-art-badge-bg" cx="412" cy="90" r="4.8" />
       </g>
 
-      {/* Soft ground shadow beneath isometric storefront */}
-      <ellipse className="np-art-shadow" cx="228" cy="240" rx="82" ry="15" />
+      {/* Four-pointed sparkles */}
+      <g className="np-art-sparks" aria-hidden="true">
+        <ArtSpark cx={72} cy={62} size={18} />
+        <ArtSpark cx={396} cy={246} size={14} />
+      </g>
+      <g className="np-art-sparks-cyan" aria-hidden="true">
+        <ArtSpark cx={364} cy={42} size={12} />
+      </g>
 
-      {/* Dashed hierarchy connectors: Admin pill -> Shop -> Pedidos & Turnos pills */}
+      {/* Flat ground shadow */}
+      <ellipse className="np-art-shadow" cx="230" cy="352" rx="168" ry="8.5" />
+
+      {/* ── LAYER 2: Hierarchy Connectors & Satellite Links ── */}
+      {/* Admin -> Business Hub */}
       <path
         className="np-art-tree-link"
         data-active={adminHighlighted || undefined}
-        d="M230 78 V116"
+        d="M230 72 V112"
       />
-      <path
-        className="np-art-tree-link"
-        data-active={operatorHighlighted || undefined}
-        d="M188 228 Q154 252 134 276"
-      />
-      <path
-        className="np-art-tree-link"
-        data-active={operatorHighlighted || undefined}
-        d="M268 228 Q304 252 324 276"
+      <circle
+        cx="230"
+        cy="92"
+        r="3.5"
+        className={adminHighlighted ? "np-art-node-active" : "np-art-node"}
       />
 
-      {/* ── TOP PILL: Administrador (Parent Role) ── */}
-      <g transform="translate(230 56)">
-        <rect
-          x="-92"
-          y="-22"
-          width="184"
-          height="44"
-          rx="22"
-          className={adminHighlighted ? "np-art-pill is-highlighted" : "np-art-pill"}
+      {/* Side satellites -> Business Hub */}
+      <path className="np-art-sat-link" d="M77 160 Q95 166 113 166" />
+      <path className="np-art-sat-link" d="M383 176 Q365 176 347 174" />
+
+      {/* Business Hub -> Subordinate Operator Modules */}
+      <path
+        className="np-art-tree-link"
+        data-active={operatorHighlighted || undefined}
+        d="M230 232 C230 258 118 246 118 276"
+      />
+      <path
+        className="np-art-tree-link"
+        data-active={operatorHighlighted || undefined}
+        d="M230 232 C230 258 342 246 342 276"
+      />
+      <circle
+        cx="230"
+        cy="232"
+        r="5"
+        className={operatorHighlighted ? "np-art-node-active" : "np-art-node"}
+      />
+
+      {/* ── LAYER 3: Flanking Satellites (Catalog & Team/Config) ── */}
+      {/* Left satellite: Catalog / Inventory token */}
+      <g transform="translate(52 156) rotate(-10)">
+        <rect x="-24" y="-24" width="48" height="48" rx="15" className="np-art-card" />
+        <rect x="-15" y="-15" width="30" height="30" rx="9" className="np-art-chip-cream" />
+        <path
+          className="np-art-icon"
+          d="M-7 -4 L0 -8 L7 -4 V4 L0 8 L-7 4 Z M-7 -4 L0 0 L7 -4 M0 0 V8"
         />
-        {/* User silhouette icon */}
-        <circle cx="-58" cy="-4.5" r="4.8" className="np-art-icon" />
-        <path d="M-67 9 C-65.5 3 -50.5 3 -49 9" className="np-art-icon" />
-        <text x="-38" y="4.5" className="np-art-pill-label">
+      </g>
+
+      {/* Right satellite: Team / Config settings token */}
+      <g transform="translate(408 176) rotate(9)">
+        <rect x="-24" y="-24" width="48" height="48" rx="15" className="np-art-card" />
+        <rect x="-15" y="-15" width="30" height="30" rx="9" className="np-art-chip-cyan" />
+        <circle cx="0" cy="0" r="4" className="np-art-icon" />
+        <path
+          className="np-art-icon"
+          d="M0 -8.5 V-6.5 M0 6.5 V8.5 M-8.5 0 H-6.5 M6.5 0 H8.5 M-6 -6 L-4.5 -4.5 M4.5 4.5 L6 6 M6 -6 L4.5 -4.5 M-4.5 4.5 L-6 6"
+        />
+      </g>
+
+      {/* ── LAYER 4: Top Parent Card — Administrador ── */}
+      <g transform="translate(230 42)">
+        <rect
+          x="-116"
+          y="-29"
+          width="232"
+          height="58"
+          rx="18"
+          className={adminHighlighted ? "np-art-card is-highlighted" : "np-art-card"}
+        />
+        {/* Icon chip */}
+        <rect
+          x="-103"
+          y="-18"
+          width="36"
+          height="36"
+          rx="11"
+          className={adminHighlighted ? "np-art-chip-orange" : "np-art-chip-cream"}
+        />
+        {/* Admin user + shield glyph */}
+        <circle cx="-85" cy="-4.5" r="4.6" className={adminHighlighted ? "np-art-icon-accent" : "np-art-icon"} />
+        <path
+          d="M-93.5 8.5 C-92 2.5 -78 2.5 -76.5 8.5"
+          className={adminHighlighted ? "np-art-icon-accent" : "np-art-icon"}
+        />
+        {/* Copy */}
+        <text x="-56" y="-4" className="np-art-eyebrow-text">
+          ROL PRINCIPAL
+        </text>
+        <text x="-56" y="12.5" className="np-art-card-title">
           Administrador
         </text>
-        {/* Cyan check badge on upper-right */}
-        <g transform="translate(82 -16)">
-          <circle r="11" className="np-art-badge-bg" />
+        {/* Cyan check badge */}
+        <g transform="translate(108 -22)">
+          <circle r="13.5" className="np-art-cyan-halo" />
+          <circle r="10.5" className="np-art-badge-bg" />
           <path d="M-4 0.5 L-1 3.5 L4.5 -3" className="np-art-badge-check" />
         </g>
       </g>
 
-      {/* ── CENTERPIECE: Isometric NECTO Storefront ── */}
-      <g className="np-iso-shop">
-        {/* Front-left white facade */}
-        <path d="M164 158 L235 184 L235 241 L164 215 Z" className="np-iso-front-wall" />
-        {/* Dark indigo display window */}
-        <path d="M173 178 L200 188 L200 216 L173 206 Z" className="np-iso-dark-window" />
-        {/* Entrance door */}
-        <path d="M208 191 L226 198 L226 237 L208 230 Z" className="np-iso-door" />
-        <circle cx="212.5" cy="215" r="1.4" className="np-art-indigo-dot" />
+      {/* ── LAYER 5: Centerpiece Hero Card — Negocio Central NECTO ── */}
+      <g transform="translate(230 172) rotate(-2)">
+        {/* Outer editorial card */}
+        <rect
+          x="-118"
+          y="-58"
+          width="236"
+          height="116"
+          rx="20"
+          className={adminHighlighted ? "np-art-hub is-highlighted" : "np-art-hub"}
+        />
 
-        {/* Right cyan side wall */}
-        <path d="M235 184 L292 161 L292 218 L235 241 Z" className="np-iso-side-wall" />
-        {/* White isometric side window */}
-        <path d="M247 190 L279 177 L279 203 L247 216 Z" className="np-iso-side-window" />
-
-        {/* Flat white isometric roof */}
-        <path d="M159 148 L218 124 L295 151 L235 175 Z" className="np-iso-roof-top" />
-        {/* Deep indigo right roof eave */}
-        <path d="M235 175 L295 151 L295 161 L235 185 Z" className="np-iso-roof-edge" />
-
-        {/* Striped vermilion & white awning */}
-        {awningRibs.map((rib) => (
-          <path
-            key={rib.index}
-            d={rib.d}
-            className={rib.isOrange ? "np-iso-stripe-orange" : "np-iso-stripe-white"}
-          />
-        ))}
-
-        {/* Rooftop NECTO N signboard */}
-        <path d="M199 137 L241 120 L245 121.5 L203 138.5 Z" className="np-iso-roof-edge" />
-        <path d="M240 80 L245 81.5 L245 121.5 L240 120 Z" className="np-iso-roof-edge" />
-        <path d="M199 97 L240 80 L240 120 L199 137 Z" className="np-iso-sign-face" />
-        <g transform="translate(211 103) skewY(-22.5)">
-          <ArtMark x={0} y={0} size={18} />
+        {/* Stylized flat-editorial storefront awning strip along the top edge */}
+        <g transform="translate(-104 -46)">
+          <rect x="0" y="0" width="38" height="14" rx="5" className="np-art-awning-orange" />
+          <rect x="42" y="0" width="38" height="14" rx="5" className="np-art-awning-cream" />
+          <rect x="84" y="0" width="40" height="14" rx="5" className="np-art-awning-orange" />
+          <rect x="128" y="0" width="38" height="14" rx="5" className="np-art-awning-cream" />
+          <rect x="170" y="0" width="38" height="14" rx="5" className="np-art-awning-orange" />
         </g>
+
+        {/* NECTO Brand Mark tile */}
+        <rect x="-102" y="-18" width="48" height="48" rx="14" className="np-art-chip-orange" />
+        <ArtMark x={-91} y={-7} size={26} />
+
+        {/* Hub copy */}
+        <text x="-42" y="-3" className="np-art-eyebrow-text">
+          NEGOCIO CENTRAL
+        </text>
+        <text x="-42" y="13.5" className="np-art-hub-title">
+          Gestión y Config.
+        </text>
+        <text x="-42" y="28" className="np-art-meta-text">
+          Catálogo · Equipo · Módulos
+        </text>
+
+        {/* Editorial divider & live status footer */}
+        <line x1="-102" y1="40" x2="102" y2="40" className="np-art-rule" />
+        <g transform="translate(-102 47)">
+          <circle cx="4" cy="2" r="3" className="np-art-dot-orange" />
+          <circle cx="14" cy="2" r="3" className="np-art-badge-bg" />
+          <circle cx="24" cy="2" r="3" className="np-art-indigo-dot" />
+          <text x="36" y="5" className="np-art-eyebrow-text">
+            CONTROL COMPLETO
+          </text>
+        </g>
+        {/* Right-aligned mini status pill */}
+        <rect x="46" y="43.5" width="56" height="11" rx="5.5" className="np-art-chip-cyan" />
+        <text x="74" y="51.2" textAnchor="middle" className="np-art-pill-micro">
+          EN LÍNEA
+        </text>
       </g>
 
-      {/* ── LOWER-LEFT PILL: Pedidos (Subordinate Operator Module) ── */}
-      <g transform="translate(122 298)">
+      {/* ── LAYER 6: Subordinate Child Cards — Pedidos & Turnos ── */}
+      {/* Bottom-left: Pedidos */}
+      <g transform="translate(116 308) rotate(-2)">
         <rect
-          x="-68"
-          y="-20"
-          width="136"
-          height="40"
-          rx="20"
-          className={operatorHighlighted ? "np-art-pill is-highlighted-cyan" : "np-art-pill"}
+          x="-90"
+          y="-30"
+          width="180"
+          height="60"
+          rx="16"
+          className={operatorHighlighted ? "np-art-card is-highlighted-cyan" : "np-art-card"}
         />
+        <rect x="-78" y="-18" width="36" height="36" rx="10" className="np-art-chip-cyan" />
         {/* Shopping bag icon */}
         <path
-          d="M-44 -5 H-30 L-29 8 H-45 L-44 -5 Z M-41 -5 V-7.5 A4 4 0 0 1 -33 -7.5 V-5"
+          d="M-66.5 -4.5 H-53.5 L-52.5 8 H-67.5 L-66.5 -4.5 Z M-63.5 -4.5 V-7.2 A3.5 3.5 0 0 1 -56.5 -7.2 V-4.5"
           className="np-art-icon"
         />
-        <text x="-18" y="4.5" className="np-art-pill-label">
+        <text x="-32" y="-4" className="np-art-eyebrow-text">
+          OPERADOR
+        </text>
+        <text x="-32" y="12.5" className="np-art-card-title">
           Pedidos
         </text>
-        {/* Cyan check badge on upper-right */}
-        <g transform="translate(58 -15)">
-          <circle r="10.5" className="np-art-badge-bg" />
+        <g transform="translate(82 -24)">
+          <circle r="12.5" className="np-art-cyan-halo" />
+          <circle r="10" className="np-art-badge-bg" />
           <path d="M-3.8 0.5 L-1 3.3 L4.3 -2.8" className="np-art-badge-check" />
         </g>
       </g>
 
-      {/* ── LOWER-RIGHT PILL: Turnos (Subordinate Operator Module) ── */}
-      <g transform="translate(332 298)">
+      {/* Bottom-right: Turnos */}
+      <g transform="translate(344 308) rotate(2)">
         <rect
-          x="-66"
-          y="-20"
-          width="132"
-          height="40"
-          rx="20"
-          className={operatorHighlighted ? "np-art-pill is-highlighted-cyan" : "np-art-pill"}
+          x="-90"
+          y="-30"
+          width="180"
+          height="60"
+          rx="16"
+          className={operatorHighlighted ? "np-art-card is-highlighted-cyan" : "np-art-card"}
         />
+        <rect x="-78" y="-18" width="36" height="36" rx="10" className="np-art-chip-cyan" />
         {/* Queue list icon */}
-        <path d="M-37 -5 H-24 M-37 0 H-24 M-37 5 H-24" className="np-art-icon" />
-        <circle cx="-42" cy="-5" r="1.4" className="np-art-indigo-dot" />
-        <circle cx="-42" cy="0" r="1.4" className="np-art-indigo-dot" />
-        <circle cx="-42" cy="5" r="1.4" className="np-art-indigo-dot" />
-        <text x="-14" y="4.5" className="np-art-pill-label">
+        <path d="M-61 -5.5 H-51 M-61 0 H-51 M-61 5.5 H-51" className="np-art-icon" />
+        <circle cx="-66" cy="-5.5" r="1.4" className="np-art-indigo-dot" />
+        <circle cx="-66" cy="0" r="1.4" className="np-art-indigo-dot" />
+        <circle cx="-66" cy="5.5" r="1.4" className="np-art-indigo-dot" />
+        <text x="-32" y="-4" className="np-art-eyebrow-text">
+          OPERADOR
+        </text>
+        <text x="-32" y="12.5" className="np-art-card-title">
           Turnos
         </text>
-        {/* Cyan check badge on upper-right */}
-        <g transform="translate(56 -15)">
-          <circle r="10.5" className="np-art-badge-bg" />
+        <g transform="translate(82 -24)">
+          <circle r="12.5" className="np-art-cyan-halo" />
+          <circle r="10" className="np-art-badge-bg" />
           <path d="M-3.8 0.5 L-1 3.3 L4.3 -2.8" className="np-art-badge-check" />
         </g>
       </g>
